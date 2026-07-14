@@ -1,0 +1,74 @@
+# ═══════════════════════════════════════════════════════════════
+# AutoMind Backend — requirements.txt (production)
+#
+# Versions épinglées et compatibles entre elles.
+# torch est en mode CPU-only par défaut (pas de dépendance CUDA).
+# Pour GPU : remplacer torch par la version CUDA correspondante
+#   → pip install torch --index-url https://download.pytorch.org/whl/cu121
+# ═══════════════════════════════════════════════════════════════
+
+
+# ─── Core API ──────────────────────────────────────────────────
+# Framework web async, validation, docs OpenAPI automatique
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.1
+pydantic-settings==2.5.2
+python-multipart==0.0.9          # Upload fichiers (images véhicules)
+email-validator==2.2.0           # Validation EmailStr dans Pydantic
+
+# ─── Authentification ──────────────────────────────────────────
+# JWT + hashing mot de passe (bcrypt)
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# ─── Base de données — PostgreSQL ─────────────────────────────
+# ORM async (asyncpg) + migrations (Alembic)
+sqlalchemy==2.0.35
+asyncpg==0.29.0                  # Driver async PostgreSQL
+alembic==1.13.2                  # Migrations de schéma
+psycopg2-binary           # Driver sync (pour Alembic / scripts)
+
+# ─── Base de données — Neo4j (graphe) ─────────────────────────
+# Client Python pour les requêtes Cypher + GDS
+neo4j==5.25.0
+
+# ─── Vector Store / RAG ───────────────────────────────────────
+# Qdrant pour les embeddings, sentence-transformers pour l'encodage,
+# LangChain pour l'orchestration RAG (chatbot)
+qdrant-client==1.11.3
+sentence-transformers==3.1.1
+langchain==0.3.0
+langchain-openai==0.2.0
+langchain-groq==1.1.3
+langchain-community==0.3.0
+
+# ─── Machine Learning — Recommandation & Pricing ──────────────
+# scikit-learn pour le content-based filtering + preprocessing
+# XGBoost pour la prédiction de prix
+scikit-learn
+xgboost
+pandas
+numpy
+joblib
+
+# ─── Computer Vision — Analyse d'images véhicules ─────────────
+# YOLO (ultralytics) pour la détection de dommages,
+# imagehash pour la détection de photos dupliquées
+ultralytics==8.2.100
+opencv-python-headless==4.10.0.84  # Headless = pas de dépendance GTK (serveur)
+imagehash==4.3.1
+Pillow==10.4.0
+
+# ─── NLP — Sentiment & Analyse de texte ──────────────────────
+# transformers pour les modèles de sentiment pré-entraînés
+# torch CPU-only (voir commentaire en haut pour GPU)
+transformers==4.44.2
+torch==2.4.1                     # CPU-only par défaut
+
+# ─── Kafka — Streaming d'événements ──────────────────────────
+confluent-kafka==2.5.3
+
+# ─── Utilitaires ──────────────────────────────────────────────
+python-dotenv==1.0.1             # Chargement .env
+httpx==0.27.2                    # Client HTTP async (appels inter-services)

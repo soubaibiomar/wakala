@@ -1,0 +1,83 @@
+:root {
+  --car-headlight-width: 120px;
+  --car-headlight-height: 60px;
+  --car-headlight-color: rgba(174, 140, 78, 0.25);
+  --car-headlight-glow: rgba(174, 140, 78, 0.3);
+  --plate-bg: linear-gradient(135deg, #122135, #1A3A5C);
+  --plate-border: #AE8C4E;
+  --plate-text: #AE8C4E;
+}
+
+.car-headlight {
+  position: absolute;
+  width: var(--car-headlight-width);
+  height: var(--car-headlight-height);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.3;
+  transition: opacity 0.6s ease, box-shadow 0.6s ease;
+}
+
+.car-headlight--left {
+  background: radial-gradient(ellipse,
+    rgba(255,255,255,0.2) 0%,
+    var(--car-headlight-color) 40%,
+    transparent 70%
+  );
+  box-shadow: 0 0 40px 10px var(--car-headlight-glow);
+}
+
+.car-headlight--right {
+  background: radial-gradient(ellipse,
+    rgba(255,255,255,0.2) 0%,
+    var(--car-headlight-color) 40%,
+    transparent 70%
+  );
+  box-shadow: 0 0 40px 10px var(--car-headlight-glow);
+}
+
+.car-headlight--active {
+  opacity: 1;
+  box-shadow: 0 0 60px 20px var(--car-headlight-glow);
+}
+
+@keyframes headlight-flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.car-headlight--pulse {
+  animation: headlight-flash 0.8s ease-in-out 1;
+}
+
+.license-plate {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--plate-bg);
+  border: 2px solid var(--plate-border);
+  border-radius: 4px;
+  padding: 2px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: var(--plate-text);
+  text-transform: uppercase;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+.license-plate__flag {
+  font-size: 0.6rem;
+  margin-right: 2px;
+}
+
+.car-icon-svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

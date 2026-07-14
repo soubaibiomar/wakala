@@ -1,0 +1,40 @@
+# ─── Environment ───────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ─── Dependencies ──────────────────────────────────────
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ─── Build outputs ────────────────────────────────────
+dist/
+build/
+*.egg-info/
+
+# ─── IDE ───────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# ─── Data & ML ─────────────────────────────────────────
+data-pipeline/storage/bronze/*
+data-pipeline/storage/silver/*
+data-pipeline/storage/gold/*
+!data-pipeline/storage/**/.gitkeep
+*.pkl
+*.joblib
+*.h5
+*.pt
+
+# ─── Docker ────────────────────────────────────────────
+docker-compose.override.yml
+
+# ─── Logs ──────────────────────────────────────────────
+*.log
+logs/

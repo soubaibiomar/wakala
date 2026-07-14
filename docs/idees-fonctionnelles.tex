@@ -1,0 +1,259 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage[margin=2cm]{geometry}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={Référentiel des Idées Fonctionnelles - Vente Auto Platform},
+}
+
+\title{Référentiel des Idées Fonctionnelles\\Projet Vente Auto Platform}
+\author{Équipe Projet}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introduction}
+Ce document consolide l'ensemble des idées fonctionnelles imaginées, évaluées et retenues au cours du développement du projet \textbf{Vente Auto Platform}. Il sert de référence unique pour les développeurs, les data scientists et les évaluateurs du projet.
+
+Les idées ont été itérées, et les concepts redondants ont été fusionnés (ex: Recommandation hybride et Matchmaker automobile) pour obtenir une liste claire et exhaustive de 20 fonctionnalités clés.
+
+\section{Tableau de synthèse global}
+Le tableau suivant présente la liste complète des idées, triées par catégorie.
+
+\begin{longtable}{p{1.5cm} p{10cm} p{4.5cm}}
+\toprule
+\textbf{N°} & \textbf{Nom de l'idée} & \textbf{Catégorie} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{N°} & \textbf{Nom de l'idée} & \textbf{Catégorie} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{\textit{Suite sur la page suivante...}} \\
+\endfoot
+\bottomrule
+\endlastfoot
+
+\multicolumn{3}{l}{\textbf{Expérience B2C}} \\
+1 & Chatbot RAG & Expérience B2C \\
+2 & Recommandation hybride & Expérience B2C \\
+8 & Recherche en langage naturel & Expérience B2C \\
+16 & Simulateur TCO & Expérience B2C \\
+20 & Générateur d'annonces IA & Expérience B2C \\
+\midrule
+\multicolumn{3}{l}{\textbf{Outils B2B}} \\
+7 & Dashboard analytics vendeur & Outils B2B \\
+17 & Cartographie de la demande & Outils B2B \\
+18 & Tarification dynamique & Outils B2B \\
+\midrule
+\multicolumn{3}{l}{\textbf{Data Analytics / Décisionnel}} \\
+3 & Pipeline ingestion temps réel & Analytics \\
+6 & Graphe de similarité (GraphRAG) & Analytics \\
+9 & Segmentation acheteurs & Analytics \\
+10 & Analyse de sentiment avis clients & Analytics \\
+11 & Prévision de demande & Analytics \\
+12 & Data lineage / traçabilité & Analytics \\
+13 & Analyse géospatiale & Analytics \\
+14 & A/B testing recommandation & Analytics \\
+\midrule
+\multicolumn{3}{l}{\textbf{Transactions}} \\
+4 & Prédiction prix de revente & Transactions \\
+\midrule
+\multicolumn{3}{l}{\textbf{Confiance / Sécurité}} \\
+5 & Détection anomalies/fraude & Confiance \\
+15 & Computer Vision (photos) & Confiance \\
+19 & Profils vérifiés TrustBadge & Confiance \\
+\end{longtable}
+
+\newpage
+\section{Fiches détaillées par idée}
+
+\subsection{1. Chatbot RAG}
+\textbf{Catégorie :} Expérience B2C
+
+\textbf{Explication}\\
+Le Chatbot RAG (Retrieval-Augmented Generation) agit comme un assistant virtuel expert pour les acheteurs. Au lieu d'une simple recherche par filtres, l'utilisateur peut poser des questions complexes (ex. : "Quels SUV consomment moins de 5L/100km et sont disponibles près de Lyon ?"). Le système comprend l'intention, recherche les véhicules pertinents et formule une réponse naturelle et argumentée, tout en citant les annonces précises comme sources. Techniquement, cette fonctionnalité s'appuie sur des modèles de pointe comme OpenAI GPT-4 ou Gemini pour la compréhension et la génération du langage naturel. L'orchestration des requêtes et la gestion du contexte sont assurées par des frameworks dédiés tels que LangChain ou LlamaIndex. Pour garantir des temps de réponse optimaux lors de la recherche sémantique, les embeddings des annonces sont stockés dans une base de données vectorielle performante comme Qdrant ou Pinecone. L'ensemble est propulsé par une API temps réel sous FastAPI, interfacée avec une application React pour offrir une expérience conversationnelle fluide.
+
+\subsection{2. Recommandation hybride (Matchmaker automobile)}
+\textbf{Catégorie :} Expérience B2C
+
+\textbf{Explication}\\
+Ce système va au-delà de la simple suggestion "basée sur le contenu". Il fusionne plusieurs approches : le filtrage collaboratif, le filtrage basé sur le contenu, et l'historique de navigation récent. Le but est de créer un véritable "matchmaker" qui s'adapte en temps réel aux préférences changeantes de l'utilisateur. Pour ce faire, le filtrage collaboratif exploite des bibliothèques telles que Scikit-learn ou LightFM avec des modèles de factorisation matricielle. La compréhension approfondie des annonces est rendue possible par des modèles NLP avancés (Transformers via Hugging Face) qui encodent les descriptions des véhicules en embeddings. Afin de servir ces recommandations à très faible latence, les profils utilisateurs temporaires sont stockés et mis à jour en temps réel via un cache Redis.
+
+\subsection{3. Pipeline ingestion temps réel (scrapers)}
+\textbf{Catégorie :} Data Analytics / Décisionnel
+
+\textbf{Explication}\\
+C'est le moteur de données de la plateforme. Il collecte en continu des données depuis de multiples sources externes pour enrichir le catalogue. Du point de vue utilisateur, cela garantit que les prix de référence sont toujours à jour et que le catalogue est exhaustif. Cette architecture robuste orchestre les tâches de scraping, de normalisation et de nettoyage à l'aide d'Apache Airflow. Les données sont extraites du web via des scripts Python s'appuyant sur Scrapy et BeautifulSoup. Pour gérer le flux massif de données en temps réel sans interruption de service, le pipeline s'articule autour d'Apache Kafka. Enfin, les données structurées sont consolidées dans PostgreSQL, tandis que les données brutes sont conservées sur S3 formant un Data Lake complet.
+
+\subsection{4. Prédiction prix de revente (Argus intelligent)}
+\textbf{Catégorie :} Transactions
+
+\textbf{Explication}\\
+Un estimateur de prix piloté par l'IA. Contrairement à une cote fixe, il prend en compte des centaines de variables, y compris la micro-saisonnalité, la couleur, et les données de marché en temps réel pour prédire la valeur exacte d'un véhicule. Pour un vendeur, il suggère le prix de vente optimal pour vendre rapidement. Ce modèle prédictif repose sur des algorithmes de Gradient Boosting extrêmement performants sur données tabulaires, tels que XGBoost ou LightGBM. Le cycle de vie et le versioning des modèles sont rigoureusement suivis via MLflow. Le modèle sélectionné est ensuite déployé via FastAPI, offrant une API d'inférence capable de répondre en moins de 100ms.
+
+\subsection{5. Détection anomalies/fraude (Anti-fraude scam detection)}
+\textbf{Catégorie :} Confiance / Sécurité
+
+\textbf{Explication}\\
+Ce module protège la plateforme contre les fausses annonces et les arnaques. Il analyse en temps réel chaque nouvelle annonce publiée pour détecter des schémas suspects : prix anormalement bas, description incohérente, ou réseau de vendeurs frauduleux. Les annonces suspectes sont bloquées automatiquement ou mises en quarantaine. L'intelligence derrière ce système combine des algorithmes non-supervisés (Isolation Forest ou Autoencodeurs) pour la détection d'anomalies statistiques avec des modèles NLP (Transformers) capables de repérer un langage typique de fraude. Pour aller plus loin, une base de données orientée graphe comme Neo4j permet d'identifier des relations cachées et des réseaux de fraude organisés.
+
+\subsection{6. Graphe de similarité (GraphRAG)}
+\textbf{Catégorie :} Data Analytics / Décisionnel
+
+\textbf{Explication}\\
+Cette fonctionnalité structure la donnée sous forme de graphe, liant les véhicules, les utilisateurs, les caractéristiques et les interactions. Cela permet au système RAG de ne pas seulement chercher des vecteurs, mais de comprendre les relations structurelles. L'utilisateur bénéficie ainsi de réponses ultra-contextualisées, l'IA étant capable d'inférer des liens complexes. La fondation de ce système repose sur Neo4j, une base de données graphe optimale pour stocker et traverser ces relations. Les capacités du LLM sont étendues grâce aux modules GraphQA de LangChain, traduisant les questions en langage naturel en requêtes Cypher dynamiques. FastAPI vient orchestrer cette architecture complexe pour exposer les résultats rapidement.
+
+\subsection{7. Dashboard analytics vendeur}
+\textbf{Catégorie :} Outils B2B
+
+\textbf{Explication}\\
+Une interface riche dédiée aux vendeurs professionnels. Ce dashboard agrège les données de la plateforme pour offrir des insights actionnables : nombre de vues par annonce, taux de conversion, et estimation du temps de vente. Cela leur permet d'optimiser leur stock et d'ajuster leurs prix en temps réel. Le rendu visuel interactif est assuré par React, couplé à des bibliothèques graphiques puissantes comme Recharts ou Chart.js. Pour fournir ces statistiques avec des temps de réponse instantanés sur de gros volumes, le backend FastAPI s'interface avec une base de données OLAP haute performance comme ClickHouse, ou un PostgreSQL optimisé via des vues matérialisées.
+
+\subsection{8. Recherche en langage naturel}
+\textbf{Catégorie :} Expérience B2C
+
+\textbf{Explication}\\
+Substitut ou complément aux filtres traditionnels. L'utilisateur tape simplement ce qu'il veut dans une barre de recherche globale. Le système extrait les entités, comprend les concepts flous et renvoie les résultats pertinents en classant par pertinence sémantique. Cette recherche intuitive s'appuie sur les Sentence Transformers d'Hugging Face, générant des embeddings denses pour comprendre l'intention de la requête. Ces vecteurs sont ensuite indexés dans un moteur de recherche performant (Elasticsearch avec recherche hybride ou Qdrant). L'ensemble du flux est géré par un backend Python/FastAPI assurant l'interface entre le frontend et le moteur d'indexation.
+
+\subsection{9. Segmentation acheteurs}
+\textbf{Catégorie :} Data Analytics / Décisionnel
+
+\textbf{Explication}\\
+Analyse du comportement des utilisateurs pour les classer dans des segments. Cette segmentation permet de personnaliser l'interface d'accueil, d'orienter les recommandations plus finement, et de fournir des statistiques agrégées aux vendeurs professionnels sur le type de clientèle qui consulte leurs annonces. L'identification de ces profils types est réalisée grâce à des algorithmes de clustering de Scikit-learn (K-Means ou DBSCAN) appliqués sur l'historique d'interactions. Les volumes massifs de logs de navigation sont traités de manière distribuée grâce à Apache Spark, avant que les segments calculés ne soient persistés dans PostgreSQL et associés dynamiquement aux identifiants utilisateurs.
+
+\subsection{10. Analyse de sentiment avis clients}
+\textbf{Catégorie :} Data Analytics / Décisionnel
+
+\textbf{Explication}\\
+Un outil qui scanne et analyse les avis textuels laissés par les acheteurs concernant les vendeurs professionnels. Le système extrait un score de satisfaction global et identifie les thèmes récurrents. Cela crée un indice de confiance automatisé pour orienter les futurs acheteurs. Techniquement, cette analyse s'opère via des modèles NLP avancés tels que CamemBERT ou RoBERTa, spécialement fine-tunés pour la langue française. L'extraction des thématiques majeures est effectuée avec des approches comme LDA ou BERTopic. L'ensemble de ce traitement analytique s'exécute de façon asynchrone via des batch jobs Python orchestrés minutieusement par Airflow.
+
+\subsection{11. Prévision de demande}
+\textbf{Catégorie :} Data Analytics / Décisionnel
+
+\textbf{Explication}\\
+Un modèle de séries temporelles qui anticipe la demande future pour des catégories de véhicules spécifiques. Par exemple, prévoir une hausse de la demande pour les cabriolets avant l'été. Ces prévisions sont cruciales pour conseiller les vendeurs professionnels sur la gestion de leur stock. La modélisation repose sur des outils spécialisés dans les séries temporelles, comme Prophet (développé par Meta) ou des modèles statistiques ARIMA/SARIMA. La préparation et le lissage intensif des données temporelles s'effectuent via la librairie Pandas. L'ensemble du cycle d'expérimentation et d'évolution de ces modèles est tracé rigoureusement avec MLflow.
+
+\subsection{12. Data lineage / traçabilité}
+\textbf{Catégorie :} Data Analytics / Décisionnel
+
+\textbf{Explication}\\
+Garantit la traçabilité complète de chaque point de donnée affiché sur la plateforme. De l'ingestion brute jusqu'au modèle prédictif, le système documente quelles transformations ont eu lieu. C'est essentiel pour auditer l'origine d'un prix affiché, débugger des erreurs de ML, et assurer la gouvernance. Cette cartographie de la donnée prend vie à travers des outils dédiés comme OpenLineage, DataHub ou Apache Atlas. Les transformations complexes en base sont modélisées, testées et documentées avec dbt (data build tool). Le tout est parfaitement intégré aux flux d'orchestration d'Apache Airflow, permettant d'enrichir le graphe de traçabilité à chaque exécution de tâche.
+
+\subsection{13. Analyse géospatiale}
+\textbf{Catégorie :} Data Analytics / Décisionnel
+
+\textbf{Explication}\\
+Cartographie avancée permettant de visualiser des "heatmaps" d'offre et de demande. Un utilisateur peut voir où se concentrent les annonces pour un modèle précis. Pour la plateforme, cela permet d'identifier des disparités régionales de prix et d'ajuster les recommandations géographiques. L'architecture repose sur PostGIS, l'extension spatiale de PostgreSQL, indispensable pour indexer et requêter efficacement des coordonnées. Côté traitement analytique, GeoPandas facilite la manipulation de ces données spatiales complexes. Le rendu cartographique fluide sur l'interface utilisateur est assuré par l'intégration de Leaflet ou Mapbox au sein de l'application React.
+
+\subsection{14. A/B testing recommandation}
+\textbf{Catégorie :} Data Analytics / Décisionnel
+
+\textbf{Explication}\\
+Une infrastructure qui permet de tester scientifiquement de nouveaux algorithmes. Les utilisateurs sont répartis dynamiquement en cohortes. Le système mesure des KPIs précis pour prouver la valeur ajoutée de l'IA avant un déploiement global. Ce déploiement granulaire est géré par des plateformes de Feature Flags comme Unleash ou LaunchDarkly. La persistance de la cohorte assignée à chaque utilisateur est maintenue efficacement en mémoire cache grâce à Redis, assurant une expérience cohérente. L'analyse finale des résultats des tests s'appuie sur des scripts Python mobilisant scipy.stats pour garantir la significativité statistique et orienter les décisions d'implémentation.
+
+\subsection{15. Computer Vision (détection chocs/rayures + floutage plaques)}
+\textbf{Catégorie :} Confiance / Sécurité
+
+\textbf{Explication}\\
+Lorsqu'un utilisateur upload des photos pour une annonce, des algorithmes de vision par ordinateur traitent immédiatement les images. Ils floutent automatiquement les plaques d'immatriculation pour protéger la vie privée, et analysent la carrosserie pour identifier les dommages évidents, renforçant la transparence. Ce traitement visuel utilise d'abord OpenCV pour les filtres et le redimensionnement de base. Les tâches d'identification complexes, comme la détection de rayures ou de plaques, reposent sur des modèles Deep Learning de pointe (YOLO ou Mask R-CNN) entraînés sous PyTorch. Pour garantir une expérience utilisateur sans latence, cette inférence lourde est exécutée de façon asynchrone par FastAPI couplé à des files d'attente Celery et RabbitMQ.
+
+\subsection{16. Simulateur TCO (Coût Total de Possession)}
+\textbf{Catégorie :} Expérience B2C
+
+\textbf{Explication}\\
+Un calculateur intelligent qui dépasse le simple prix d'achat. Il simule sur plusieurs années le coût réel du véhicule en intégrant l'assurance, l'entretien estimé et la décote prédictive. L'acheteur peut ainsi comparer objectivement le TCO de deux motorisations très différentes. La logique métier complexe, gérant les formules financières et interrogeant les modèles de décote, est centralisée sur un backend Python. Ce dernier sollicite en direct des API externes de fournisseurs de données pour actualiser le coût de l'assurance et de l'énergie. L'utilisateur final explore ces projections financières à travers des composants React interactifs, enrichis de graphiques évolutifs réalisés avec Recharts.
+
+\subsection{17. Cartographie de la demande (B2B)}
+\textbf{Catégorie :} Outils B2B
+
+\textbf{Explication}\\
+Un outil stratégique pour les professionnels de l'automobile. Il agrège les données de recherche et de navigation des utilisateurs pour montrer sur une carte interactive quelles régions recherchent activement quels types de véhicules. Cela permet au concessionnaire d'adapter sa stratégie hyper-locale. Les données analytiques lourdes sont préparées en amont durant la nuit grâce à l'orchestrateur Airflow. Les zones géographiques complexes sont requêtées via PostGIS, et l'ensemble de ces visualisations métier à forte valeur ajoutée est mis à disposition des professionnels au sein d'une interface de Business Intelligence dédiée, motorisée par Apache Superset ou Metabase.
+
+\subsection{18. Tarification dynamique (yield management)}
+\textbf{Catégorie :} Outils B2B
+
+\textbf{Explication}\\
+Inspiré par le secteur aérien, ce système suggère automatiquement des ajustements de prix aux vendeurs. Si une voiture ne génère aucune vue, il suggère une baisse. Si un modèle suscite un pic de recherches soudain, il recommande une augmentation de prix. Les modèles de décision évaluant l'élasticité prix-demande sont développés en Python avec Scikit-learn. L'architecture est totalement orientée événements, s'appuyant sur Apache Kafka pour ingérer et traiter en temps réel les flux de clics et de vues. Lorsqu'une opportunité d'ajustement de prix est détectée, le vendeur est alerté instantanément via une connexion WebSockets persistante gérée par Socket.io.
+
+\subsection{19. Profils vérifiés TrustBadge}
+\textbf{Catégorie :} Confiance / Sécurité
+
+\textbf{Explication}\\
+Un système de certification d'identité pour les vendeurs, octroyant un badge "Vendeur Vérifié". L'utilisateur scanne sa pièce d'identité et fait un selfie vidéo. Le système valide l'authenticité et ajoute un niveau de rassurance majeur pour les acheteurs, réduisant considérablement le risque d'arnaques. Plutôt que de redévelopper la biométrie en interne, ce service s'intègre via API à des fournisseurs KYC spécialisés (comme Onfido ou Stripe Identity). Le backend FastAPI sécurise et traite les webhooks envoyés par ces prestataires. L'ensemble des données sensibles est stocké sur PostgreSQL avec un chiffrement strict au repos, garantissant la pleine conformité aux normes RGPD.
+
+\subsection{20. Générateur d'annonces IA}
+\textbf{Catégorie :} Expérience B2C
+
+\textbf{Explication}\\
+Un assistant de rédaction pour les vendeurs. Plutôt que de rédiger péniblement une annonce, le vendeur renseigne la plaque d'immatriculation et l'état général. Le système récupère les données techniques, puis un LLM génère instantanément un texte de description attractif, optimisé SEO et mettant en avant les atouts spécifiques. L'enrichissement initial des spécifications du véhicule se fait par l'appel à des API externes spécialisées. Le texte est ensuite façonné par des API de génération de texte de pointe (OpenAI GPT-4 ou Anthropic Claude), orchestrées par un Prompt Engineering avancé. Le vendeur finalise et publie l'annonce directement depuis l'interface React à l'aide d'un éditeur de texte riche comme Draft.js ou Quill.
+
+\newpage
+\section{Vue d'ensemble par couche architecturale}
+Afin de comprendre l'intégration de ces fonctionnalités dans l'écosystème global de la plateforme, les idées ont été cartographiées selon les 5 couches architecturales du projet :
+
+\begin{itemize}
+    \item \textbf{Couche 1 : Ingestion et Streaming}
+    \begin{itemize}
+        \item Pipeline ingestion temps réel (scrapers) (\#3) : Capture la donnée brute à la source de manière continue.
+    \end{itemize}
+    
+    \item \textbf{Couche 2 : Stockage et Modélisation}
+    \begin{itemize}
+        \item Data lineage / traçabilité (\#12) : Organise, documente et suit le cycle de vie de la donnée dans l'entrepôt.
+        \item Graphe de similarité (GraphRAG) (\#6) : Structure la donnée pour révéler les relations latentes complexes.
+    \end{itemize}
+    
+    \item \textbf{Couche 3 : Intelligence et Machine Learning}
+    \begin{itemize}
+        \item Prédiction prix de revente (\#4) : Génère une nouvelle valeur prédictive de haute précision à partir de la donnée historique.
+    \end{itemize}
+    
+    \item \textbf{Couche 4 : Conversationnel et RAG}
+    \begin{itemize}
+        \item Chatbot RAG (\#1) : Exploite l'intelligence et le stockage pour créer une interface de dialogue naturel.
+        \item Recherche en langage naturel (\#8) : S'appuie sur la vectorisation pour un accès direct et qualitatif aux annonces.
+    \end{itemize}
+    
+    \item \textbf{Couche 5 : Application et Visualisation}
+    \begin{itemize}
+        \item \textit{(Bien qu'aucune idée n'occupe exclusivement cette couche pour l'instant, des outils comme le Dashboard analytics vendeur (\#7) viendront l'alimenter lors de la prochaine étape).}
+    \end{itemize}
+\end{itemize}
+
+\section{Conclusion}
+Ce référentiel illustre l'ambition technique et fonctionnelle de la plateforme "Vente Auto Platform". En fusionnant des approches Data classiques (Pipelines temps réel, Data Engineering) avec des technologies de pointe en IA (LLMs, RAG, Graphes de connaissances, Machine Learning prédictif), le projet dépasse le simple site de petites annonces. Il pose les fondations d'un véritable écosystème intelligent, sécurisé et hautement personnalisé, orienté vers l'exploitation maximale de la valeur de la donnée.
+
+\newpage
+\appendix
+\section{Annexe : Idées écartées}
+Cette section liste brièvement les idées initialement envisagées mais retirées du périmètre du projet, avec leur justification principale :
+
+\begin{itemize}
+    \item \textbf{Showroom virtuel 360°/AR} : Périphérique au cœur d'expertise IA/Data visé ; coût de développement frontend 3D trop élevé pour la valeur démontrée.
+    \item \textbf{Carnet d'entretien blockchain} : Dépendance externe trop forte vis-à-vis des garages physiques pour alimenter le registre ; la complexité n'est pas justifiée.
+    \item \textbf{Générateur de vidéos réseaux sociaux} : S'éloigne du cas d'usage principal de la plateforme (transaction/recherche).
+    \item \textbf{Hyper-ciblage financement/assurance} : Fonctionnalité périphérique, impliquant de fortes contraintes réglementaires sans réelle prouesse algorithmique pour le MVP.
+    \item \textbf{Échange multilatéral (Troc croisé)} : Complexité métier extrême et volume d'offres compatibles nécessaires trop important pour être viable sur une plateforme naissante.
+    \item \textbf{Enchères inversées} : Change fondamentalement le modèle économique de la plateforme, non aligné avec la fluidité transactionnelle recherchée.
+    \item \textbf{Médiateur IA négociation} : Coût de développement et risque de gestion des litiges post-vente liés à l'IA trop élevés.
+    \item \textbf{Inspection mécanique O2O (Online-To-Offline)} : Nécessite une logistique physique (experts sur le terrain) en dehors du cadre purement numérique.
+    \item \textbf{Score fiabilité prédictif maintenance} : Manque de jeux de données télémétriques temps réel fiables à ce stade pour entraîner un modèle crédible.
+\end{itemize}
+
+\end{document}

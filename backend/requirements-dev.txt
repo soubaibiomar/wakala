@@ -1,0 +1,28 @@
+# ═══════════════════════════════════════════════════════════════
+# AutoMind Backend — requirements-dev.txt (développement uniquement)
+#
+# Installer avec :
+#   pip install -r requirements.txt -r requirements-dev.txt
+# ═══════════════════════════════════════════════════════════════
+
+
+# ─── Tests ─────────────────────────────────────────────────────
+pytest==8.3.3
+pytest-asyncio==0.24.0           # Tests async pour FastAPI
+pytest-cov==5.0.0                # Couverture de code
+httpx==0.27.2                    # Déjà en prod, utilisé aussi pour TestClient
+factory-boy==3.3.1               # Factories pour les données de test
+
+# ─── Linting & Formatage ──────────────────────────────────────
+black==24.8.0                    # Formateur de code
+ruff==0.6.4                      # Linter ultra-rapide (remplace flake8+isort)
+mypy==1.11.2                     # Vérification de types statique
+
+# ─── Stubs de types ───────────────────────────────────────────
+types-passlib==1.7.7.20240819
+types-python-jose==3.3.4.20240106
+
+# ─── Debug & Profiling ────────────────────────────────────────
+ipython==8.27.0                  # Shell interactif amélioré
+ipdb==0.13.13                    # Debugger interactif
+rich==13.8.1                     # Affichage enrichi dans le terminal

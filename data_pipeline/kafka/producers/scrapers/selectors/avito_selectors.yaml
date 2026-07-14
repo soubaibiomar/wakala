@@ -1,0 +1,12 @@
+version: "2026-07-10"
+listing_card: "div[data-testid='ad-list-item']"
+fields:
+  url: "a[href]"
+  price: "[data-testid='price']"
+  title: "[data-testid='title']"
+  city: "[data-testid='location']"
+fallback_fields:
+  url: ["a"]
+  price: [".sc-1nre5sl-1", ".price", "span[class*='price']"]
+  title: [".sc-1jge648-0", ".title", "h2", "h3"]
+  city: [".sc-1x0vz2r-0", ".location", "span[class*='location']"]

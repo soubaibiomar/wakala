@@ -1,0 +1,60 @@
+/* ═══════════════════════════════════════════════════════════════
+   Wakala — Design Tokens
+   Thème clair premium : Navy #122135 + Gold #AE8C4E
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ─── Palette principale (Thème Clair) ───────────────────── */
+  --bg-primary: #FFFFFF;
+  --bg-surface: #F8F7F4;
+  --bg-elevated: #F1EFE9;
+  --bg-card: #FFFFFF;
+  --bg-glass: rgba(255, 255, 255, 0.88);
+
+  /* ─── Couleurs de marque ──────────────────────────────────── */
+  --color-primary: #122135;
+  --color-accent: #AE8C4E;
+  --color-accent-hover: #C9A24B;
+  --color-accent-light: rgba(174, 140, 78, 0.12);
+  --accent-gold: #AE8C4E;
+  --accent-gold-hover: #C9A24B;
+  --accent-cyan: #3B7A9E;
+  --accent-green: #2D8659;
+  --accent-red: #C0392B;
+
+  /* ─── Texte ──────────────────────────────────────────────── */
+  --text-primary: #122135;
+  --text-secondary: #4A5568;
+  --text-muted: #8492A6;
+
+  /* ─── Bordures ───────────────────────────────────────────── */
+  --border-subtle: rgba(18, 33, 53, 0.08);
+  --border-accent: rgba(174, 140, 78, 0.3);
+
+  /* ─── Typographie ────────────────────────────────────────── */
+  --font-display: 'Cormorant Garamond', 'Georgia', serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* ─── Rayons ─────────────────────────────────────────────── */
+  --radius-card: 12px;
+  --radius-pill: 999px;
+  --radius-md: 10px;
+
+  /* ─── Ombres ─────────────────────────────────────────────── */
+  --shadow-card: 0 2px 16px rgba(18, 33, 53, 0.06), 0 0 0 1px rgba(18, 33, 53, 0.04);
+  --shadow-glow-gold: 0 0 30px rgba(174, 140, 78, 0.12);
+  --shadow-glow-cyan: 0 0 30px rgba(59, 122, 158, 0.10);
+
+  /* ─── Espacement ─────────────────────────────────────────── */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+
+  /* ─── Transitions ────────────────────────────────────────── */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease-in-out;
+}

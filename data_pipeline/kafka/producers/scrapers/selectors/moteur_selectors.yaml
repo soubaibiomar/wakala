@@ -1,0 +1,17 @@
+version: "2026-07-10"
+listing_card: ".ads-index-card"
+fields:
+  url: "a[href*='/voiture/']"
+  price: ".price"
+  title: ".title"
+  city: ".city"
+  specs: ".specs-list"
+  year: "[data-year]"
+fallback_fields:
+  listing_card: [".listing-card", "article.ad-item", ".row-item", "div[class*='card']:has(a[href*='/voiture/'])"]
+  url: ["a"]
+  price: [".ad-price", "[class*='price']"]
+  title: [".ad-title", "h3", "h4", "[class*='title']"]
+  city: [".location", ".ad-location", "[class*='city']", "[class*='location']"]
+  specs: [".ad-specs", ".characteristics", "[class*='spec']"]
+  year: ["[class*='year']"]
