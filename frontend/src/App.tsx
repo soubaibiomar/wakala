@@ -54,7 +54,7 @@ function Navbar() {
             <Link to="/catalogue" className={isActive('/catalogue')}>Catalogue</Link>
           </li>
           <li>
-            <Link to="/dedouanement" className={isActive('/dedouanement')} style={{ color: 'var(--accent-gold)' }}>Dédouanement</Link>
+            <Link to="/dedouanement" className={isActive('/dedouanement')}>Dédouanement</Link>
           </li>
 
           {isAuthenticated && user ? (
