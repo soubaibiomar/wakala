@@ -21,17 +21,24 @@ export default function SourceVehicleCard({ source }: SourceVehicleCardProps) {
       onClick={() => navigate(`/vehicule/${source.vehicle_id}`)}
       title={`Voir le détail de ${source.vehicle_title || 'ce véhicule'}`}
     >
-      <div className={styles.sourceCardIcon}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <rect x="3" y="3" width="18" height="14" rx="2" />
-          <path d="M8 21h8M12 17v4" />
-        </svg>
-      </div>
+      {source.image_url ? (
+        <img src={source.image_url} alt={source.vehicle_title} className={styles.sourceCardImage} />
+      ) : (
+        <div className={styles.sourceCardIcon}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <rect x="3" y="3" width="18" height="14" rx="2" />
+            <path d="M8 21h8M12 17v4" />
+          </svg>
+        </div>
+      )}
 
       <div className={styles.sourceCardInfo}>
         <span className={styles.sourceCardTitle}>
           {source.vehicle_title || 'Véhicule'}
         </span>
+        {source.price && (
+          <span className={styles.sourceCardPrice}>{source.price} MAD</span>
+        )}
       </div>
 
       <div className={styles.sourceCardBadge} style={{ color: scoreColor }}>

@@ -10,6 +10,7 @@ import { FUEL_LABELS, BODY_LABELS, TRANSMISSION_LABELS } from '../types/vehicle'
 import TrustScore from '../components/trust-score/TrustScore';
 import { useAuth } from '../context/AuthContext';
 import fr from '../i18n/fr';
+import PriceBadge from '../components/pricing/PriceBadge';
 
 function DetailSkeleton() {
   return (
@@ -328,11 +329,16 @@ export default function VehicleDetail() {
                 </p>
               )}
 
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-gold)', marginBottom: 4 }}>
-                {vehicle.price.toLocaleString('fr-FR')} {fr.vehicle.mad}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: 4 }}>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-gold)' }}>
+                  {vehicle.price.toLocaleString('fr-FR')} {fr.vehicle.mad}
+                </div>
+                {marketPrice && (
+                  <PriceBadge price={vehicle.price} predictedPrice={marketPrice.predicted_price} />
+                )}
               </div>
 
-              {vehicle.predicted_price != null && (
+              {vehicle.predicted_price != null && !marketPrice && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: '0.85rem' }}>
                   <span style={{
                     padding: '2px 8px', borderRadius: 'var(--radius-pill)', fontSize: '0.65rem',

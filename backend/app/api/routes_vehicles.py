@@ -21,6 +21,7 @@ from app.schemas.vehicle_schema import (
     VehicleReadWithSeller,
     VehicleUpdate,
 )
+from app.rag.compare_chain import compare_chain
 
 router = APIRouter()
 
@@ -108,6 +109,56 @@ async def list_vehicles(
         page_size=page_size,
         pages=math.ceil(total / page_size) if total > 0 else 0,
     )
+
+
+# ──────────────────────────────────────────────────────────────
+# GET /compare — Comparaison IA de véhicules
+# ──────────────────────────────────────────────────────────────
+
+@router.get(
+    "/compare",
+    summary="Comparaison IA de plusieurs véhicules",
+    description="Retourne les données brutes des véhicules et un verdict IA comparatif.",
+)
+async def compare_vehicles(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    vehicle_ids: list[str] = Query(..., description="Liste des IDs des véhicules à comparer (max 4)"),
+):
+    if not vehicle_ids or len(vehicle_ids) > 4:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Veuillez fournir entre 1 et 4 IDs de véhicules.",
+        )
+    
+    result = await db.execute(select(Vehicle).where(Vehicle.id.in_(vehicle_ids)))
+    vehicles = result.scalars().all()
+    
+    if not vehicles:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Aucun véhicule trouvé.",
+        )
+    
+    vehicles_data = []
+    for v in vehicles:
+        vehicles_data.append({
+            "id": str(v.id),
+            "brand": v.brand,
+            "model": v.model,
+            "year": v.year,
+            "price": float(v.price),
+            "mileage": v.mileage,
+            "fuel_type": v.fuel_type,
+            "condition_score": float(v.condition_score) if v.condition_score else None,
+            "description": v.description,
+        })
+    
+    ai_verdict = await compare_chain.generate_comparison(vehicles_data)
+    
+    return {
+        "vehicles": [VehicleRead.model_validate(v) for v in vehicles],
+        "ai_verdict": ai_verdict
+    }
 
 
 # ──────────────────────────────────────────────────────────────

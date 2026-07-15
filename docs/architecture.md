@@ -1,4 +1,4 @@
-# 🏗️ Architecture AutoMind
+﻿# 🏗️ Architecture Wakala
 
 ## Vue d'ensemble
 

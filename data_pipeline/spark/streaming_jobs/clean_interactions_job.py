@@ -1,21 +1,23 @@
-from pyspark.sql import SparkSession
+﻿from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, to_timestamp, row_number, when
 from pyspark.sql.window import Window
 
 VALID_ACTIONS = ("view", "click", "favorite", "unfavorite",
                  "contact", "share", "search", "recommendation_click")
 
-JDBC_URL = "jdbc:postgresql://postgres:5432/automind"
+import os
+
+JDBC_URL = os.getenv("JDBC_URL", "jdbc:postgresql://postgres:5432/Wakala")
 JDBC_PROPS = {
-    "user": "automind_user",
-    "password": "automind_secret_password",
+    "user": os.getenv("POSTGRES_USER", "Wakala_user"),
+    "password": os.getenv("POSTGRES_PASSWORD", ""),
     "driver": "org.postgresql.Driver",
 }
 
 
 def run_job():
     spark = SparkSession.builder \
-        .appName("AutoMind-CleanInteractions") \
+        .appName("Wakala-CleanInteractions") \
         .config("spark.sql.streaming.checkpointLocation",
                 "/data/checkpoints/silver_interactions") \
         .config("spark.jars",

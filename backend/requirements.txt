@@ -1,5 +1,5 @@
-# ═══════════════════════════════════════════════════════════════
-# AutoMind Backend — requirements.txt (production)
+﻿# ═══════════════════════════════════════════════════════════════
+# Wakala Backend — requirements.txt (production)
 #
 # Versions épinglées et compatibles entre elles.
 # torch est en mode CPU-only par défaut (pas de dépendance CUDA).

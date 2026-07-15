@@ -1,4 +1,4 @@
-"""
+﻿"""
 core/config.py — Configuration centralisée via variables d'environnement.
 Charge automatiquement le fichier .env à la racine du backend.
 """
@@ -8,15 +8,15 @@ from typing import List
 
 
 class Settings(BaseSettings):
-    """Configuration de l'application AutoMind."""
+    """Configuration de l'application Wakala."""
 
     # ─── Application ───────────────────────────────────────────
-    APP_NAME: str = "AutoMind"
+    APP_NAME: str = "Wakala"
     APP_ENV: str = "development"
     DEBUG: bool = True
 
     # ─── Sécurité / JWT ────────────────────────────────────────
-    SECRET_KEY: str = "change-me-in-production-use-openssl-rand-hex-32"
+    SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
@@ -29,9 +29,9 @@ class Settings(BaseSettings):
     # ─── PostgreSQL ────────────────────────────────────────────
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5432
-    POSTGRES_DB: str = "automind"
-    POSTGRES_USER: str = "automind_user"
-    POSTGRES_PASSWORD: str = "automind_secret_password"
+    POSTGRES_DB: str = "Wakala"
+    POSTGRES_USER: str = "Wakala_user"
+    POSTGRES_PASSWORD: str
 
     @property
     def DATABASE_URL(self) -> str:
@@ -52,7 +52,7 @@ class Settings(BaseSettings):
     # ─── Neo4j ─────────────────────────────────────────────────
     NEO4J_URI: str = "bolt://localhost:7687"
     NEO4J_USER: str = "neo4j"
-    NEO4J_PASSWORD: str = "neo4j_secret_password"
+    NEO4J_PASSWORD: str
 
     # ─── Qdrant ────────────────────────────────────────────────
     QDRANT_HOST: str = "localhost"

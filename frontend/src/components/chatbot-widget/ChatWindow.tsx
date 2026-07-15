@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import '../../styles/car-motifs.css';
 import type { Message } from './useChatSession';
 import ChatMessage from './ChatMessage';
 import styles from './chatbot.module.css';
@@ -51,10 +50,6 @@ export default function ChatWindow({
     <div className={styles.window}>
       <div className={styles.windowHeader}>
         <div className={styles.windowHeaderLeft}>
-          <div className="license-plate">
-            <span className="license-plate__flag">MA</span>
-            AI-01
-          </div>
           <div className={styles.windowTitle}>
             <span className={styles.windowTitleMain}>Assistant Wakala</span>
             <span className={styles.windowTitleSub}>Propulsé par IA</span>
@@ -132,11 +127,15 @@ export default function ChatWindow({
 
       <div className={styles.windowInput}>
         <div className={styles.inputBar}>
+          <div className={styles.inputLicenseFlag}>
+            <span>M</span>
+            <span>A</span>
+          </div>
           <input
             ref={inputRef}
             type="text"
             className={styles.inputField}
-            placeholder="Posez votre question sur les véhicules..."
+            placeholder="Rechercher (ex: Dacia Duster Casablanca)"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}

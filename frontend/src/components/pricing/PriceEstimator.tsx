@@ -193,6 +193,27 @@ export default function PriceEstimator({ initialValues, onPriceChange }: PriceEs
             <option value="semi_auto">Semi-auto</option>
           </select>
         </label>
+        <label style={{ gridColumn: 'span 2', marginTop: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+              État détecté par IA (Computer Vision)
+            </span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--accent-gold)', fontWeight: 700 }}>
+              {form.condition_score ? `${form.condition_score}/5` : 'Auto'}
+            </span>
+          </div>
+          <input 
+            type="range" 
+            min="1" max="5" step="0.5"
+            value={form.condition_score || 3} 
+            onChange={(e) => update('condition_score', Number(e.target.value))}
+            style={{ width: '100%', accentColor: 'var(--accent-gold)', cursor: 'pointer' }} 
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+            <span>Médiocre (1)</span>
+            <span>Excellent (5)</span>
+          </div>
+        </label>
       </div>
 
       {loading && (

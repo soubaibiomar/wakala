@@ -12,6 +12,8 @@ export interface PricePredictionInput {
   doors?: number;
   seats?: number;
   city: string;
+  condition_score?: number;
+  month?: number;
 }
 
 export interface ConfidenceInterval {
@@ -45,7 +47,7 @@ export interface ModelInfo {
 export const pricingService = {
   async predict(input: PricePredictionInput): Promise<PricePredictionResult> {
     const { data } = await api.post<PricePredictionResult>(
-      '/vehicles/predict-price',
+      '/vehicles/estimate',
       input
     );
     return data;

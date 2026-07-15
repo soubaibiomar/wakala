@@ -12,34 +12,29 @@
 /* ─── Trigger (Wakala monogram button) ──────────────── */
 .trigger {
   position: relative;
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
-  border: 2px solid rgba(174, 140, 78, 0.2);
-  background: linear-gradient(135deg, #122135, #1A3A5C);
+  border: 1px solid rgba(18, 33, 53, 0.1);
+  background: #122135;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 20px rgba(18, 33, 53, 0.25);
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-              box-shadow 0.2s ease-in-out,
-              border-color 0.2s ease-in-out;
-  color: rgba(174, 140, 78, 0.7);
-  overflow: visible;
+  box-shadow: 0 4px 12px rgba(18, 33, 53, 0.15);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  color: #FFFFFF;
+  overflow: hidden;
 }
 
 .trigger:hover {
-  transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 6px 28px rgba(18, 33, 53, 0.35);
-  border-color: rgba(174, 140, 78, 0.5);
-  color: #AE8C4E;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(18, 33, 53, 0.2);
+  background: #1A3A5C;
 }
 
 .triggerOpen {
-  transform: translateY(-4px) scale(0.95);
-  border-color: var(--color-accent-gold);
-  color: var(--color-accent-gold);
+  transform: scale(0.95);
 }
 
 .triggerCar {
@@ -48,30 +43,17 @@
   height: 24px;
 }
 
-.triggerHeadlight {
-  opacity: 0.15;
-  transition: opacity 0.4s ease;
-}
-
-.trigger:hover .triggerHeadlight {
-  opacity: 0.4;
-}
-
 .notificationBadge {
   position: absolute;
-  top: -4px;
-  right: 0;
-  width: 20px;
-  height: 20px;
+  top: 4px;
+  right: 4px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--color-accent-gold);
-  color: white;
-  font-size: 0.65rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 0 8px rgba(174, 140, 78, 0.4);
+  border: 2px solid #122135;
+  color: transparent;
+  font-size: 0;
 }
 
 /* ─── Window ────────────────────────────────────────── */
@@ -86,7 +68,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: slideUp 0.3s ease-in-out;
 }
 
 @keyframes slideUp {
@@ -198,11 +180,11 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: rgba(174, 140, 78, 0.1);
+  background: rgba(18, 33, 53, 0.04);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-accent-gold);
+  color: var(--color-text-secondary);
 }
 
 .windowEmptyTitle {
@@ -230,19 +212,19 @@
   display: block;
   width: 100%;
   padding: 10px 16px;
-  border-radius: var(--radius-pill);
+  border-radius: 4px;
   border: 1px solid rgba(18, 33, 53, 0.08);
   background: var(--color-bg-secondary);
   color: var(--color-text-secondary);
   font-size: 0.78rem;
   cursor: pointer;
-  transition: background 0.15s ease-in-out, color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
   text-align: left;
 }
 
 .suggestionChip:hover {
-  background: rgba(174, 140, 78, 0.08);
-  border-color: rgba(174, 140, 78, 0.3);
+  background: rgba(18, 33, 53, 0.04);
+  border-color: rgba(18, 33, 53, 0.2);
   color: var(--color-text-primary);
 }
 
@@ -312,6 +294,14 @@
   border-bottom-left-radius: 4px;
 }
 
+.messageCasual .messageText {
+  border-radius: 16px;
+  border-bottom-left-radius: 4px;
+  background: #f8fbff;
+  border-color: rgba(18, 33, 53, 0.03);
+  font-family: var(--font-sans);
+}
+
 .messageSources {
   display: flex;
   flex-direction: column;
@@ -356,6 +346,17 @@
 .sourceCardInfo {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sourceCardImage {
+  flex-shrink: 0;
+  width: 48px;
+  height: 36px;
+  border-radius: 4px;
+  object-fit: cover;
+  background: var(--color-bg-secondary);
 }
 
 .sourceCardTitle {
@@ -366,6 +367,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   display: block;
+}
+
+.sourceCardPrice {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--color-accent-gold);
+  margin-top: 2px;
 }
 
 .sourceCardBadge {
@@ -455,10 +463,26 @@
   display: flex;
   align-items: center;
   background: var(--color-bg-primary);
-  border: 1px solid rgba(18, 33, 53, 0.1);
-  border-radius: var(--radius-pill);
-  padding: 4px 4px 4px 16px;
+  border: 1px solid var(--color-primary);
+  border-radius: 4px;
+  padding: 4px;
   transition: box-shadow 0.25s ease-in-out, border-color 0.25s ease-in-out;
+}
+
+.inputLicenseFlag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 36px;
+  background: var(--color-primary);
+  color: white;
+  border-radius: 2px;
+  font-size: 0.5rem;
+  font-weight: bold;
+  margin-right: 8px;
+  letter-spacing: 1px;
 }
 
 .inputBar:focus-within {
@@ -471,7 +495,8 @@
   border: none;
   outline: none;
   background: none;
-  font-family: var(--font-sans);
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 600;
   font-size: 0.85rem;
   color: var(--color-text-primary);
   padding: 8px 8px;

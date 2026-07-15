@@ -1,4 +1,4 @@
-from pyspark.sql import SparkSession
+﻿from pyspark.sql import SparkSession
 from pathlib import Path
 
 TRIGGER_FILE = Path("/data/triggers/retrain_embeddings")
@@ -7,7 +7,7 @@ THRESHOLD = 10_000
 
 def run_job():
     spark = SparkSession.builder \
-        .appName("AutoMind-RetrainTrigger") \
+        .appName("Wakala-RetrainTrigger") \
         .getOrCreate()
 
     interactions = spark.read.parquet("/data/gold/views_per_vehicle")

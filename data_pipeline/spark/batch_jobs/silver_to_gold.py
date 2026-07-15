@@ -1,4 +1,4 @@
-"""
+﻿"""
 Spark Batch Job — Agrégations Silver → Gold layer.
 Calcule les métriques agrégées pour le dashboard et les modèles ML.
 """
@@ -10,7 +10,7 @@ from pyspark.sql.functions import avg, count, col, stddev
 def run_batch_aggregation():
     """Agrège les données Silver en métriques Gold."""
     spark = SparkSession.builder \
-        .appName("AutoMind-BatchGold") \
+        .appName("Wakala-BatchGold") \
         .getOrCreate()
 
     # Lecture Silver

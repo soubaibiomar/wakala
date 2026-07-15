@@ -1,11 +1,11 @@
-from pyspark.sql import SparkSession
+﻿from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, lower, trim, row_number, when, to_timestamp
 from pyspark.sql.window import Window
 
 
 def run_job():
     spark = SparkSession.builder \
-        .appName("AutoMind-CleanListings") \
+        .appName("Wakala-CleanListings") \
         .config("spark.sql.streaming.checkpointLocation",
                 "/data/checkpoints/silver_listings") \
         .getOrCreate()

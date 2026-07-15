@@ -13,25 +13,25 @@ export default function TrustScore({ score, label = 'Score de confiance' }: Trus
   const offset = circumference * (1 - score / 100);
 
   return (
-    <div className="trust-score" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-      <svg width="100" height="100" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
+    <div className="trust-score" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+      <svg width="80" height="80" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#E2E8F0" strokeWidth="2" />
         <circle
-          cx="50" cy="50" r="40"
+          cx="50" cy="50" r="46"
           fill="none"
           stroke={color}
-          strokeWidth="6"
+          strokeWidth="2"
           strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
+          strokeDasharray={289} /* 2 * PI * 46 */
+          strokeDashoffset={289 * (1 - score / 100)}
           style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%', transition: 'stroke-dashoffset 1s ease' }}
         />
         <text x="50" y="50" textAnchor="middle" dominantBaseline="central"
-              fill={color} fontSize="22" fontWeight="700" fontFamily="var(--font-display)">
+              fill="var(--color-primary)" fontSize="20" fontWeight="600" fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace">
           {score}%
         </text>
       </svg>
-      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{label}</span>
+      <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-secondary)', fontWeight: 600 }}>{label}</span>
     </div>
   );
 }

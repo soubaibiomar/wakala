@@ -14,7 +14,7 @@ vi.mock('../../../services/api', () => ({
 }));
 
 vi.mock('../chatbot.module.css', () => ({ default: {} }));
-vi.mock('../../styles/car-motifs.css', () => ({ default: {} }));
+
 
 describe('ChatbotWidget', () => {
   it('renders the trigger button', () => {

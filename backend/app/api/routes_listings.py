@@ -5,7 +5,7 @@ api/routes_listings.py — CRUD annonces (listings).
 from datetime import datetime, timezone
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,6 +21,7 @@ from app.schemas.listing_schema import (
     ListingUpdate,
 )
 from app.ml.anomaly.detector import anomaly_detector
+from app.ml.fraud.broker_detector import broker_detector
 import numpy as np
 
 router = APIRouter()
@@ -39,6 +40,7 @@ router = APIRouter()
                 "Le véhicule doit appartenir au vendeur authentifié.",
 )
 async def create_listing(
+    request: Request,
     payload: ListingCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(require_role("seller", "admin"))],
@@ -69,6 +71,29 @@ async def create_listing(
     db.add(listing)
     await db.flush()
     await db.refresh(listing)
+
+    # Ingestion dans le graphe (Neo4j) pour la détection de courtiers
+    # Si localhost, simuler des IPs pour générer des clusters artificiels pour les tests
+    client_ip = request.client.host if request.client else "unknown"
+    if client_ip in ("127.0.0.1", "::1", "localhost"):
+        import random
+        # Pour forcer des partages d'IP en dev (1 chance sur 3 de retomber sur une IP "suspecte" commune)
+        test_ips = ["192.168.1.100", "192.168.1.200", f"192.168.1.{random.randint(10,99)}"]
+        client_ip = random.choice(test_ips)
+
+    # Lancement asynchrone non-bloquant
+    import asyncio
+    asyncio.create_task(
+        broker_detector.ingest_user_listing_activity(
+            user_id=str(current_user.id),
+            phone=current_user.phone or "UNKNOWN_PHONE",
+            ip_address=client_ip,
+            vehicle_id=str(vehicle.id),
+            brand=vehicle.brand,
+            city=vehicle.city
+        )
+    )
+
     return listing
 
 

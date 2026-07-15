@@ -12,6 +12,7 @@ Market range: 40 000 - 400 000 MAD (Moroccan used cars).
 
 import json
 import pickle
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -28,7 +29,7 @@ ENCODERS_PATH = MODEL_DIR / "encoders.pkl"
 SCALER_PATH = MODEL_DIR / "scaler.pkl"
 FEATURES_PATH = MODEL_DIR / "feature_columns.json"
 
-NUMERIC_FEATURES = ["year", "mileage", "engine_power_hp", "doors", "seats"]
+NUMERIC_FEATURES = ["year", "mileage", "engine_power_hp", "doors", "seats", "month", "condition_score"]
 CATEGORICAL_FEATURES = ["brand", "model", "fuel_type", "body_type", "transmission", "city"]
 
 ALL_FEATURES = NUMERIC_FEATURES + CATEGORICAL_FEATURES
@@ -83,13 +84,28 @@ class PriceModel:
                 df[cols] = self.scaler.transform(df[cols])
         return df
 
+    def _get_smart_condition_default(self, year: int, mileage: int) -> float:
+        # Fallback intelligent (Neo4j proxy) basé sur l'âge et l'usure
+        current_year = datetime.now().year
+        age = max(0, current_year - year)
+        score = 5.0 - (age * 0.12) - (mileage / 60000)
+        return max(1.0, min(5.0, round(score, 1)))
+
     def _build_features(self, vehicle: dict) -> pd.DataFrame:
+        year_val = vehicle.get("year", 2020)
+        mileage_val = vehicle.get("mileage", 50_000)
+        cond_val = vehicle.get("condition_score")
+        if cond_val is None:
+            cond_val = self._get_smart_condition_default(year_val, mileage_val)
+
         row = {
-            "year": vehicle.get("year", 2020),
-            "mileage": vehicle.get("mileage", 50_000),
+            "year": year_val,
+            "mileage": mileage_val,
             "engine_power_hp": vehicle.get("engine_power_hp") or 100,
             "doors": vehicle.get("doors", 5),
             "seats": vehicle.get("seats", 5),
+            "month": vehicle.get("month", datetime.now().month),
+            "condition_score": cond_val,
             "brand": vehicle.get("brand", "Inconnu"),
             "model": vehicle.get("model", "Inconnu"),
             "fuel_type": vehicle.get("fuel_type", "essence"),
@@ -134,12 +150,18 @@ class PriceModel:
 
         records = []
         for v in vehicles:
+            cond_val = v.condition_score
+            if cond_val is None:
+                cond_val = self._get_smart_condition_default(v.year, v.mileage)
+                
             records.append({
                 "year": v.year,
                 "mileage": v.mileage,
                 "engine_power_hp": v.engine_power_hp or 100,
                 "doors": v.doors,
                 "seats": v.seats,
+                "month": v.created_at.month if hasattr(v, "created_at") and v.created_at else datetime.now().month,
+                "condition_score": cond_val,
                 "brand": v.brand,
                 "model": v.model,
                 "fuel_type": v.fuel_type,

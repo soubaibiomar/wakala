@@ -1,8 +1,8 @@
-# 📊 Benchmark Concurrentiel
+﻿# 📊 Benchmark Concurrentiel
 
-## Positionnement AutoMind
+## Positionnement Wakala
 
-| Critère                   | AutoMind        | LeBonCoin  | La Centrale | AutoScout24 |
+| Critère                   | Wakala        | LeBonCoin  | La Centrale | AutoScout24 |
 |---------------------------|-----------------|------------|-------------|-------------|
 | Recherche en langage naturel | ✅ (NLP + RAG) | ❌         | ❌          | ❌          |
 | Recommandation IA          | ✅ Hybride      | ❌         | Basique     | Basique     |

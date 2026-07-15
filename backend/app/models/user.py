@@ -29,6 +29,7 @@ class User(Base):
         default="buyer",
     )
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_pro: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     preferences: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True)
 

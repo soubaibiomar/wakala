@@ -34,12 +34,12 @@ DEFAULT_SAMPLE_PATH = PROJECT_ROOT / "data_pipeline" / "storage" / "sample-data"
 
 
 def get_db_url():
-    """Get database URL from environment or use local default"""
+    """Get database URL from environment"""
     import os
-    return os.getenv(
-        "DATABASE_URL",
-        "postgresql://automind_user:automind_secret_password@localhost:5432/automind"
-    )
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        print("Warning: DATABASE_URL not set in environment.")
+    return db_url
 
 
 def load_sample_parquet(sample_path: Path) -> pd.DataFrame:

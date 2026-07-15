@@ -11,6 +11,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Search, Cpu, ShieldCheck, MessageSquare, LineChart, Network, BarChart3, Target, Zap, Star } from 'lucide-react';
 import { vehicleService } from '../services/vehicleService';
 import type { Vehicle } from '../types/vehicle';
 import VehicleCard from '../components/vehicle-card/VehicleCard';
@@ -25,10 +26,10 @@ import './Home.css';
 
 function StatsSection() {
   const stats = [
-    { value: '15 000+', label: 'Véhicules analysés', icon: '📊' },
-    { value: '98.5%', label: 'Précision IA', icon: '🎯' },
-    { value: '< 2s', label: 'Temps de recommandation', icon: '⚡' },
-    { value: '4.8/5', label: 'Satisfaction utilisateur', icon: '⭐' },
+    { value: '15 000+', label: 'Véhicules analysés', icon: <BarChart3 size={24} /> },
+    { value: '98.5%', label: 'Précision IA', icon: <Target size={24} /> },
+    { value: '< 2s', label: 'Temps de recommandation', icon: <Zap size={24} /> },
+    { value: '4.8/5', label: 'Satisfaction utilisateur', icon: <Star size={24} /> },
   ];
 
   return (
@@ -153,12 +154,12 @@ function FeaturedSection() {
 
 function FeaturesSection() {
   const features = [
-    { icon: '🔍', title: 'Recherche intelligente', desc: 'Décrivez en langage naturel le véhicule de vos rêves. Notre NLP comprend votre besoin.' },
-    { icon: '🤖', title: 'Recommandation IA hybride', desc: 'Algorithmes content-based + collaborative filtering pour des suggestions ultra-pertinentes.' },
-    { icon: '🛡️', title: 'Score de confiance', desc: 'Chaque annonce est analysée par 5 modules IA : vision, fraude, prix, vendeur, qualité.' },
-    { icon: '💬', title: 'Chatbot RAG', desc: 'Un assistant qui connaît tout le catalogue. Posez vos questions en français.' },
-    { icon: '📊', title: 'Estimation de prix', desc: 'XGBoost prédit le juste prix avec intervalle de confiance. Plus de mauvaises surprises.' },
-    { icon: '🔗', title: 'Graphe de similarité', desc: 'Neo4j + PageRank identifient les véhicules similaires et les tendances marché.' },
+    { icon: <Search size={24} />, title: 'Recherche intelligente', desc: 'Décrivez en langage naturel le véhicule de vos rêves. Notre NLP comprend votre besoin.' },
+    { icon: <Cpu size={24} />, title: 'Recommandation IA hybride', desc: 'Algorithmes content-based + collaborative filtering pour des suggestions ultra-pertinentes.' },
+    { icon: <ShieldCheck size={24} />, title: 'Score de confiance', desc: 'Chaque annonce est analysée par 5 modules IA : vision, fraude, prix, vendeur, qualité.' },
+    { icon: <MessageSquare size={24} />, title: 'Chatbot RAG', desc: 'Un assistant qui connaît tout le catalogue. Posez vos questions en français.' },
+    { icon: <LineChart size={24} />, title: 'Estimation de prix', desc: 'XGBoost prédit le juste prix avec intervalle de confiance. Plus de mauvaises surprises.' },
+    { icon: <Network size={24} />, title: 'Graphe de similarité', desc: 'Neo4j + PageRank identifient les véhicules similaires et les tendances marché.' },
   ];
 
   return (

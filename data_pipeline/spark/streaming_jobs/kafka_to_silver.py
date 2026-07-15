@@ -1,4 +1,4 @@
-"""
+﻿"""
 Spark Streaming Job — Traitement temps réel des événements véhicules.
 Lit depuis Kafka, nettoie et écrit en Silver layer.
 """
@@ -28,7 +28,7 @@ vehicle_schema = StructType([
 def run_streaming_job():
     """Lance le job de streaming Spark (Kafka → Silver)."""
     spark = SparkSession.builder \
-        .appName("AutoMind-StreamingSilver") \
+        .appName("Wakala-StreamingSilver") \
         .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0") \
         .getOrCreate()
 

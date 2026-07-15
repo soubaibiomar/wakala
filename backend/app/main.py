@@ -1,5 +1,5 @@
-"""
-AutoMind Backend — Point d'entrée FastAPI.
+﻿"""
+Wakala Backend — Point d'entrée FastAPI.
 
 Lance le serveur avec :
     uvicorn app.main:app --reload --port 8000
@@ -21,13 +21,17 @@ from app.api.routes_reviews import router as reviews_router
 from app.api.routes_recommendation import router as recommendation_router
 from app.api.routes_chatbot import router as chatbot_router
 from app.api.routes_pricing import router as pricing_router
+from app.api.routes_vision import router as vision_router
+from app.api.routes_admin import router as admin_router
+from app.api.routes_customs import router as customs_router
+from app.api.routes_transactions import router as transactions_router
 
 # ─── Application FastAPI ───────────────────────────────────────
 
 app = FastAPI(
-    title="AutoMind API",
+    title="Wakala API",
     description=(
-        "API REST de la marketplace automobile intelligente AutoMind.\n\n"
+        "API REST de la marketplace automobile intelligente Wakala.\n\n"
         "Modules disponibles :\n"
         "- **Auth** : Inscription, connexion JWT\n"
         "- **Users** : Gestion de profil, vérification TrustBadge\n"
@@ -64,6 +68,10 @@ app.include_router(reviews_router,  prefix="/api/reviews",  tags=["Avis"])
 app.include_router(recommendation_router,  prefix="/api/recommendation",  tags=["Recommandation"])
 app.include_router(chatbot_router,  prefix="/api/chat",  tags=["Chatbot"])
 app.include_router(pricing_router, prefix="/api", tags=["Prédiction de prix"])
+app.include_router(vision_router, prefix="/api/v1", tags=["Computer Vision"])
+app.include_router(admin_router, prefix="/api/v1", tags=["Admin & Modération"])
+app.include_router(customs_router, prefix="/api/v1", tags=["Dédouanement"])
+app.include_router(transactions_router, prefix="/api/v1", tags=["Escrow & Séquestre"])
 
 
 # ─── Health check ─────────────────────────────────────────────
@@ -73,6 +81,6 @@ async def health_check():
     """Vérifie que le service est opérationnel."""
     return {
         "status": "healthy",
-        "service": "automind-backend",
+        "service": "Wakala-backend",
         "version": "0.1.0",
     }

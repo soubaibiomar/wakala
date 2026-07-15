@@ -6,6 +6,8 @@ export interface SourceRef {
   vehicle_title: string;
   relevance_score: number;
   source_type: string;
+  image_url?: string;
+  price?: string;
 }
 
 export interface Message {
@@ -13,6 +15,7 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   sources?: SourceRef[];
+  style_profile?: { formality: string; verbosity: string; technicality: string };
   timestamp: number;
 }
 
@@ -59,6 +62,7 @@ export function useChatSession() {
         role: 'assistant',
         content: data.reply,
         sources: data.sources?.filter((s) => s.relevance_score > 0) || [],
+        style_profile: data.style_profile,
         timestamp: Date.now(),
       };
 

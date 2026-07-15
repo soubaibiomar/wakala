@@ -1,4 +1,4 @@
-# 📖 API Reference — AutoMind Backend
+﻿# 📖 API Reference — Wakala Backend
 
 Base URL : `http://localhost:8000/api/v1`
 

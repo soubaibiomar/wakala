@@ -1,4 +1,4 @@
-"""
+﻿"""
 CLI — Lancement du scraper / générateur de données.
 
 Usage:
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 async def _main():
-    parser = argparse.ArgumentParser(description="AutoMind Scraper & Data Generator")
+    parser = argparse.ArgumentParser(description="Wakala Scraper & Data Generator")
     sub = parser.add_subparsers(dest="command")
 
     scrap = sub.add_parser("scrape", help="Scraper les sites d'annonces")

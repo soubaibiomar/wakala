@@ -81,9 +81,15 @@ class AvitoScraper(BaseScraper):
         """Parse the Next.js __NEXT_DATA__ JSON structure"""
         listings = []
         try:
-            # Navigate to the ads array - structure may vary
             page_props = data.get('props', {}).get('pageProps', {})
-            ads = page_props.get('ads', []) or page_props.get('initialAds', [])
+            
+            # 1. Try componentProps
+            cp = page_props.get('componentProps', {})
+            ads = cp.get('ads', {}).get('ads', [])
+            
+            # 2. Try old structure
+            if not ads:
+                ads = page_props.get('ads', []) or page_props.get('initialAds', [])
 
             for ad in ads[:max_items]:
                 title = ad.get('title', 'No title')
@@ -118,8 +124,13 @@ class AvitoScraper(BaseScraper):
             title = ad.get('title') or ad.get('subject') or ''
             brand, model = self._extract_brand_model(title)
 
-            # Extract details from attributes
+            # Extract details from attributes or params
             attrs = ad.get('attributes', [])
+            
+            if not attrs and 'params' in ad:
+                params_dict = ad['params']
+                attrs = params_dict.get('primary', []) + params_dict.get('secondary', [])
+            
             year = None
             mileage = None
             fuel_type = None
@@ -129,15 +140,16 @@ class AvitoScraper(BaseScraper):
             for attr in attrs:
                 key = attr.get('key', '').lower()
                 val = attr.get('value')
-                if 'year' in key or 'année' in key:
+                label = attr.get('label', '').lower()
+                if 'year' in key or 'regdate' in key or 'année' in label:
                     year = self._parse_int(val)
-                elif 'mileage' in key or 'kilom' in key:
+                elif 'mileage' in key or 'kilom' in label:
                     mileage = self._parse_int(val)
-                elif 'fuel' in key or 'carburant' in key:
+                elif 'fuel' in key or 'carburant' in label:
                     fuel_type = str(val).lower() if val else None
-                elif 'transmission' in key or 'boîte' in key or 'gearbox' in key:
+                elif 'transmission' in key or 'bv' in key or 'boîte' in label:
                     transmission = str(val).lower() if val else None
-                elif 'body' in key or 'carrosserie' in key:
+                elif 'body' in key or 'carrosserie' in label:
                     body_type = str(val).lower() if val else None
 
             raw_data = {

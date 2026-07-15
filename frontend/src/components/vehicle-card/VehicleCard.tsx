@@ -4,9 +4,11 @@
  */
 
 import { Link } from 'react-router-dom';
+import { Scale } from 'lucide-react';
 import type { Vehicle } from '../../types/vehicle';
 import fr from '../../i18n/fr';
 import MatchScoreBadge from '../recommendation-form/MatchScoreBadge';
+import { useCompare } from '../../context/CompareContext';
 import './VehicleCard.css';
 
 interface VehicleCardProps {
@@ -16,6 +18,9 @@ interface VehicleCardProps {
 }
 
 export default function VehicleCard({ vehicle, matchScore }: VehicleCardProps) {
+  const { addVehicle, compareList } = useCompare();
+  const isCompared = compareList.some((v) => v.id === vehicle.id);
+
   // Format price securely
   const formattedPrice = new Intl.NumberFormat('fr-MA', {
     style: 'currency',
@@ -46,6 +51,30 @@ export default function VehicleCard({ vehicle, matchScore }: VehicleCardProps) {
           </div>
         )}
         {matchScore !== undefined && <MatchScoreBadge score={matchScore} />}
+        
+        {/* Compare Button */}
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            addVehicle(vehicle);
+          }}
+          disabled={isCompared || compareList.length >= 4}
+          style={{
+            position: 'absolute', top: 12, right: 12,
+            background: isCompared ? 'var(--accent-gold)' : 'rgba(0,0,0,0.5)',
+            color: isCompared ? 'var(--bg-card)' : 'white',
+            border: 'none', borderRadius: '50%',
+            width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: (isCompared || compareList.length >= 4) ? 'not-allowed' : 'pointer',
+            backdropFilter: 'blur(4px)',
+            transition: 'all 0.2s ease',
+            zIndex: 2
+          }}
+          title={isCompared ? "Déjà dans le comparateur" : "Comparer"}
+        >
+          <Scale size={16} />
+        </button>
       </div>
 
       {/* ─── Body Content ──────────────────────────────────────── */}

@@ -13,14 +13,18 @@
 
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { CompareProvider } from './context/CompareContext';
 import Home from './pages/Home';
 import Catalogue from './pages/Catalogue';
 import VehicleDetail from './pages/VehicleDetail';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import AdminDashboard from './pages/AdminDashboard';
+import CustomsPage from './pages/CustomsPage';
+import TransactionPage from './pages/TransactionPage';
 import ChatbotWidget from './components/chatbot-widget/ChatbotWidget';
+import CompareDrawer from './components/compare/CompareDrawer';
 import './styles/globals.css';
-import './styles/car-motifs.css';
 
 // ─── Navbar ───────────────────────────────────────────────────
 
@@ -49,6 +53,9 @@ function Navbar() {
           <li>
             <Link to="/catalogue" className={isActive('/catalogue')}>Catalogue</Link>
           </li>
+          <li>
+            <Link to="/dedouanement" className={isActive('/dedouanement')} style={{ color: 'var(--accent-gold)' }}>Dédouanement</Link>
+          </li>
 
           {isAuthenticated && user ? (
             <>
@@ -74,6 +81,11 @@ function Navbar() {
                   Déconnexion
                 </button>
               </li>
+              {user.role === 'admin' && (
+                <li>
+                  <Link to="/admin" className="navbar__link">Admin</Link>
+                </li>
+              )}
             </>
           ) : (
             <>
@@ -111,6 +123,7 @@ function Footer() {
           <div className="footer__title">Plateforme</div>
           <ul className="footer__list">
             <li><Link to="/catalogue">Catalogue</Link></li>
+            <li><Link to="/dedouanement">Calculateur Douane</Link></li>
             <li><Link to="/register">Vendre un véhicule</Link></li>
             <li><a href="#">Comment ça marche</a></li>
           </ul>
@@ -152,10 +165,14 @@ function AppRoutes() {
           <Route path="/vehicule/:id" element={<VehicleDetail />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/dedouanement" element={<CustomsPage />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/transaction/:id" element={<TransactionPage />} />
         </Routes>
       </main>
       <Footer />
       <ChatbotWidget />
+      <CompareDrawer />
     </>
   );
 }
@@ -163,9 +180,11 @@ function AppRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
+      <CompareProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </CompareProvider>
     </AuthProvider>
   );
 }

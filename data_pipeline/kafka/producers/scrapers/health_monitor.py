@@ -46,16 +46,43 @@ class HealthMonitor:
             logger.info(f"  - {field}: {rate:.1%}")
             
         # Trigger alert if below threshold
-        if success_rate < self.threshold:
+        failing_fields = []
+        for field, rate in field_rates.items():
+            if rate < self.threshold:
+                failing_fields.append(field)
+                
+        if success_rate < self.threshold or failing_fields:
             msg = f"Degradation detected for {self.site}. Success rate: {success_rate:.1%} (Threshold: {self.threshold:.1%})"
             send_alert(self.site, msg, severity="WARNING", details={"field_rates": field_rates})
+            
+            # Trigger selector regenerator if we have a generally ok response but specific fields failed
+            if failing_fields and success_rate > 0.1: # Don't trigger if the site is totally blocked
+                try:
+                    import threading
+                    from .selector_regenerator import SelectorRegenerator
+                    
+                    def run_regeneration():
+                        regenerator = SelectorRegenerator()
+                        regenerator.regenerate_selectors(self.site, failing_fields)
+                        
+                    thread = threading.Thread(target=run_regeneration)
+                    thread.daemon = True
+                    thread.start()
+                    logger.info(f"Started background selector regeneration for {self.site}, fields: {failing_fields}")
+                except ImportError as e:
+                    logger.warning(f"SelectorRegenerator not available: {e}")
+                except Exception as e:
+                    logger.error(f"Failed to start selector regeneration: {e}")
             
         # Save to DB
         self._save_to_db(success_rate, field_rates)
         
     def _save_to_db(self, success_rate: float, field_rates: dict):
         try:
-            db_url = os.getenv("DATABASE_URL", "postgresql://automind_user:automind_secret_password@localhost:5432/automind")
+            db_url = os.getenv("DATABASE_URL")
+            if not db_url:
+                logger.warning("DATABASE_URL not set, skipping DB save")
+                return
             engine = create_engine(db_url)
             with engine.begin() as conn:
                 # Check if table exists

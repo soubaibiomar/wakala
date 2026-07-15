@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import '../../styles/car-motifs.css';
 import styles from './chatbot.module.css';
 
 interface ChatTriggerProps {
@@ -34,7 +33,7 @@ export default function ChatTrigger({ isOpen, hasNewMessage, onClick }: ChatTrig
       </div>
       
       {hasNewMessage && !isOpen && (
-        <span className={styles.notificationBadge}>1</span>
+        <span className={styles.notificationBadge}></span>
       )}
     </button>
   );

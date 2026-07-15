@@ -92,10 +92,6 @@ export default function HeroCar() {
 
   return (
     <section className={styles.heroSlider}>
-      {/* Effets ambiants */}
-      <div className={styles.grain} aria-hidden="true" />
-      <div className={styles.ambientGlow} aria-hidden="true" />
-
       {/* Track d'images en fond */}
       <div className={styles.track} aria-live="polite">
         {slides.map((slide, index) => {

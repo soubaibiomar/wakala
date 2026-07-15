@@ -7,6 +7,8 @@ class SourceReference(BaseModel):
     vehicle_title: str = ""
     relevance_score: float = Field(..., ge=0, le=1)
     source_type: str = "vector_search"
+    image_url: Optional[str] = None
+    price: Optional[str] = None
 
 
 class ChatRequest(BaseModel):
@@ -34,3 +36,7 @@ class ChatResponse(BaseModel):
         description="Véhicules sources utilisés pour générer la réponse",
     )
     session_id: str
+    style_profile: Optional[dict] = Field(
+        None,
+        description="Profil de style du dernier message utilisateur",
+    )

@@ -1,0 +1,49 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{a4paper, margin=2.5cm}
+
+\title{Journal de Bord - Projet Wakala}
+\author{Étudiant Ingénieur}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+Ce document résume les problèmes rencontrés au cours des dernières 24 heures sur le développement de la plateforme "Wakala" (Frontend, Backend, Mobile) et les solutions qui ont été apportées.
+
+\section{Problèmes rencontrés et solutions}
+
+\subsection{1. Faille de Sécurité : Mots de passe dans le code}
+\textbf{Problème :} Des mots de passe et clés secrètes (comme le mot de passe de la base de données PostgreSQL) étaient écrits directement dans le code source, ce qui est une très mauvaise pratique de sécurité. \\
+\textbf{Solution :} J'ai supprimé ces mots de passe du code. Maintenant, le système lit ces informations sensibles de manière sécurisée à partir des variables d'environnement (grâce au fichier \texttt{.env}).
+
+\subsection{2. Vulnérabilité sur les Transactions}
+\textbf{Problème :} N'importe quel utilisateur connecté pouvait uploader (envoyer) un document sur la transaction de quelqu'un d'autre. \\
+\textbf{Solution :} J'ai ajouté une vérification stricte dans l'API. Désormais, le code vérifie que la personne qui modifie la transaction est bien soit l'acheteur, soit le vendeur de cette transaction spécifique. 
+
+\subsection{3. Bug du Mode Hors-Ligne (Catalogue Mobile)}
+\textbf{Problème :} Quand le serveur rencontrait un problème interne (erreur 500), l'application mobile croyait qu'il n'y avait plus d'internet et affichait des vieilles données en cache, ce qui cachait la vraie erreur. \\
+\textbf{Solution :} J'ai modifié le bloc "catch" du code (gestion des erreurs). Le mode "hors-ligne" ne s'active désormais que s'il s'agit d'une vraie coupure d'internet.
+
+\subsection{4. Erreur d'incompatibilité avec Expo Go (Mobile)}
+\textbf{Problème :} L'application mobile a refusé de s'ouvrir sur le téléphone en affichant l'erreur \textit{"Project is incompatible with this version of Expo Go"}. Le projet utilisait une version d'Expo trop récente pour le téléphone. \\
+\textbf{Solution :} J'ai rétrogradé la version d'Expo à la version stable précédente (SDK 56) avec les commandes \texttt{npm install expo@\textasciicircum 56.0.0} et \texttt{npx expo install --fix}. Tout refonctionne.
+
+\subsection{5. Erreur des Tests Python}
+\textbf{Problème :} En lançant les tests automatiques (avec \texttt{pytest}), le terminal affichait \texttt{ModuleNotFoundError: No module named 'app'}. Python ne trouvait pas les dossiers du projet. \\
+\textbf{Solution :} J'ai configuré la variable \texttt{PYTHONPATH="."} dans le terminal. Cela indique à Python de chercher le code dans le dossier actuel, et les tests ont pu passer.
+
+\section{Nouvelles Fonctionnalités}
+\subsection{Adaptation Intelligente du Chatbot}
+Pour rendre le Chatbot plus naturel, j'ai créé un "Détecteur de Style". Il analyse en temps réel la façon dont l'utilisateur écrit (par exemple, s'il utilise des mots techniques automobiles ou s'il est formel/décontracté). Le Chatbot adapte alors son ton pour lui répondre de la même manière, le tout sans jamais enregistrer de données personnelles.
+
+\section{Conclusion}
+Le projet est désormais beaucoup plus sécurisé. Les problèmes de connexion avec l'application mobile ont été réglés rapidement. La plateforme devient de plus en plus robuste !
+
+\end{document}

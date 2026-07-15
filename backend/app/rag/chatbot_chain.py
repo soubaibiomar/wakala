@@ -1,4 +1,4 @@
-from typing import Any, Optional
+﻿from typing import Any, Optional
 
 try:
     from langchain_groq import ChatGroq
@@ -31,10 +31,17 @@ from app.rag.vector_search import search_reviews, search_vehicles
 from app.rag.graph_context import enrich_with_graph, get_popularity_scores
 from app.rag.conversation_memory import conversation_memory
 from app.rag.schemas import ChatResponse, SourceReference
+from app.rag.style_detector import style_detector
 
 
-SYSTEM_PROMPT = """Tu es AutoMind, l'assistant intelligent de la marketplace automobile.
-Tu aides les utilisateurs a trouver le vehicule ideal au Maroc.
+SYSTEM_PROMPT = """Tu es Wakala, l'assistant expert et empathique de la marketplace automobile Wakala au Maroc.
+Tu parles naturellement en mélangeant français et Darija (phonétique).
+Tu es un expert automobile : tu expliques les avantages/inconvénients (consommation, coût, revente).
+Tes connaissances sont limitées aux données fournies. Tu n'hallucines jamais.
+Tu exprimes les prix en MAD.
+Si l'utilisateur est vague, pose une question pertinente sur son budget ou son usage.
+DIRECTIVE LOI 09-08 : Tu ne dois JAMAIS demander, stocker ou exposer des données personnelles sensibles (nom, téléphone, adresse, carte bancaire).
+OBLIGATION DE FORMATAGE : Les caractéristiques techniques des véhicules doivent OBLIGATOIREMENT être formatées sous forme de liste à puces en Markdown.
 
 CONTEXTE VEHICULES DISPONIBLES :
 {vehicle_context}
@@ -48,15 +55,9 @@ AVIS CLIENTS PERTINENTS :
 HISTORIQUE DE LA CONVERSATION :
 {conversation_history}
 
-REGLES STRICTES :
-1. Base TOUJOURS tes reponses sur les vehicules listes dans le contexte.
-2. Ne invente JAMAIS un vehicule, un prix ou une specification qui n'est pas dans le contexte.
-3. Si le contexte ne contient pas la reponse, reponds exactement : "Je n'ai pas trouve de vehicule correspondant dans le catalogue actuel."
-4. Cite les prix, annees, kilometres et villes exacts du contexte.
-5. Mentionne la popularite (score de confiance) quand elle est disponible.
-6. Propose 2-3 alternatives pertinentes si possible.
-7. Reponds en francais, de maniere concise et professionnelle.
-8. Utilise l'historique pour comprendre les references (ex: "et en diesel ?")."""
+DIRECTIVES DE STYLE :
+{style_instructions}
+"""
 
 NO_MATCH_REPLY = "Je n'ai pas trouve de vehicule correspondant dans le catalogue actuel."
 
@@ -116,7 +117,7 @@ def _format_history(history: list[dict]) -> str:
         return "Aucun echange precedent."
     lines = []
     for entry in history[-4:]:
-        role = "Utilisateur" if entry["role"] == "user" else "AutoMind"
+        role = "Utilisateur" if entry["role"] == "user" else "Wakala"
         content = entry["content"][:300]
         lines.append(f"{role}: {content}")
     return "\n".join(lines)
@@ -139,6 +140,32 @@ class ChatbotChain:
     def __init__(self):
         self._llm: Optional[Any] = None
 
+    async def _validate_query(self, message: str, history: list[dict]) -> Optional[str]:
+        """Returns a clarification question if the query is vague, else None."""
+        if not LANGCHAIN_AVAILABLE:
+            return None
+        
+        history_text = _format_history(history)
+        prompt = ChatPromptTemplate.from_messages([
+            SystemMessage(content=(
+                "Analyse l'historique et la demande de l'utilisateur. S'il cherche un véhicule mais "
+                "qu'AUCUN budget, NI ville, NI modèle précis n'a été mentionné (ni avant, ni maintenant), "
+                "formule une courte question polie en français/darija demandant ces précisions (ex: 'Chhal le budget dyalek ?' ou 'Dans quelle ville ?'). "
+                "Si les critères sont suffisants, réponds EXACTEMENT 'OK'."
+                f"\nHISTORIQUE:\n{history_text}"
+            )),
+            HumanMessage(content=message)
+        ])
+        try:
+            llm = self._get_llm()
+            response = await llm.ainvoke(prompt.format_messages())
+            reply = response.content.strip()
+            if reply == "OK" or reply.startswith("OK"):
+                return None
+            return reply
+        except Exception:
+            return None
+
     def _get_llm(self) -> Any:
         if not LANGCHAIN_AVAILABLE:
             raise RuntimeError("LangChain/Groq n'est pas installe")
@@ -157,6 +184,12 @@ class ChatbotChain:
         session_id: str,
     ) -> ChatResponse:
         history = conversation_memory.get_history(session_id)
+
+        # Validation step: intercept vague queries
+        clarification = await self._validate_query(message, history)
+        if clarification:
+            conversation_memory.add_turn(session_id, message, clarification)
+            return ChatResponse(reply=clarification, sources=[], session_id=session_id)
 
         # The caps here are intentional: never send an unbounded catalogue to the LLM.
         query = _retrieval_query(message, history)
@@ -181,11 +214,29 @@ class ChatbotChain:
         review_context = _format_review_context(reviews)
         conversation_history = _format_history(history)
 
+        style_profile = style_detector.detect_style(message)
+        style_instructions = ""
+        if style_profile["formality"] == "casual":
+            style_instructions += "- Ton: Direct, détendu et chaleureux (sans familiarité excessive).\n"
+        else:
+            style_instructions += "- Ton: Poli, vouvoiement de rigueur.\n"
+            
+        if style_profile["verbosity"] == "concise":
+            style_instructions += "- Format: Réponses courtes et concises (2-3 phrases max).\n"
+        else:
+            style_instructions += "- Format: Réponses détaillées.\n"
+            
+        if style_profile["technicality"] == "technical":
+            style_instructions += "- Technicité: Vocabulaire automobile expert, ne pas vulgariser les termes évidents.\n"
+        else:
+            style_instructions += "- Technicité: Vulgariser les concepts (ex: expliquer ce qu'est une DSG si mentionnée).\n"
+
         system_message = SYSTEM_PROMPT.format(
             vehicle_context=vehicle_context,
             graph_context=graph_context,
             review_context=review_context,
             conversation_history=conversation_history,
+            style_instructions=style_instructions,
         )
 
         prompt = ChatPromptTemplate.from_messages([
@@ -204,17 +255,30 @@ class ChatbotChain:
                 "Veuillez reformuler votre question ou reessayer."
             )
 
-        sources = [
-            SourceReference(
-                vehicle_id=v["vehicle_id"],
-                vehicle_title=v.get("metadata", {}).get("brand", "")
-                + " " + v.get("metadata", {}).get("model", ""),
-                relevance_score=v.get("score", 0),
-                source_type="vector_search",
+        sources = []
+        for v in vehicles[:5]:
+            if not v.get("vehicle_id"):
+                continue
+            
+            meta = v.get("metadata", {})
+            title = meta.get("brand", "") + " " + meta.get("model", "")
+            
+            images = meta.get("images", [])
+            image_url = images[0] if isinstance(images, list) and images else (images if isinstance(images, str) else None)
+            
+            price_val = meta.get("price")
+            price_str = str(price_val) if price_val is not None else None
+            
+            sources.append(
+                SourceReference(
+                    vehicle_id=v["vehicle_id"],
+                    vehicle_title=title.strip(),
+                    relevance_score=v.get("score", 0),
+                    source_type="vector_search",
+                    image_url=image_url,
+                    price=price_str
+                )
             )
-            for v in vehicles[:5]
-            if v.get("vehicle_id")
-        ]
 
         conversation_memory.add_turn(session_id, message, reply)
 
@@ -222,6 +286,7 @@ class ChatbotChain:
             reply=reply,
             sources=sources,
             session_id=session_id,
+            style_profile=style_profile,
         )
 
 

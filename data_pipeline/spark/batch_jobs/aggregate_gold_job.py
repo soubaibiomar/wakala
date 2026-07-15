@@ -1,4 +1,4 @@
-from pyspark.sql import SparkSession
+﻿from pyspark.sql import SparkSession
 from pyspark.sql.functions import (
     avg, count, col, stddev, sum as _sum, countDistinct, when,
 )
@@ -6,7 +6,7 @@ from pyspark.sql.functions import (
 
 def run_job(date_str: str | None = None):
     spark = SparkSession.builder \
-        .appName("AutoMind-GoldAggregation") \
+        .appName("Wakala-GoldAggregation") \
         .getOrCreate()
 
     filter_expr = f"dt = '{date_str}'" if date_str else "1 = 1"

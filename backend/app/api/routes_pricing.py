@@ -27,6 +27,8 @@ class PricePredictionInput(BaseModel):
     doors: int = Field(5, ge=1, le=9)
     seats: int = Field(5, ge=1, le=9)
     city: str = Field(..., example="Casablanca")
+    condition_score: Optional[float] = Field(None, ge=1, le=5, description="Note d'état du véhicule (1 à 5)")
+    month: Optional[int] = Field(None, ge=1, le=12, description="Mois de mise en vente (pour la saisonnalité)")
 
 
 class ConfidenceInterval(BaseModel):
@@ -61,6 +63,8 @@ class ModelInfoResponse(BaseModel):
     features: list[str]
 
 
+# Alias for the new requirement POST /api/v1/pricing/estimate
+@router.post("/estimate", response_model=PricePredictionResponse)
 @router.post("/predict-price", response_model=PricePredictionResponse)
 async def predict_price(input_data: PricePredictionInput):
     try:
