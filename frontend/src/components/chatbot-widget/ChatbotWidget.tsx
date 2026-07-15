@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { useChatSession } from './useChatSession';
 import ChatTrigger from './ChatTrigger';
 import ChatWindow from './ChatWindow';
@@ -26,9 +27,16 @@ export default function ChatbotWidget() {
   );
 
   const hasNewMessage = messages.length > 0 && !isOpen;
-
+  
   return (
-    <div className={styles.widget}>
+    <>
+      <motion.div 
+        className={`${styles.widget} ${isOpen ? styles.widgetOpen : ''}`}
+        drag
+        dragElastic={0.1}
+        dragMomentum={false}
+        style={{ pointerEvents: 'none' }}
+      >
       {isOpen && (
         <ChatWindow
           messages={messages}
@@ -49,6 +57,7 @@ export default function ChatbotWidget() {
         hasNewMessage={hasNewMessage}
         onClick={toggleOpen}
       />
-    </div>
+      </motion.div>
+    </>
   );
 }

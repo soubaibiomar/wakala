@@ -54,32 +54,48 @@ export function useChatSession() {
     setIsTyping(true);
     setError(null);
 
+    // Prepare assistant message stub
+    const assistantId = generateId();
+    const assistantMsg: Message = {
+      id: assistantId,
+      role: 'assistant',
+      content: '',
+      timestamp: Date.now(),
+    };
+    
+    setMessages((prev) => [...prev, assistantMsg]);
+
     try {
-      const { data } = await chatbotService.sendMessage(trimmed, sessionIdRef.current);
-
-      const assistantMsg: Message = {
-        id: generateId(),
-        role: 'assistant',
-        content: data.reply,
-        sources: data.sources?.filter((s) => s.relevance_score > 0) || [],
-        style_profile: data.style_profile,
-        timestamp: Date.now(),
-      };
-
-      setMessages((prev) => [...prev, assistantMsg]);
+      // Build history for backend (excluding the current user message just added)
+      // Actually, we can just pass the previous messages
+      const history = messages.map(m => ({ role: m.role, content: m.content }));
+      
+      await chatbotService.streamMessage(trimmed, history, (chunk: string) => {
+        setMessages((prev) => {
+          return prev.map(msg => {
+            if (msg.id === assistantId) {
+              return { ...msg, content: msg.content + chunk };
+            }
+            return msg;
+          });
+        });
+        // Scroll bottom effect can be triggered if needed, but handled by useEffect usually
+      });
+      
     } catch {
-      const fallback: Message = {
-        id: generateId(),
-        role: 'assistant',
-        content: 'Desole, je rencontre une difficulte technique. Veuillez reessayer.',
-        timestamp: Date.now(),
-      };
-      setMessages((prev) => [...prev, fallback]);
+      setMessages((prev) => {
+        return prev.map(msg => {
+          if (msg.id === assistantId && !msg.content) {
+            return { ...msg, content: 'Désolé, je rencontre une difficulté technique. Veuillez réessayer.' };
+          }
+          return msg;
+        });
+      });
       setError('Erreur de communication avec le serveur.');
     } finally {
       setIsTyping(false);
     }
-  }, []);
+  }, [messages]);
 
   const clearHistory = useCallback(() => {
     setMessages([]);

@@ -19,10 +19,10 @@ class User(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    full_name: Mapped[str] = mapped_column("name", String(255), nullable=False)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
-    phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    phone: Mapped[str] = mapped_column(String(30), nullable=False)
+    hashed_password: Mapped[str] = mapped_column("password_hash", String(255), nullable=False)
     role: Mapped[str] = mapped_column(
         Enum("buyer", "seller", "admin", name="user_role", create_type=False),
         nullable=False,

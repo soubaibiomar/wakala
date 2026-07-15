@@ -1,4 +1,4 @@
-﻿"""
+"""
 Wakala Backend — Point d'entrée FastAPI.
 
 Lance le serveur avec :
@@ -11,6 +11,9 @@ Documentation interactive :
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+
+from app.services.health_checker import start_health_checker
 
 from app.core.config import settings
 from app.api.routes_auth import router as auth_router
@@ -25,11 +28,21 @@ from app.api.routes_vision import router as vision_router
 from app.api.routes_admin import router as admin_router
 from app.api.routes_customs import router as customs_router
 from app.api.routes_transactions import router as transactions_router
+from app.api.v1.endpoints.ai import router as ai_router
+
+# ─── Lifespan ──────────────────────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Démarrage des tâches de fond
+    start_health_checker()
+    yield
+    # Cleanup si nécessaire
 
 # ─── Application FastAPI ───────────────────────────────────────
 
 app = FastAPI(
     title="Wakala API",
+    lifespan=lifespan,
     description=(
         "API REST de la marketplace automobile intelligente Wakala.\n\n"
         "Modules disponibles :\n"
@@ -72,7 +85,7 @@ app.include_router(vision_router, prefix="/api/v1", tags=["Computer Vision"])
 app.include_router(admin_router, prefix="/api/v1", tags=["Admin & Modération"])
 app.include_router(customs_router, prefix="/api/v1", tags=["Dédouanement"])
 app.include_router(transactions_router, prefix="/api/v1", tags=["Escrow & Séquestre"])
-
+app.include_router(ai_router, prefix="/api/v1/ai", tags=["IA & RAG"])
 
 # ─── Health check ─────────────────────────────────────────────
 

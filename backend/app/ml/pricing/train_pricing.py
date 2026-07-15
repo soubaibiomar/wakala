@@ -28,12 +28,20 @@ async def train_from_db(min_samples: int = 50):
     print("[train_pricing] Loading vehicles from DB...")
     async with async_session_factory() as session:
         session: AsyncSession
+        # Priorité aux annonces vendues (Argus)
         result = await session.execute(
-            select(Vehicle).where(Vehicle.price.isnot(None))
+            select(Vehicle).where(Vehicle.price.isnot(None), Vehicle.status == 'sold')
         )
         vehicles = list(result.scalars().all())
 
-    print(f"[train_pricing] Loaded {len(vehicles)} vehicles with prices.")
+        if len(vehicles) < min_samples:
+            print(f"[train_pricing] Cold Start: Not enough sold vehicles ({len(vehicles)}). Falling back to 'available'.")
+            result = await session.execute(
+                select(Vehicle).where(Vehicle.price.isnot(None), Vehicle.status == 'available')
+            )
+            vehicles.extend(list(result.scalars().all()))
+
+    print(f"[train_pricing] Loaded {len(vehicles)} vehicles for training.")
     if len(vehicles) < min_samples:
         print(
             f"[train_pricing] WARNING: only {len(vehicles)} samples "

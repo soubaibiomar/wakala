@@ -41,6 +41,7 @@ class PricePredictionResponse(BaseModel):
     confidence_interval: ConfidenceInterval
     method: str
     features_importance: dict[str, float]
+    market_trend: str = Field("Stable", description="Indicateur de tendance du marché (ex: Stable, À la hausse, À la baisse)")
 
 
 class BatchPredictionRequest(BaseModel):
@@ -69,6 +70,16 @@ class ModelInfoResponse(BaseModel):
 async def predict_price(input_data: PricePredictionInput):
     try:
         result = price_model.predict(input_data.model_dump())
+        
+        # Simple market trend logic based on age and mileage for now
+        trend = "Stable"
+        current_year = 2026
+        age = current_year - input_data.year
+        if age < 3 and input_data.mileage < 30000:
+            trend = "Très demandé"
+        elif age > 10 or input_data.mileage > 150000:
+            trend = "À la baisse"
+
         return PricePredictionResponse(
             predicted_price=result["predicted_price"],
             confidence_interval=ConfidenceInterval(
@@ -77,6 +88,7 @@ async def predict_price(input_data: PricePredictionInput):
             ),
             method=result["method"],
             features_importance=result["features_importance"],
+            market_trend=trend
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -98,6 +110,7 @@ async def batch_predict_price(request: BatchPredictionRequest):
                     ),
                     method=result["method"],
                     features_importance=result["features_importance"],
+                    market_trend="Stable",
                 ),
             )
         )

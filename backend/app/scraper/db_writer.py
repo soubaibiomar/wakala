@@ -1,4 +1,4 @@
-﻿"""
+"""
 DbWriter — insère les données (générées/scrapées) dans PostgreSQL.
 """
 import uuid
@@ -20,10 +20,10 @@ async def _get_or_create_default_seller(session: AsyncSession) -> uuid.UUID:
         return user.id
 
     default_seller = User(
-        name="Vendeur Wakala",
-        email="vendeur@Wakala.ma",
-        phone="+212612345678",
-        password_hash="$2b$12$placeholder",
+        full_name="Vendeur Wakala",
+        email=PRO_USER_EMAIL,
+        phone="+212600000000",
+        hashed_password="$2b$12$placeholder",
         role="seller",
         is_verified=True,
         preferences={},

@@ -131,13 +131,18 @@ export default function ChatWindow({
             <span>M</span>
             <span>A</span>
           </div>
-          <input
-            ref={inputRef}
-            type="text"
+          <textarea
+            ref={inputRef as any}
             className={styles.inputField}
             placeholder="Rechercher (ex: Dacia Duster Casablanca)"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            rows={1}
+            style={{ resize: 'none', overflow: 'hidden', minHeight: '36px', maxHeight: '120px' }}
+            onChange={(e) => {
+              setInput(e.target.value);
+              e.target.style.height = 'auto';
+              e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+            }}
             onKeyDown={handleKeyDown}
             disabled={isTyping}
           />

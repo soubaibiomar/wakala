@@ -72,3 +72,4 @@ confluent-kafka==2.5.3
 # ─── Utilitaires ──────────────────────────────────────────────
 python-dotenv==1.0.1             # Chargement .env
 httpx==0.27.2                    # Client HTTP async (appels inter-services)
+fastapi-mail

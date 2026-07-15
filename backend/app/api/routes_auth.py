@@ -2,23 +2,32 @@
 api/routes_auth.py — Authentification (inscription + connexion JWT).
 """
 
-from typing import Annotated
+import random
+import string
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.security import create_access_token, hash_password, verify_password
+from app.models.auth import EmailVerification
 from app.models.user import User
 from app.schemas.user_schema import (
     LoginRequest,
+    OTPVerification,
     TokenResponse,
     UserCreate,
     UserRead,
 )
+from app.services.mailer import send_otp_email
 
 router = APIRouter()
+
+def generate_otp() -> str:
+    """Génère un code OTP à 6 chiffres."""
+    return ''.join(random.choices(string.digits, k=6))
 
 
 # ──────────────────────────────────────────────────────────────
@@ -27,14 +36,13 @@ router = APIRouter()
 
 @router.post(
     "/register",
-    response_model=UserRead,
     status_code=status.HTTP_201_CREATED,
-    summary="Créer un compte utilisateur",
-    description="Inscrit un nouvel acheteur ou vendeur. Le mot de passe doit "
-                "contenir au moins 8 caractères, une majuscule et un chiffre.",
+    summary="Créer un compte utilisateur et envoyer OTP",
+    description="Inscrit un nouvel acheteur ou vendeur et envoie un code OTP par email.",
 )
 async def register(
     payload: UserCreate,
+    background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     # Vérifier l'unicité de l'email
@@ -45,18 +53,84 @@ async def register(
             detail="Un compte avec cet email existe déjà",
         )
 
+    # Créer l'utilisateur (is_verified = False par défaut)
     user = User(
-        name=payload.name,
+        full_name=payload.full_name,
         email=payload.email,
         phone=payload.phone,
-        password_hash=hash_password(payload.password),
+        hashed_password=hash_password(payload.password),
         role=payload.role,
+        is_verified=False,
     )
     db.add(user)
     await db.flush()
     await db.refresh(user)
 
-    return user
+    # Générer OTP et sauvegarder
+    otp_code = generate_otp()
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+    
+    verification = EmailVerification(
+        user_id=user.id,
+        otp_code=otp_code,
+        expires_at=expires_at,
+    )
+    db.add(verification)
+    await db.commit()
+
+    # Déclencher l'envoi de l'e-mail en tâche de fond
+    background_tasks.add_task(send_otp_email, user.email, otp_code)
+
+    return {"message": "Utilisateur créé. Code OTP envoyé."}
+
+
+# ──────────────────────────────────────────────────────────────
+# POST /verify-email — Vérification OTP
+# ──────────────────────────────────────────────────────────────
+
+@router.post(
+    "/verify-email",
+    summary="Vérifier l'email via OTP",
+    description="Valide le code OTP et active le compte.",
+)
+async def verify_email(
+    payload: OTPVerification,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    # Trouver l'utilisateur
+    result = await db.execute(select(User).where(User.email == payload.email))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        
+    if user.is_verified:
+        return {"message": "Compte déjà vérifié"}
+
+    # Vérifier l'OTP
+    stmt = select(EmailVerification).where(
+        EmailVerification.user_id == user.id,
+        EmailVerification.otp_code == payload.otp_code,
+    )
+    verification_result = await db.execute(stmt)
+    verification = verification_result.scalar_one_or_none()
+
+    if not verification:
+        raise HTTPException(status_code=400, detail="Code OTP invalide")
+        
+    if verification.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Le code OTP a expiré")
+
+    # Activer le compte
+    user.is_verified = True
+    
+    # Supprimer l'OTP
+    await db.execute(delete(EmailVerification).where(EmailVerification.user_id == user.id))
+    
+    # Commit transaction
+    await db.commit()
+    
+    return {"message": "Email vérifié avec succès. Vous pouvez maintenant vous connecter."}
 
 
 # ──────────────────────────────────────────────────────────────
@@ -76,11 +150,17 @@ async def login(
     result = await db.execute(select(User).where(User.email == payload.email))
     user = result.scalar_one_or_none()
 
-    if not user or not verify_password(payload.password, user.password_hash):
+    if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email ou mot de passe incorrect",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+        
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Veuillez vérifier votre adresse email avant de vous connecter",
         )
 
     token = create_access_token(data={"sub": str(user.id), "role": user.role})

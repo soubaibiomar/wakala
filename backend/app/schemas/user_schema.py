@@ -19,17 +19,17 @@ CIN_RE = re.compile(r'^[A-Za-z]{2}\d{5,6}$')
 
 class UserCreate(BaseModel):
     """Schéma de création d'un compte utilisateur."""
-    name: str = Field(..., min_length=2, max_length=255, examples=["Jean Dupont"])
+    full_name: str = Field(..., min_length=2, max_length=255, examples=["Jean Dupont"])
     email: EmailStr = Field(..., examples=["jean@example.ma"])
-    phone: Optional[str] = Field(None, max_length=30, examples=["+212612345678"])
+    phone: str = Field(..., max_length=30, examples=["+212612345678"])
     cin: Optional[str] = Field(None, min_length=7, max_length=8, examples=["AB123456"])
     password: str = Field(..., min_length=8, max_length=128, examples=["MonMotDePasse123!"])
     role: str = Field("buyer", pattern="^(buyer|seller)$", examples=["buyer"])
 
     @field_validator("phone")
     @classmethod
-    def validate_phone(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and not MOROCCAN_PHONE_RE.match(v):
+    def validate_phone(cls, v: str) -> str:
+        if not MOROCCAN_PHONE_RE.match(v):
             raise ValueError("Le téléphone doit être au format +2126XXXXXXXX ou +2125XXXXXXXX")
         return v
 
@@ -55,7 +55,7 @@ class UserCreate(BaseModel):
 class UserRead(BaseModel):
     """Schéma de lecture — renvoyé par l'API (jamais le hash)."""
     id: UUID
-    name: str
+    full_name: str
     email: EmailStr
     phone: Optional[str] = None
     role: str
@@ -70,7 +70,7 @@ class UserRead(BaseModel):
 class UserReadBrief(BaseModel):
     """Version allégée pour les listings/reviews (pas d'email)."""
     id: UUID
-    name: str
+    full_name: str
     role: str
     is_verified: bool
 
@@ -81,7 +81,7 @@ class UserReadBrief(BaseModel):
 
 class UserUpdate(BaseModel):
     """Schéma de mise à jour — tous les champs optionnels."""
-    name: Optional[str] = Field(None, min_length=2, max_length=255)
+    full_name: Optional[str] = Field(None, min_length=2, max_length=255)
     phone: Optional[str] = Field(None, max_length=30)
     preferences: Optional[dict] = None
     avatar_url: Optional[str] = None
@@ -100,3 +100,9 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserRead
+
+
+class OTPVerification(BaseModel):
+    """Schéma de vérification OTP."""
+    email: EmailStr
+    otp_code: str = Field(..., min_length=6, max_length=6)

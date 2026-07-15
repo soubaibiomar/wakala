@@ -11,11 +11,13 @@ import TrustScore from '../components/trust-score/TrustScore';
 import { useAuth } from '../context/AuthContext';
 import fr from '../i18n/fr';
 import PriceBadge from '../components/pricing/PriceBadge';
+import VehicleSEO from '../components/seo/VehicleSEO';
+import './VehicleDetail.css';
 
 function DetailSkeleton() {
   return (
     <div style={{ maxWidth: 'var(--max-width, 1280px)', margin: '0 auto', padding: 'var(--space-xl)' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 'var(--space-xl)' }}>
+      <div className="vehicle-detail-grid">
         <div>
           <div style={{ height: 420, borderRadius: 'var(--radius-card)', marginBottom: 24, background: 'var(--bg-surface)' }} />
           <div style={{ height: 150, borderRadius: 'var(--radius-card)', background: 'var(--bg-surface)' }} />
@@ -113,23 +115,16 @@ function SpecsGrid({ vehicle }: { vehicle: Vehicle }) {
       }}>
         Caractéristiques
       </h3>
-      <div style={{
-        display: 'grid', gridTemplateColumns: '1fr 1fr',
-        gap: 1, background: 'var(--border-subtle)',
-        borderRadius: 'var(--radius-card)', overflow: 'hidden',
-      }}>
-        {specs.map((s) => (
-          <div key={s.label} style={{ padding: '10px 12px', background: 'var(--bg-surface)' }}>
-            <div style={{
-              fontSize: '0.7rem', color: 'var(--text-muted)',
-              marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.04em',
-            }}>
-              {s.label}
-            </div>
-            <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>{s.value}</div>
-          </div>
-        ))}
-      </div>
+      <table className="vehicle-specs">
+        <tbody>
+          {specs.map((s) => (
+            <tr key={s.label}>
+              <th>{s.label}</th>
+              <td>{s.value}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -189,7 +184,9 @@ export default function VehicleDetail() {
   if (error || !vehicle) return <DetailError message={error || fr.error.notFound} />;
 
   return (
-    <div style={{ background: 'var(--bg-primary)', minHeight: '100vh', paddingTop: 'calc(var(--nav-height) + var(--space-xl))' }}>
+    <>
+      <VehicleSEO vehicle={vehicle} />
+      <div style={{ background: 'var(--bg-primary)', minHeight: '100vh', paddingTop: 'calc(var(--nav-height) + var(--space-xl))' }}>
       <div style={{ maxWidth: 'var(--max-width, 1280px)', margin: '0 auto', padding: '0 var(--space-lg)' }}>
         <nav style={{ marginBottom: 'var(--space-lg)', fontSize: '0.85rem' }} aria-label="Fil d'Ariane">
           <Link to="/" style={{ color: 'var(--text-muted)' }}>{fr.nav.home}</Link>
@@ -199,9 +196,7 @@ export default function VehicleDetail() {
           <span style={{ color: 'var(--text-secondary)' }}>{vehicle.brand} {vehicle.model}</span>
         </nav>
 
-        <div style={{
-          display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 'var(--space-xl)', alignItems: 'start',
-        }}>
+        <div className="vehicle-detail-grid">
           <div>
             <motion.div
               initial={{ opacity: 0, scale: 0.98 }}
@@ -321,7 +316,7 @@ export default function VehicleDetail() {
               }}
             >
               <h1 style={{ fontSize: '1.6rem', fontFamily: 'var(--font-display)', fontWeight: 800, marginBottom: 4, color: 'var(--text-primary)' }}>
-                {vehicle.brand} {vehicle.model}
+                {vehicle.brand} {vehicle.model} - {vehicle.year}
               </h1>
               {vehicle.version && (
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: 16 }}>
@@ -443,5 +438,6 @@ export default function VehicleDetail() {
         </div>
       </div>
     </div>
+    </>
   );
 }

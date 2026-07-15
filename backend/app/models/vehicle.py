@@ -60,6 +60,14 @@ class Vehicle(Base):
     doors: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=5)
     seats: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=5)
 
+    # ─── Statut (Soft Delete) ──────────────────────────────────
+    status: Mapped[str] = mapped_column(
+        Enum("available", "sold", "deleted", name="vehicle_status", create_type=False),
+        nullable=False,
+        default="available",
+    )
+    source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
     # ─── Localisation ──────────────────────────────────────────
     city: Mapped[str] = mapped_column(String(150), nullable=False, index=True)
     postal_code: Mapped[str | None] = mapped_column(String(10), nullable=True)

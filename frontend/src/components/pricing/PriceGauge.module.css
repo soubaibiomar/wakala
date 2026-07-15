@@ -1,0 +1,65 @@
+.gaugeContainer {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-card);
+  border: 1px solid rgba(18, 33, 53, 0.08);
+  margin-top: 12px;
+}
+
+.gaugeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.gaugeTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.gaugeValue {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.progressBarBg {
+  width: 100%;
+  height: 8px;
+  background-color: rgba(18, 33, 53, 0.05);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.progressBarFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease-out, background-color 0.3s ease;
+}
+
+.gaugeFooter {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+}
+
+.trendLabel {
+  color: var(--color-text-muted);
+}
+
+/* Status Colors */
+.green .gaugeValue { color: #10B981; }
+.green .progressBarFill { background-color: #10B981; }
+.green .statusLabel { color: #10B981; font-weight: 600; }
+
+.grey .gaugeValue { color: var(--color-text-primary); }
+.grey .progressBarFill { background-color: #9CA3AF; }
+.grey .statusLabel { color: #6B7280; font-weight: 600; }
+
+.red .gaugeValue { color: #EF4444; }
+.red .progressBarFill { background-color: #EF4444; }
+.red .statusLabel { color: #EF4444; font-weight: 600; }

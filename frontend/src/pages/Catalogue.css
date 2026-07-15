@@ -10,28 +10,9 @@
   padding-bottom: var(--space-3xl);
 }
 
-/* ─── Layout container ─────────────────────────────────────── */
-.catalogue__container {
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: var(--space-xl);
-  display: flex;
-  gap: var(--space-xl);
-  align-items: flex-start;
-}
+/* ─── Layout container (Moved to Mobile-First section at bottom) ─────────────────────── */
 
-/* ─── Sidebar ──────────────────────────────────────────────── */
-.catalogue__sidebar {
-  flex: 0 0 300px;
-  position: sticky;
-  top: calc(var(--nav-height) + var(--space-md));
-  background: var(--color-bg-card);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(18, 33, 53, 0.06);
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-}
+/* ─── Sidebar (Moved to Mobile-First section at bottom) ──────────────────────────────── */
 
 .catalogue__sidebar-top {
   display: flex;
@@ -257,12 +238,7 @@
   color: var(--color-text-muted);
 }
 
-/* ─── Vehicle grid ─────────────────────────────────────────── */
-.catalogue__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--space-lg);
-}
+/* ─── Vehicle grid (Moved to Mobile-First section at bottom) ─────────────────────────── */
 
 /* Vehicle card overrides for a cleaner look */
 .catalogue__card-wrapper {
@@ -378,22 +354,72 @@
   cursor: pointer;
 }
 
-/* ─── Responsive ───────────────────────────────────────────── */
-@media (max-width: 992px) {
+/* ─── Layout container (Mobile First) ──────────────────────── */
+.catalogue__container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+@media (min-width: 768px) {
   .catalogue__container {
-    flex-direction: column;
-  }
-  
-  .catalogue__sidebar {
-    width: 100%;
-    flex: none;
-    position: static;
+    padding: var(--space-xl);
+    gap: var(--space-xl);
   }
 }
 
-@media (max-width: 768px) {
+@media (min-width: 992px) {
   .catalogue__container {
-    padding: var(--space-md);
-    gap: var(--space-md);
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+/* ─── Sidebar (Mobile First) ───────────────────────────────── */
+.catalogue__sidebar {
+  width: 100%;
+  flex: none;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(18, 33, 53, 0.06);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 992px) {
+  .catalogue__sidebar {
+    flex: 0 0 300px;
+    width: auto;
+    position: sticky;
+    top: calc(var(--nav-height) + var(--space-md));
+  }
+}
+
+/* ─── Vehicle grid (Mobile First) ──────────────────────────── */
+.catalogue__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-lg);
+}
+
+@media (min-width: 768px) {
+  .catalogue__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .catalogue__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .catalogue__grid {
+    grid-template-columns: repeat(4, 1fr);
   }
 }

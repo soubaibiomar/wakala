@@ -6,7 +6,7 @@
 @import './tokens.css';
 
 /* ─── Google Fonts ─────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:wght@400;500;600;700&display=swap');
 
 /* ─── CSS Custom Properties (Design Tokens) ───────────────── */
 :root {
@@ -632,14 +632,75 @@ textarea {
   box-shadow: none !important;
 }
 
-/* ─── Responsive navbar ────────────────────────────────────── */
+/* ─── Responsive navbar & Bottom Tab Bar ───────────────────── */
+.mobile-tab-bar {
+  display: none;
+}
+
 @media (max-width: 768px) {
+  /* Hide desktop links */
   .navbar__links {
-    gap: var(--space-sm);
+    display: none;
+  }
+  
+  /* Center or push logo left (already left by flex-between) */
+  .navbar__inner {
+    justify-content: center; /* Center logo on mobile */
+  }
+  .navbar__brand-logo {
+    margin: 0;
   }
 
-  .navbar__link {
-    font-size: 0.8rem;
+  /* Bottom Tab Bar for Mobile */
+  .mobile-tab-bar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background: var(--color-glass);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-top: var(--border-subtle);
+    z-index: 1000;
+    justify-content: space-around;
+    align-items: center;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mobile-tab-bar__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-size: 0.65rem;
+    font-weight: 500;
+    flex: 1;
+    height: 100%;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+  }
+
+  .mobile-tab-bar__item:hover {
+    color: var(--color-text-secondary);
+  }
+
+  .mobile-tab-bar__item--active {
+    color: var(--color-accent-gold);
+  }
+  
+  .mobile-tab-bar__item--active svg {
+    color: var(--color-accent-gold);
+    stroke-width: 2.5px;
+  }
+
+  /* Adjust page padding so content doesn't hide behind tab bar */
+  .page {
+    padding-bottom: calc(70px + env(safe-area-inset-bottom) + var(--space-md));
   }
 
   .page__container {

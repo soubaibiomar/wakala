@@ -1,0 +1,53 @@
+/* VehicleDetail.css */
+
+.vehicle-detail-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: var(--space-xl);
+  align-items: start;
+}
+
+@media (max-width: 992px) {
+  .vehicle-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Specifications Semantic Table ──────────────────────── */
+.vehicle-specs {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--border-subtle);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: 0 0 0 1px var(--border-subtle);
+}
+
+.vehicle-specs tbody {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+}
+
+.vehicle-specs tr {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px;
+  background: var(--bg-surface);
+}
+
+.vehicle-specs th {
+  text-align: left;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: normal;
+}
+
+.vehicle-specs td {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}

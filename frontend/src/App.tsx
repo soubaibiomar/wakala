@@ -11,20 +11,27 @@
  *   </AuthProvider>
  */
 
-import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { BrowserRouter, Routes, Route, Link, useLocation, Outlet } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Home as HomeIcon, Search, Calculator, User, LogOut } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CompareProvider } from './context/CompareContext';
 import Home from './pages/Home';
 import Catalogue from './pages/Catalogue';
 import VehicleDetail from './pages/VehicleDetail';
-import Login from './pages/Login';
-import Register from './pages/Register';
+import AuthPage from './pages/Auth/AuthPage';
 import AdminDashboard from './pages/AdminDashboard';
 import CustomsPage from './pages/CustomsPage';
 import TransactionPage from './pages/TransactionPage';
 import ChatbotWidget from './components/chatbot-widget/ChatbotWidget';
 import CompareDrawer from './components/compare/CompareDrawer';
+import DashboardLayout from './components/dashboard/DashboardLayout';
+import DashboardIndex from './pages/Dashboard';
 import './styles/globals.css';
+
+// ─── React Query Client ───────────────────────────────────────
+const queryClient = new QueryClient();
 
 // ─── Navbar ───────────────────────────────────────────────────
 
@@ -35,73 +42,106 @@ function Navbar() {
   const isActive = (path: string) =>
     location.pathname === path ? 'navbar__link navbar__link--active' : 'navbar__link';
 
+  const isMobileActive = (path: string) =>
+    location.pathname === path ? 'mobile-tab-bar__item mobile-tab-bar__item--active' : 'mobile-tab-bar__item';
+
   return (
-    <nav className="navbar" id="navbar">
-      <div className="navbar__inner">
-        <Link to="/" className="navbar__brand">
-          <img
-            src="/assets/wakala-logo.png"
-            alt="Wakala"
-            className="navbar__brand-logo"
-          />
-        </Link>
+    <>
+      {/* Desktop Navbar */}
+      <nav className="navbar" id="navbar">
+        <div className="navbar__inner">
+          <Link to="/" className="navbar__brand">
+            <img
+              src="/assets/wakala-logo.png"
+              alt="Wakala"
+              className="navbar__brand-logo"
+            />
+          </Link>
 
-        <ul className="navbar__links">
-          <li>
-            <Link to="/" className={isActive('/')}>Accueil</Link>
-          </li>
-          <li>
-            <Link to="/catalogue" className={isActive('/catalogue')}>Catalogue</Link>
-          </li>
-          <li>
-            <Link to="/dedouanement" className={isActive('/dedouanement')}>Dédouanement</Link>
-          </li>
+          <ul className="navbar__links">
+            <li>
+              <Link to="/" className={isActive('/')}>Accueil</Link>
+            </li>
+            <li>
+              <Link to="/catalogue" className={isActive('/catalogue')}>Catalogue</Link>
+            </li>
+            <li>
+              <Link to="/dedouanement" className={isActive('/dedouanement')}>Dédouanement</Link>
+            </li>
 
-          {isAuthenticated && user ? (
-            <>
-              <li>
-                <span
-                  className="navbar__link"
-                  style={{ opacity: 0.7, fontSize: '0.82rem', cursor: 'default' }}
-                >
-                  👤 {user.name}
-                  {user.role === 'seller' && (
-                    <span className="badge badge--gold" style={{ marginLeft: 6, fontSize: '0.6rem' }}>
-                      Vendeur
-                    </span>
-                  )}
-                </span>
-              </li>
-              <li>
-                <button
-                  className="btn btn--ghost btn--sm"
-                  onClick={logout}
-                  id="nav-logout"
-                >
-                  Déconnexion
-                </button>
-              </li>
-              {user.role === 'admin' && (
+            {isAuthenticated && user ? (
+              <>
                 <li>
-                  <Link to="/admin" className="navbar__link">Admin</Link>
+                  <span
+                    className="navbar__link"
+                    style={{ opacity: 0.7, fontSize: '0.82rem', cursor: 'default' }}
+                  >
+                    👤 {user.name}
+                    {user.role === 'seller' && (
+                      <span className="badge badge--gold" style={{ marginLeft: 6, fontSize: '0.6rem' }}>
+                        Vendeur
+                      </span>
+                    )}
+                  </span>
                 </li>
-              )}
-            </>
-          ) : (
-            <>
-              <li>
-                <Link to="/login" className={isActive('/login')}>Connexion</Link>
-              </li>
-              <li>
-                <Link to="/register" className={isActive('/register')}>
-                  S'inscrire
-                </Link>
-              </li>
-            </>
-          )}
-        </ul>
-      </div>
-    </nav>
+                <li>
+                  <button
+                    className="btn btn--ghost btn--sm"
+                    onClick={() => logout()}
+                    id="nav-logout"
+                  >
+                    Déconnexion
+                  </button>
+                </li>
+                {user.role === 'admin' && (
+                  <li>
+                    <Link to="/admin" className="navbar__link">Admin</Link>
+                  </li>
+                )}
+              </>
+            ) : (
+              <>
+                <li>
+                  <Link to="/login" className={isActive('/login')}>Connexion</Link>
+                </li>
+                <li>
+                  <Link to="/register" className={isActive('/register')}>
+                    S'inscrire
+                  </Link>
+                </li>
+              </>
+            )}
+          </ul>
+        </div>
+      </nav>
+
+      {/* Mobile Bottom Tab Bar */}
+      <nav className="mobile-tab-bar">
+        <Link to="/" className={isMobileActive('/')}>
+          <HomeIcon size={24} />
+          <span>Accueil</span>
+        </Link>
+        <Link to="/catalogue" className={isMobileActive('/catalogue')}>
+          <Search size={24} />
+          <span>Catalogue</span>
+        </Link>
+        <Link to="/dedouanement" className={isMobileActive('/dedouanement')}>
+          <Calculator size={24} />
+          <span>Douane</span>
+        </Link>
+        {isAuthenticated ? (
+          <button className="mobile-tab-bar__item" onClick={logout} style={{ background: 'none', border: 'none' }}>
+            <LogOut size={24} />
+            <span>Sortir</span>
+          </button>
+        ) : (
+          <Link to="/login" className={isMobileActive('/login')}>
+            <User size={24} />
+            <span>Profil</span>
+          </Link>
+        )}
+      </nav>
+    </>
   );
 }
 
@@ -152,23 +192,14 @@ function Footer() {
   );
 }
 
-// ─── App (wrapped in AuthProvider) ────────────────────────────
+// ─── Layouts ──────────────────────────────────────────────────
 
-function AppRoutes() {
+function MainLayout() {
   return (
     <>
       <Navbar />
       <main className="page">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/catalogue" element={<Catalogue />} />
-          <Route path="/vehicule/:id" element={<VehicleDetail />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/dedouanement" element={<CustomsPage />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/transaction/:id" element={<TransactionPage />} />
-        </Routes>
+        <Outlet />
       </main>
       <Footer />
       <ChatbotWidget />
@@ -177,14 +208,48 @@ function AppRoutes() {
   );
 }
 
+// ─── App (wrapped in AuthProvider) ────────────────────────────
+
+function AppRoutes() {
+  return (
+    <Routes>
+      {/* Public Routes with standard Navbar/Footer */}
+      <Route element={<MainLayout />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/catalogue" element={<Catalogue />} />
+        <Route path="/vehicule/:id" element={<VehicleDetail />} />
+        <Route path="/login" element={<AuthPage />} />
+        <Route path="/register" element={<AuthPage />} />
+        <Route path="/dedouanement" element={<CustomsPage />} />
+        <Route path="/transaction/:id" element={<TransactionPage />} />
+        {/* L'ancien admin, en attendant d'être supprimé ou refactoré */}
+        <Route path="/admin" element={<AdminDashboard />} />
+      </Route>
+      
+      {/* Dashboard Routes with Sidebar/BottomNav */}
+      <Route path="/dashboard" element={<DashboardLayout />}>
+        <Route index element={<DashboardIndex />} />
+        {/* Placeholder for other routes like listings, favorites */}
+        <Route path="listings" element={<div>Mes Annonces (À venir)</div>} />
+        <Route path="favorites" element={<div>Favoris (À venir)</div>} />
+        <Route path="argus" element={<div>Argus Complet (À venir)</div>} />
+        {/* L'Admin Bento est géré par l'index qui check le role, ou on peut le forcer ici */}
+        <Route path="admin" element={<DashboardIndex />} />
+      </Route>
+    </Routes>
+  );
+}
+
 export default function App() {
   return (
-    <AuthProvider>
-      <CompareProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </CompareProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <CompareProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </CompareProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }

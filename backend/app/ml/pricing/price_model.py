@@ -29,7 +29,7 @@ ENCODERS_PATH = MODEL_DIR / "encoders.pkl"
 SCALER_PATH = MODEL_DIR / "scaler.pkl"
 FEATURES_PATH = MODEL_DIR / "feature_columns.json"
 
-NUMERIC_FEATURES = ["year", "mileage", "engine_power_hp", "doors", "seats", "month", "condition_score"]
+NUMERIC_FEATURES = ["year", "mileage", "engine_power_hp", "doors", "seats", "month", "condition_score", "vehicle_age", "annual_mileage"]
 CATEGORICAL_FEATURES = ["brand", "model", "fuel_type", "body_type", "transmission", "city"]
 
 ALL_FEATURES = NUMERIC_FEATURES + CATEGORICAL_FEATURES
@@ -98,6 +98,10 @@ class PriceModel:
         if cond_val is None:
             cond_val = self._get_smart_condition_default(year_val, mileage_val)
 
+        current_year = datetime.now().year
+        vehicle_age = max(0, current_year - year_val)
+        annual_mileage = mileage_val / max(1, vehicle_age)
+
         row = {
             "year": year_val,
             "mileage": mileage_val,
@@ -106,6 +110,8 @@ class PriceModel:
             "seats": vehicle.get("seats", 5),
             "month": vehicle.get("month", datetime.now().month),
             "condition_score": cond_val,
+            "vehicle_age": vehicle_age,
+            "annual_mileage": annual_mileage,
             "brand": vehicle.get("brand", "Inconnu"),
             "model": vehicle.get("model", "Inconnu"),
             "fuel_type": vehicle.get("fuel_type", "essence"),
@@ -154,6 +160,10 @@ class PriceModel:
             if cond_val is None:
                 cond_val = self._get_smart_condition_default(v.year, v.mileage)
                 
+            current_year = datetime.now().year
+            vehicle_age = max(0, current_year - v.year)
+            annual_mileage = v.mileage / max(1, vehicle_age)
+
             records.append({
                 "year": v.year,
                 "mileage": v.mileage,
@@ -162,6 +172,8 @@ class PriceModel:
                 "seats": v.seats,
                 "month": v.created_at.month if hasattr(v, "created_at") and v.created_at else datetime.now().month,
                 "condition_score": cond_val,
+                "vehicle_age": vehicle_age,
+                "annual_mileage": annual_mileage,
                 "brand": v.brand,
                 "model": v.model,
                 "fuel_type": v.fuel_type,
