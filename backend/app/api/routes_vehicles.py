@@ -22,6 +22,8 @@ from app.schemas.vehicle_schema import (
     VehicleUpdate,
 )
 from app.rag.compare_chain import compare_chain
+from app.services.ai.sync import upsert_vehicle_to_qdrant, delete_vehicle_from_qdrant
+from fastapi import BackgroundTasks
 
 router = APIRouter()
 
@@ -89,7 +91,10 @@ async def list_vehicles(
     total = total_result.scalar() or 0
 
     # Tri
-    sort_column = getattr(Vehicle, sort_by, Vehicle.created_at)
+    allowed_sort_fields = {"price", "year", "mileage", "created_at"}
+    if sort_by not in allowed_sort_fields:
+        sort_by = "created_at"
+    sort_column = getattr(Vehicle, sort_by)
     if sort_order == "desc":
         query = query.order_by(sort_column.desc())
     else:
@@ -162,6 +167,26 @@ async def compare_vehicles(
 
 
 # ──────────────────────────────────────────────────────────────
+# GET /me — Mes véhicules (vendeur authentifié)
+# ──────────────────────────────────────────────────────────────
+
+@router.get(
+    "/me",
+    response_model=list[VehicleRead],
+    summary="Mes véhicules",
+    description="Retourne la liste des véhicules appartenant à l'utilisateur connecté.",
+)
+async def get_my_vehicles(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(require_role("seller", "admin", "buyer"))],
+    limit: int = Query(100, ge=1, le=1000, description="Limite du nombre de résultats"),
+    offset: int = Query(0, ge=0, description="Décalage (skip)"),
+):
+    result = await db.execute(select(Vehicle).where(Vehicle.seller_id == current_user.id).limit(limit).offset(offset))
+    vehicles = result.scalars().all()
+    return vehicles
+
+# ──────────────────────────────────────────────────────────────
 # GET /{vehicle_id} — Détail d'un véhicule (avec vendeur)
 # ──────────────────────────────────────────────────────────────
 
@@ -200,6 +225,7 @@ async def get_vehicle(
 )
 async def create_vehicle(
     payload: VehicleCreate,
+    background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(require_role("seller", "admin"))],
 ):
@@ -210,6 +236,10 @@ async def create_vehicle(
     db.add(vehicle)
     await db.flush()
     await db.refresh(vehicle)
+    
+    # Synchronisation IA en tâche de fond
+    background_tasks.add_task(upsert_vehicle_to_qdrant, vehicle)
+    
     return vehicle
 
 
@@ -227,6 +257,7 @@ async def create_vehicle(
 async def update_vehicle(
     vehicle_id: str,
     payload: VehicleUpdate,
+    background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
@@ -246,6 +277,10 @@ async def update_vehicle(
 
     await db.flush()
     await db.refresh(vehicle)
+    
+    # Synchronisation IA en tâche de fond
+    background_tasks.add_task(upsert_vehicle_to_qdrant, vehicle)
+    
     return vehicle
 
 
@@ -260,6 +295,7 @@ async def update_vehicle(
 )
 async def delete_vehicle(
     vehicle_id: str,
+    background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ):
@@ -273,3 +309,7 @@ async def delete_vehicle(
         raise HTTPException(status_code=403, detail="Non autorisé")
 
     await db.delete(vehicle)
+    await db.commit()
+    
+    # Synchronisation IA en tâche de fond
+    background_tasks.add_task(delete_vehicle_from_qdrant, vehicle_id)

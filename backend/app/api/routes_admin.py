@@ -62,7 +62,7 @@ async def get_flagged_brokers(
     return [
         {
             "id": str(u.id),
-            "name": u.name,
+            "name": u.full_name,
             "email": u.email,
             "phone": u.phone,
             "role": u.role,

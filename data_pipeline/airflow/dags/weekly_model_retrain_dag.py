@@ -9,7 +9,7 @@ from airflow.operators.python import PythonOperator
 TRIGGER_FILE = Path("/data/triggers/retrain_embeddings")
 
 default_args = {
-    "owner": "automind",
+    "owner": "wakala",
     "depends_on_past": False,
     "email_on_failure": False,
     "retries": 2,
@@ -33,7 +33,7 @@ with DAG(
     schedule="0 4 * * 0",
     start_date=datetime(2024, 1, 1),
     catchup=False,
-    tags=["automind", "ml", "retrain"],
+    tags=["wakala", "ml", "retrain"],
 ) as dag:
 
     check_trigger = PythonOperator(
@@ -49,7 +49,7 @@ with DAG(
     recompute_collab = BashOperator(
         task_id="recompute_collaborative_scores",
         bash_command=(
-            "psql -U automind_user -d automind -h postgres "
+            "psql -U wakala_user -d wakala -h postgres "
             "-c 'REFRESH MATERIALIZED VIEW CONCURRENTLY mv_user_item_matrix;'"
         ),
     )

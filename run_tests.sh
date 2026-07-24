@@ -2,7 +2,7 @@
 set -e
 
 # ═══════════════════════════════════════════════════════════════
-# AutoMind — Run All Tests
+# Wakala — Run All Tests
 # Lance les tests backend (pytest) et frontend (vitest),
 # puis affiche un resume de couverture combine.
 #
@@ -41,7 +41,7 @@ FAILED_TESTS=""
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════╗"
-echo "║   AutoMind — Suite de Tests Complete                     ║"
+echo "║   Wakala — Suite de Tests Complete                     ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo ""
 

@@ -14,15 +14,20 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\"",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check-env": "node -e \"const fs=require('fs'); const src=fs.readFileSync('dist/assets/index.js','utf8')||''; const leaks=['OPENAI_API_KEY','AWS_SECRET','S3_BUCKET'].filter(k=>src.includes(k)); if(leaks.length){console.error('LEAK DETECTED:',leaks);process.exit(1)}else{console.log('No secrets leaked in build.')}\"",
+    "security:audit": "npm audit --audit-level=high"
   },
   "dependencies": {
+    "@rolldown/binding-linux-x64-musl": "^1.2.0",
     "@tanstack/react-query": "^5.101.2",
     "axios": "^1.7.7",
+    "date-fns": "^4.4.0",
     "framer-motion": "^11.5.0",
     "lucide-react": "^0.441.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-hook-form": "^7.81.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^6.26.0"
   },

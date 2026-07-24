@@ -1,5 +1,5 @@
-import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Home, List, Heart, TrendingUp, MessageSquare, Menu, LogOut, ChevronLeft } from 'lucide-react';
+import { Link, Outlet, useLocation, Navigate } from 'react-router-dom';
+import { Home, List, Heart, TrendingUp, Menu, LogOut, ChevronLeft, BookOpen } from 'lucide-react';
 import { useState } from 'react';
 import styles from './DashboardLayout.module.css';
 import { useAuth } from '../../context/AuthContext';
@@ -8,10 +8,25 @@ import ChatbotWidget from '../chatbot-widget/ChatbotWidget';
 export default function DashboardLayout() {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, isAuthenticated, loading, logout } = useAuth();
+
+  // ─── Route Guard ────────────────────────────────────────────
+  // Pendant le chargement initial, ne rien montrer (évite le flash)
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--color-bg, #0d1117)' }}>
+        <div style={{ color: 'var(--color-text-muted, #8b949e)', fontSize: '1rem' }}>Chargement...</div>
+      </div>
+    );
+  }
+  // Si pas authentifié, redirection immédiate vers /login
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
 
   const NAV_ITEMS = [
     { label: 'Accueil', icon: Home, path: '/dashboard' },
+    { label: "Carnet d'Entretien", icon: BookOpen, path: '/dashboard/maintenance' },
     { label: 'Mes Annonces', icon: List, path: '/dashboard/listings' },
     { label: 'Favoris', icon: Heart, path: '/dashboard/favorites' },
     { label: 'Argus', icon: TrendingUp, path: '/dashboard/argus' },

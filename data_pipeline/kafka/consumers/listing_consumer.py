@@ -90,7 +90,7 @@ def run_consumer():
 
     consumer = Consumer({
         "bootstrap.servers": BOOTSTRAP_SERVERS,
-        "group.id": "automind-bronze-listings",
+        "group.id": "wakala-bronze-listings",
         "auto.offset.reset": "earliest",
         "enable.auto.commit": True,
     })

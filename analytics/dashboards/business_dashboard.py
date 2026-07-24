@@ -6,9 +6,9 @@ import plotly.graph_objects as go
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 
 # Configuration de la page
-st.set_page_config(page_title="AutoMind Business Dashboard", layout="wide")
+st.set_page_config(page_title="Wakala Business Dashboard", layout="wide")
 
-st.title("📊 AutoMind - Business Dashboard")
+st.title("📊 Wakala - Business Dashboard")
 st.markdown("Vue analytique de la marketplace (Géospatial, KPI, Séries Temporelles, A/B Testing)")
 
 # Mock des données (dans la réalité, issues du Gold layer via PostgreSQL/dbt)

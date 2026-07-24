@@ -1,0 +1,109 @@
+\documentclass[a4paper, 11pt]{article}
+
+% --- Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage[margin=1.5cm, top=2cm, bottom=2cm]{geometry}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{colortbl}
+\usepackage{graphicx}
+
+% --- Définition des couleurs ---
+\definecolor{primaryBlue}{RGB}{20, 50, 90}
+\definecolor{lightBlue}{RGB}{235, 240, 247}
+
+% --- Styles de document ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[L]{\footnotesize \textcolor{gray}{Projet Wakala - Étude Utilisateurs (11 répondants)}}
+\fancyfoot[R]{\footnotesize \textcolor{gray}{Page \thepage}}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% --- Personnalisation des titres ---
+\titleformat{\section}{\Large\bfseries\color{primaryBlue}}{}{0em}{}[\titlerule]
+\titleformat{\subsection}{\large\bfseries\color{primaryBlue}}{}{0em}{}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\begin{document}
+
+% --- En-tête ---
+\begin{center}
+    {\Huge \textcolor{primaryBlue}{\textbf{WAKALA}}}\\[0.5cm]
+    {\LARGE \bfseries \textcolor{primaryBlue}{Synthèse de l'Étude Utilisateurs}}\\[0.2cm]
+    {\large \textit{Analyse des attentes (UX) et des craintes lors de l'achat de voitures d'occasion}}
+\end{center}
+
+\vspace{0.8cm}
+
+% --- Introduction ---
+\section*{Introduction}
+Ce document présente d'abord la simulation détaillée des réponses au questionnaire administré à 11 participants, suivie d'une synthèse stratégique concernant leurs attentes et craintes lors de l'achat de véhicules d'occasion.
+
+\vspace{0.5cm}
+
+% --- 1. Simulation des Réponses Détaillées ---
+\section*{1. Simulation des Réponses (Les 11 Profils)}
+
+\subsection*{Profils et Habitudes d'achat (Questions 1 à 5)}
+\begin{footnotesize}
+\begin{longtable}{L{0.5cm} L{1.8cm} L{2.5cm} L{2cm} L{2.2cm} L{2.2cm} L{2.5cm}}
+\toprule
+\rowcolor{primaryBlue}
+\textcolor{white}{\textbf{N°}} & \textcolor{white}{\textbf{Âge}} & \textcolor{white}{\textbf{Profession}} & \textcolor{white}{\textbf{Ville}} & \textcolor{white}{\textbf{Déjà acheté ?}} & \textcolor{white}{\textbf{Où ?}} & \textcolor{white}{\textbf{Durée rech.}} \\
+\midrule
+\endhead
+1 & 22 ans & Étudiant & Casablanca & Non & N/A & 1 mois \\
+\rowcolor{lightBlue}
+2 & 24 ans & Étudiante & Rabat & Oui & Avito & 3 mois \\
+3 & 45 ans & Employé & Meknès & Oui & Avito / Garage & 2 mois \\
+\rowcolor{lightBlue}
+4 & 52 ans & Professeur & Rabat & Oui & Concession & 1 mois \\
+5 & 58 ans & Retraité & Casablanca & Oui & Entre amis & 4 mois \\
+\rowcolor{lightBlue}
+6 & 25 ans & Employé & Casablanca & Oui & Avito & 2 mois \\
+7 & 48 ans & Femme au foyer & Meknès & Non & N/A & 2 semaines \\
+\rowcolor{lightBlue}
+8 & 21 ans & Étudiant & Rabat & Non & N/A & 2 mois \\
+9 & 55 ans & Retraité & Meknès & Oui & Garage local & 1 mois \\
+\rowcolor{lightBlue}
+10 & 49 ans & Professeur & Casablanca & Oui & Avito & 3 mois \\
+11 & 23 ans & Employée & Rabat & Oui & Avito & 2 mois \\
+\bottomrule
+\end{longtable}
+\end{footnotesize}
+
+\subsection*{Expérience Utilisateur (UX) et Craintes (Questions 6 à 9)}
+\begin{itemize}[label=\textbullet, leftmargin=*]
+    \item \textbf{Q6. Qu'est-ce qui fait dire "cette annonce est bien faite" ?} \\
+    \textit{Réponses :} "Beaucoup de photos nettes intérieur/extérieur" (7/11), "Description honnête sans fautes" (3/11), "Prix final clair" (1/11).
+    
+    \item \textbf{Q7. Quelles informations sont indispensables ?} \\
+    \textit{Réponses :} Historique des accidents (11/11), Kilométrage certifié (11/11), État du moteur (9/11), Nombre de propriétaires (6/11).
+    
+    \item \textbf{Q8. Préfères-tu chercher seul(e) ou être guidé(e) ?} \\
+    \textit{Réponses :} Seul(e) sur internet pour fouiller (8/11), mais guidé par un expert physique pour la visite finale (10/11). L'aide par chatbot intéresse surtout les 21-25 ans.
+    
+    \item \textbf{Q9. Quelle est ta plus grande crainte ?} \\
+    \textit{Réponses :} Compteur trafiqué (9/11), Vice caché sur le moteur (7/11), Arnaques et faux vendeurs (4/11).
+\end{itemize}
+
+\vspace{0.8cm}
+
+% --- 2. Synthèse Globale ---
+\newpage
+\section*{2. Synthèse Globale : Ce qu'il faut retenir}
+
+Les réponses de notre panel montrent une chose très claire sur le marché marocain : les acheteurs veulent utiliser internet pour trouver une voiture, mais ils n'ont pas du tout confiance. En effet, si la majorité des personnes (8 sur 11) aiment faire leurs recherches seules sur internet pour comparer les offres, le moment de voir la voiture en vrai et de payer génère un fort stress. Presque tout le monde veut alors être accompagné par un mécanicien ou un ami expert, mais les sites actuels abandonnent l'utilisateur exactement à ce moment-là. Cette anxiété s'explique par la peur des compteurs kilométriques trafiqués (cité 9 fois) et des pannes cachées. Aujourd'hui, de très belles photos ne suffisent plus à rassurer l'acheteur, qui exige des preuves concrètes : un historique des réparations, le vrai nombre d'anciens propriétaires et l'assurance que le moteur est en bon état.
+
+
+
+\end{document}

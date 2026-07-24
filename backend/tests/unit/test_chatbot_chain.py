@@ -104,7 +104,7 @@ class TestFormatFunctions:
                    {"role": "assistant", "content": "Bonjour !"}]
         ctx = _format_history(history)
         assert "Utilisateur" in ctx
-        assert "AutoMind" in ctx
+        assert "Wakala" in ctx
 
     def test_format_history_empty(self):
         assert "Aucun echange" in _format_history([])

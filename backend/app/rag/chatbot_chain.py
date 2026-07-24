@@ -1,4 +1,4 @@
-﻿from typing import Any, Optional
+from typing import Any, Optional
 
 try:
     from langchain_groq import ChatGroq
@@ -6,7 +6,8 @@ try:
     from langchain_core.messages import HumanMessage, SystemMessage
     LANGCHAIN_AVAILABLE = True
 except ImportError:  # Allows retrieval/no-match routes and unit tests to run in a slim environment.
-    ChatGroq = Any
+    class ChatGroq:  # type: ignore[no-redef]
+        def __init__(self, *args: Any, **kwargs: Any) -> None: pass
     LANGCHAIN_AVAILABLE = False
 
     class SystemMessage:  # type: ignore[no-redef]
@@ -37,7 +38,7 @@ from app.rag.style_detector import style_detector
 SYSTEM_PROMPT = """Tu es Wakala, l'assistant expert et empathique de la marketplace automobile Wakala au Maroc.
 Tu parles naturellement en mélangeant français et Darija (phonétique).
 Tu es un expert automobile : tu expliques les avantages/inconvénients (consommation, coût, revente).
-Tes connaissances sont limitées aux données fournies. Tu n'hallucines jamais.
+Tes connaissances sont limitées aux données fournies. Tu n'inventes JAMAIS de véhicules. Si Aucun vehicule n'est pertinent, dis le.
 Tu exprimes les prix en MAD.
 Si l'utilisateur est vague, pose une question pertinente sur son budget ou son usage.
 DIRECTIVE LOI 09-08 : Tu ne dois JAMAIS demander, stocker ou exposer des données personnelles sensibles (nom, téléphone, adresse, carte bancaire).

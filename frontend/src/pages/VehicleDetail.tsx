@@ -383,16 +383,21 @@ export default function VehicleDetail() {
                   fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer',
                   marginBottom: 12,
                 }}
-                onClick={() => { if (!isAuthenticated) window.location.href = '/login'; }}
+                onClick={() => {
+                  if (!isAuthenticated) window.location.href = '/login';
+                  else alert('Contacter le vendeur (Simulation)');
+                }}
               >
                 {isAuthenticated ? fr.vehicle.contact : fr.auth.loginTitle}
               </button>
 
-              <button style={{
-                width: '100%', padding: '12px 24px', background: 'transparent',
-                color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)',
-                borderRadius: 'var(--radius-pill)', fontWeight: 600, fontSize: '0.9rem',
-                cursor: 'pointer',
+              <button 
+                onClick={() => alert('Véhicule sauvegardé !')}
+                style={{
+                  width: '100%', padding: '12px 24px', background: 'transparent',
+                  color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-pill)', fontWeight: 600, fontSize: '0.9rem',
+                  cursor: 'pointer',
               }}>
                 ♡ {fr.general.save}
               </button>

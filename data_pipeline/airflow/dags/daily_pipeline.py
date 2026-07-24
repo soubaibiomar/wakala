@@ -9,7 +9,7 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 
 default_args = {
-    "owner": "automind",
+    "owner": "wakala",
     "depends_on_past": False,
     "email_on_failure": False,
     "retries": 2,
@@ -17,13 +17,13 @@ default_args = {
 }
 
 with DAG(
-    dag_id="automind_daily_pipeline",
+    dag_id="wakala_daily_pipeline",
     default_args=default_args,
     description="Pipeline batch quotidien : Gold aggregations → ML training → Embeddings",
     schedule_interval="0 2 * * *",  # Tous les jours à 2h du matin
     start_date=datetime(2024, 1, 1),
     catchup=False,
-    tags=["automind", "ml", "batch"],
+    tags=["wakala", "ml", "batch"],
 ) as dag:
 
     # ─── Étape 1 : Agrégation Gold ────────────────────────────

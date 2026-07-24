@@ -185,7 +185,7 @@ Notes:
     db_url = args.db_url or get_db_url()
 
     print("=" * 60)
-    print("AutoMind - Seed Database from Bronze Sample")
+    print("Wakala - Seed Database from Bronze Sample")
     print("=" * 60)
     print(f"Sample data: {sample_path}")
     print(f"Database:    {db_url.split('@')[-1] if '@' in db_url else db_url}")

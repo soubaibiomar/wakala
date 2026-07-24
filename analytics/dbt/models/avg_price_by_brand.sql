@@ -15,7 +15,7 @@ SELECT
     ROUND(AVG(mileage)::numeric, 0) AS avg_mileage,
     MIN(price) AS min_price,
     MAX(price) AS max_price
-FROM {{ source('automind', 'vehicles') }}
+FROM {{ source('wakala', 'vehicles') }}
 WHERE is_active = TRUE
 GROUP BY brand, model, fuel_type
 ORDER BY listing_count DESC

@@ -90,4 +90,12 @@ class ScraperNormalizer:
             "source": raw_data.get("source", "unknown"),
             "scraped_at": scraped_at,
             "timestamp": scraped_at,
+            
+            # Trust & Quality indicators
+            "is_inspected": bool(raw_data.get("is_inspected", False)),
+            "inspection_points": ScraperNormalizer._parse_int(raw_data.get("inspection_points")),
+            "has_warranty": bool(raw_data.get("has_warranty", False)),
+            "warranty_months": ScraperNormalizer._parse_int(raw_data.get("warranty_months")),
+            "is_certified": bool(raw_data.get("is_certified", False)),
+            "description": raw_data.get("description", ""),
         }

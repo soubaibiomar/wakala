@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════
--- AutoMind — Migration 005 : Table interactions
+-- Wakala — Migration 005 : Table interactions
 -- Événements utilisateur pour le collaborative filtering
 -- Alimentée en continu par Kafka, source du re-training ML
 -- ═══════════════════════════════════════════════════════════════

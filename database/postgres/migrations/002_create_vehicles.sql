@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════
--- AutoMind — Migration 002 : Table vehicles
+-- Wakala — Migration 002 : Table vehicles
 -- Catalogue véhicules avec champs pour tous les modules IA
 -- ═══════════════════════════════════════════════════════════════
 

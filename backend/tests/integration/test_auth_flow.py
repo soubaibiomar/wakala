@@ -22,7 +22,7 @@ class TestAuthFlow:
         mock_db_session.refresh = AsyncMock(side_effect=_refresh)
 
         payload = {
-            "name": "Nouvel Utilisateur",
+            "full_name": "Nouvel Utilisateur",
             "email": "nouveau@example.com",
             "password": "Password123",
             "phone": "+212612345678",
@@ -35,7 +35,7 @@ class TestAuthFlow:
         mock_db_session.execute.return_value.scalar_one_or_none.return_value = {"id": "existing"}
 
         payload = {
-            "name": "Test",
+            "full_name": "Test",
             "email": "existant@example.com",
             "password": "Password123",
             "phone": "+212612345678",
@@ -54,11 +54,11 @@ class TestAuthFlow:
 
         fake_user = User(
             id=uuid.uuid4(),
-            name="Test",
+            full_name="Test",
             email="test@example.com",
-            password_hash=hashed,
+            hashed_password=hashed,
             role="buyer",
-            is_verified=False,
+            is_verified=True,
             preferences={},
             created_at=datetime.now(timezone.utc),
             updated_at=datetime.now(timezone.utc),
@@ -80,9 +80,9 @@ class TestAuthFlow:
         from app.models.user import User
         fake_user = User(
             id=uuid.uuid4(),
-            name="Wrong",
+            full_name="Wrong",
             email="wrong@example.com",
-            password_hash=hashed,
+            hashed_password=hashed,
             role="buyer",
             is_verified=False,
             preferences={},

@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════
-# AutoMind Analytics — requirements.txt
+# Wakala Analytics — requirements.txt
 #
 # Couche décisionnelle marketing/économique :
 # dbt pour les transformations SQL, Streamlit pour les dashboards

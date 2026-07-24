@@ -5,6 +5,42 @@ from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 from typing import Optional
 from app.core.config import settings
+import time
+import logging
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.scraper import FailedScrape
+
+logger = logging.getLogger(__name__)
+
+class CircuitBreaker:
+    def __init__(self, failure_threshold=3, recovery_timeout=60):
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.failures = 0
+        self.last_failure_time = 0
+        self.is_open = False
+
+    def record_failure(self):
+        self.failures += 1
+        self.last_failure_time = time.time()
+        if self.failures >= self.failure_threshold:
+            self.is_open = True
+            logger.warning("Circuit Breaker OPEN: Trop d'erreurs LLM. Pause du scraper.")
+
+    def record_success(self):
+        self.failures = 0
+        self.is_open = False
+
+    def can_execute(self):
+        if self.is_open:
+            if time.time() - self.last_failure_time > self.recovery_timeout:
+                self.is_open = False
+                logger.info("Circuit Breaker HALF-OPEN: Tentative de reprise.")
+                return True
+            return False
+        return True
+
+cb = CircuitBreaker()
 
 class ScrapedVehicleData(BaseModel):
     brand: str = Field(description="La marque du véhicule (ex: Peugeot, Renault)")
@@ -63,7 +99,7 @@ def _map_json_ld_to_model(data: dict) -> ScrapedVehicleData:
         description=data.get('description')
     )
 
-async def parse_via_llm(html_content: str) -> ScrapedVehicleData:
+async def parse_via_llm(html_content: str, url: str, db: AsyncSession) -> Optional[ScrapedVehicleData]:
     """
     Utilise le LLM pour extraire sémantiquement les infos si le JSON-LD échoue.
     """
@@ -83,11 +119,27 @@ async def parse_via_llm(html_content: str) -> ScrapedVehicleData:
         ("human", "Voici le texte de l'annonce :\n\n{text}")
     ])
     
-    chain = prompt | llm
-    result = await chain.ainvoke({"text": text_content})
-    return result
+    
+    if not cb.can_execute():
+        logger.warning(f"Circuit Breaker ouvert, annulation du scraping LLM pour {url}")
+        return None
 
-async def parse_vehicle_page(html_content: str) -> ScrapedVehicleData:
+    try:
+        chain = prompt | llm
+        result = await chain.ainvoke({"text": text_content})
+        cb.record_success()
+        return result
+    except Exception as e:
+        logger.error(f"Erreur LLM ({type(e).__name__}): {e}")
+        cb.record_failure()
+        
+        # Sauvegarde en base
+        failed = FailedScrape(url=url, error_reason=str(e))
+        db.add(failed)
+        await db.commit()
+        return None
+
+async def parse_vehicle_page(html_content: str, url: str, db: AsyncSession) -> Optional[ScrapedVehicleData]:
     """
     Pipeline principal : 1. JSON-LD, 2. LLM Fallback.
     """
@@ -97,4 +149,4 @@ async def parse_vehicle_page(html_content: str) -> ScrapedVehicleData:
         return vehicle_data
         
     # Priorité 2: LLM
-    return await parse_via_llm(html_content)
+    return await parse_via_llm(html_content, url, db)

@@ -23,16 +23,16 @@
     citecolor=blue,
     filecolor=magenta,      
     urlcolor=cyan,
-    pdftitle={AutoMind - Benchmark Concurrentiel Approfondi},
-    pdfauthor={Équipe Projet AutoMind},
-    pdfsubject={Analyse comparative des plateformes automobiles et positionnement stratégique d'AutoMind},
+    pdftitle={Wakala - Benchmark Concurrentiel Approfondi},
+    pdfauthor={Équipe Projet Wakala},
+    pdfsubject={Analyse comparative des plateformes automobiles et positionnement stratégique d'Wakala},
     pdfkeywords={Automobile, Intelligence Artificielle, RAG, Big Data, Maroc, Carvana, CarGurus, CarMax, Avito, Moteur.ma},
 }
 
 % --- Configuration des En-têtes et Pieds de page ---
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\small\bfseries AutoMind --- Benchmark Concurrentiel Approfondi}
+\fancyhead[L]{\small\bfseries Wakala --- Benchmark Concurrentiel Approfondi}
 \fancyhead[R]{\small\slshape Juillet 2026}
 \fancyfoot[C]{\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
@@ -77,11 +77,12 @@
 
 % --- Page de Titre ---
 \title{
+
     \Huge\bfseries Benchmark Concurrentiel Approfondi\\[0.4cm]
-    \Large Analyse Comparative des Plateformes de Vente Automobile \& Positionnement Stratégique d'AutoMind
+    \Large Analyse Comparative des Plateformes de Vente Automobile \& Positionnement Stratégique d'Wakala
 }
 \author{
-    \textbf{L'Équipe Projet AutoMind}\\
+    \textbf{L'Équipe Projet Wakala}\\
     \textit{Département R\&D et Architecture Système}
 }
 \date{Juillet 2026}
@@ -91,7 +92,7 @@
 \maketitle
 
 \begin{abstract}
-Ce document présente une analyse concurrentielle rigoureuse et exhaustive des acteurs majeurs du secteur de la vente et de la recommandation de véhicules d'occasion, à la fois sur le marché marocain (Avito.ma, Moteur.ma) et sur la scène internationale (Carvana, CarGurus, CarMax). Nous y développons une méthodologie de classification distinguant les approches axées sur les données brutes (\textit{data-analytics-driven}) de celles propulsées par l'intelligence artificielle (\textit{IA-driven}). L'évaluation met en évidence les opportunités inédites du marché marocain face à des services internationaux en pleine convergence hybride. Enfin, nous détaillons comment l'architecture à cinq couches d'AutoMind (Big Data, recommandation hybride et pipeline RAG) comble ces lacunes technologiques et positionne le projet comme pionnier de cette transformation au Maroc.
+Ce document présente une analyse concurrentielle rigoureuse et exhaustive des acteurs majeurs du secteur de la vente et de la recommandation de véhicules d'occasion, à la fois sur le marché marocain (Avito.ma, Moteur.ma) et sur la scène internationale (Carvana, CarGurus, CarMax). Nous y développons une méthodologie de classification distinguant les approches axées sur les données brutes (\textit{data-analytics-driven}) de celles propulsées par l'intelligence artificielle (\textit{IA-driven}). L'évaluation met en évidence les opportunités inédites du marché marocain face à des services internationaux en pleine convergence hybride. Enfin, nous détaillons comment l'architecture à cinq couches d'Wakala (Big Data, recommandation hybride et pipeline RAG) comble ces lacunes technologiques et positionne le projet comme pionnier de cette transformation au Maroc.
 \end{abstract}
 
 \newpage
@@ -102,7 +103,7 @@ Ce document présente une analyse concurrentielle rigoureuse et exhaustive des a
 \section{Méthodologie et Concepts Directeurs}
 % =========================================================================
 
-Pour structurer efficacement notre analyse et justifier le positionnement de notre plateforme AutoMind, il convient de définir avec précision le cadre méthodologique utilisé pour évaluer nos concurrents. La distinction fondamentale repose sur deux paradigmes technologiques : le modèle \textbf{Data-analytics-driven} et le modèle \textbf{IA-driven}.
+Pour structurer efficacement notre analyse et justifier le positionnement de notre plateforme Wakala, il convient de définir avec précision le cadre méthodologique utilisé pour évaluer nos concurrents. La distinction fondamentale repose sur deux paradigmes technologiques : le modèle \textbf{Data-analytics-driven} et le modèle \textbf{IA-driven}.
 
 \subsection{Distinction Conceptuelle et Critères Observables}
 La différence entre ces deux modèles ne réside pas uniquement dans l'infrastructure sous-jacente, mais directement dans l'expérience utilisateur (UX) et les capacités d'aide à la décision. 
@@ -124,13 +125,13 @@ La différence entre ces deux modèles ne réside pas uniquement dans l'infrastr
     \end{itemize}
 \end{description}
 
-\subsection{Importance Stratégique pour le Projet AutoMind}
-Cette distinction méthodologique est cruciale pour le projet AutoMind. Le marché de l'automobile d'occasion, particulièrement au Maroc, souffre d'une forte asymétrie d'information et d'un manque de confiance. Les plateformes traditionnelles se contentent de numériser les petites annonces papier sans apporter de valeur ajoutée à l'analyse de la donnée. 
+\subsection{Importance Stratégique pour le Projet Wakala}
+Cette distinction méthodologique est cruciale pour le projet Wakala. Le marché de l'automobile d'occasion, particulièrement au Maroc, souffre d'une forte asymétrie d'information et d'un manque de confiance. Les plateformes traditionnelles se contentent de numériser les petites annonces papier sans apporter de valeur ajoutée à l'analyse de la donnée. 
 
-En adoptant une approche résolument hybride, AutoMind combine la puissance analytique d'un Data Lake (pour la structuration de données à grande échelle) et la souplesse de l'intelligence artificielle conversationnelle. Cette transition du \textit{Data-analytics} vers l'\textit{IA-driven} permet de réduire drastiquement la charge cognitive de l'acheteur tout en augmentant la conversion et la rétention.
+En adoptant une approche résolument hybride, Wakala combine la puissance analytique d'un Data Lake (pour la structuration de données à grande échelle) et la souplesse de l'intelligence artificielle conversationnelle. Cette transition du \textit{Data-analytics} vers l'\textit{IA-driven} permet de réduire drastiquement la charge cognitive de l'acheteur tout en augmentant la conversion et la rétention.
 
 \begin{insightbox}{Takeaway Méthodologique}
-La distinction entre \textit{Data-analytics} et \textit{IA-driven} réside dans la transition d'un modèle d'interrogation passif (l'utilisateur cherche lui-même parmi des milliers de lignes) vers un modèle d'accompagnement proactif (l'IA comprend le besoin, prédit la valeur réelle et personnalise l'offre). C'est ce saut qualitatif qui justifie l'architecture hybride d'AutoMind.
+La distinction entre \textit{Data-analytics} et \textit{IA-driven} réside dans la transition d'un modèle d'interrogation passif (l'utilisateur cherche lui-même parmi des milliers de lignes) vers un modèle d'accompagnement proactif (l'IA comprend le besoin, prédit la valeur réelle et personnalise l'offre). C'est ce saut qualitatif qui justifie l'architecture hybride d'Wakala.
 \end{insightbox}
 
 \newpage
@@ -263,7 +264,7 @@ Les géants internationaux illustrent la transition vers l'hybridation. Les acte
 \section{Tableau de Synthèse}
 % =========================================================================
 
-Afin de résumer visuellement le positionnement de ces différents acteurs par rapport au projet AutoMind, le tableau~\ref{tab:synthese} présente une comparaison synthétique selon leur marché, leur classification technologique et leur argument clé.
+Afin de résumer visuellement le positionnement de ces différents acteurs par rapport au projet Wakala, le tableau~\ref{tab:synthese} présente une comparaison synthétique selon leur marché, leur classification technologique et leur argument clé.
 
 \begin{table}[htbp]
   \centering
@@ -285,7 +286,7 @@ Afin de résumer visuellement le positionnement de ces différents acteurs par r
     \textbf{CarMax} & International & Hybride (IA sur Data) & Leader omnicanal modernisé par des résumés d'avis via IA générative. \\
     \addlinespace
     \midrule
-    \textbf{AutoMind} & Marocain & Hybride & \textbf{Recherche conversationnelle RAG et recommandation ML sur Big Data.} \\
+    \textbf{Wakala} & Marocain & Hybride & \textbf{Recherche conversationnelle RAG et recommandation ML sur Big Data.} \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -318,14 +319,14 @@ Réciproquement, les acteurs initialement axés sur l'interface et l'expérience
 
 L'hybridation technologique -- qui associe la rigueur analytique des données transactionnelles structurées à la flexibilité interactive de l'IA générative -- est ainsi devenue la norme d'excellence internationale.
 
-\subsection{Implications pour le projet AutoMind et son architecture}
-Pour se positionner comme le leader de la prochaine génération de plateformes automobiles au Maroc, AutoMind implémente une architecture à \textbf{cinq couches distinctes} conçue spécifiquement pour soutenir ce modèle hybride :
+\subsection{Implications pour le projet Wakala et son architecture}
+Pour se positionner comme le leader de la prochaine génération de plateformes automobiles au Maroc, Wakala implémente une architecture à \textbf{cinq couches distinctes} conçue spécifiquement pour soutenir ce modèle hybride :
 
 \begin{figure}[htbp]
   \centering
   \begin{tcolorbox}[colback=white, colframe=black!30!white, arc=1mm, width=\textwidth, before={\par\noindent\vspace{10pt}}, after=\vspace{10pt}]
     \centering
-    \textbf{Architecture Logicielle d'AutoMind (5 Couches)}\\[0.3cm]
+    \textbf{Architecture Logicielle d'Wakala (5 Couches)}\\[0.3cm]
     \begin{tabular}{llp{6.8cm}}
       \textbf{Couche 5 : RAG \& Interaction} & $\rightarrow$ & FastAPI, Qdrant, LangChain (Chatbot) \\
       \textbf{Couche 4 : IA \& ML/Graph} & $\rightarrow$ & XGBoost, Isolation Forest, Neo4j (Similarité) \\
@@ -334,7 +335,7 @@ Pour se positionner comme le leader de la prochaine génération de plateformes 
       \textbf{Couche 1 : Ingestion Temps Réel} & $\rightarrow$ & Apache Kafka (Flux d'annonces et clics) \\
     \end{tabular}
   \end{tcolorbox}
-  \caption{Schéma des 5 couches technologiques de la plateforme AutoMind}
+  \caption{Schéma des 5 couches technologiques de la plateforme Wakala}
   \label{fig:layers}
 \end{figure}
 
@@ -353,10 +354,10 @@ L'alignement de cette architecture à 5 couches (voir Figure~\ref{fig:layers}) a
     \item \textbf{Couche 5 : RAG et Interface Conversationnelle (Qdrant, LangChain \& FastAPI)} : Exploite une base de données vectorielle (Qdrant) pour stocker les plongements sémantiques des fiches techniques et des descriptions d'annonces. Un agent conversationnel orchestré par LangChain permet à l'utilisateur d'interroger le catalogue en langage naturel. Le modèle RAG garantit que le chatbot ne formule ses réponses qu'à partir d'annonces réelles et vérifiées présentes en base de données, éliminant les hallucinations.
 \end{enumerate}
 
-Cette conception modulaire permet à AutoMind de bénéficier d'un \textbf{avantage de premier entrant} (first-mover advantage) sur le marché marocain. En intégrant nativement ces 5 couches, AutoMind offre simultanément la richesse fonctionnelle des plateformes IA-driven internationales et la fiabilité analytique requise pour assainir le marché d'occasion local.
+Cette conception modulaire permet à Wakala de bénéficier d'un \textbf{avantage de premier entrant} (first-mover advantage) sur le marché marocain. En intégrant nativement ces 5 couches, Wakala offre simultanément la richesse fonctionnelle des plateformes IA-driven internationales et la fiabilité analytique requise pour assainir le marché d'occasion local.
 
-\begin{insightbox}{Alignement Stratégique d'AutoMind}
-L'architecture d'AutoMind répond directement aux conclusions de ce benchmark : elle surmonte l'absence d'outils d'IA au Maroc (Layers 4 et 5) tout en se dotant d'une infrastructure de données robuste (Layers 1, 2 et 3) indispensable pour assurer la fiabilité des prédictions et éviter les dérives des agents conversationnels génératifs.
+\begin{insightbox}{Alignement Stratégique d'Wakala}
+L'architecture d'Wakala répond directement aux conclusions de ce benchmark : elle surmonte l'absence d'outils d'IA au Maroc (Layers 4 et 5) tout en se dotant d'une infrastructure de données robuste (Layers 1, 2 et 3) indispensable pour assurer la fiabilité des prédictions et éviter les dérives des agents conversationnels génératifs.
 \end{insightbox}
 
 \newpage
@@ -369,7 +370,7 @@ L'analyse comparative détaillée des plateformes de vente automobile démontre 
 
 Sur le marché marocain, les acteurs historiques tels qu'Avito et Moteur.ma ont accumulé un volume et une légitimité précieux, mais accusent un retard important dans l'intégration de technologies avancées comme le traitement automatique du langage naturel (NLP), les graphes de connaissances et l'IA générative contextuelle. 
 
-Le projet AutoMind se positionne à la convergence de ces mondes. Grâce à son architecture à 5 couches unifiant le traitement Big Data en temps réel (Kafka, Spark), l'apprentissage automatique prédictif (XGBoost, Isolation Forest), la modélisation relationnelle (Neo4j) et les interfaces conversationnelles sémantiques (RAG avec Qdrant et LangChain), AutoMind apporte une réponse technologique complète aux carences structurelles du marché marocain. Cette approche innovante permet d'offrir une expérience utilisateur de niveau international tout en s'adaptant aux réalités locales de la transaction de pair à pair au Maroc.
+Le projet Wakala se positionne à la convergence de ces mondes. Grâce à son architecture à 5 couches unifiant le traitement Big Data en temps réel (Kafka, Spark), l'apprentissage automatique prédictif (XGBoost, Isolation Forest), la modélisation relationnelle (Neo4j) et les interfaces conversationnelles sémantiques (RAG avec Qdrant et LangChain), Wakala apporte une réponse technologique complète aux carences structurelles du marché marocain. Cette approche innovante permet d'offrir une expérience utilisateur de niveau international tout en s'adaptant aux réalités locales de la transaction de pair à pair au Maroc.
 
 \newpage
 
@@ -400,3 +401,11 @@ Le projet AutoMind se positionne à la convergence de ces mondes. Grâce à son 
 \end{enumerate}
 
 \end{document}
+
+
+
+
+
+
+
+

@@ -148,7 +148,7 @@ def test_format_history():
     ]
     ctx = _format_history(history)
     assert "Utilisateur" in ctx
-    assert "AutoMind" in ctx
+    assert "Wakala" in ctx
     print("  [OK] Format history : roles corrects")
 
     ctx_empty = _format_history([])
@@ -207,7 +207,7 @@ def test_no_results_scenario():
 if __name__ == "__main__":
     sep = "=" * 60
     print(sep)
-    print("  AutoMind - Test Chatbot RAG")
+    print("  Wakala - Test Chatbot RAG")
     print(sep)
     print()
 

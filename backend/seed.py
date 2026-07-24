@@ -7,16 +7,18 @@ from app.core.database import get_db
 from app.models.user import User
 from app.models.vehicle import Vehicle
 from app.models.listing import Listing
-
+from app.models.review import Review
+from app.models.maintenance import VehicleService
 async def seed():
     async for db in get_db():
         # Create a test user
         user_id = uuid.uuid4()
         test_user = User(
             id=user_id,
-            email="test@wakala.ma",
-            password_hash="hashed_password", 
-            name="Wakala Test",
+            email="test_seed_123@wakala.ma",
+            hashed_password="hashed_password", 
+            full_name="Wakala Test",
+            phone="+212600000000",
             role="seller",
             is_verified=True,
             created_at=datetime.now(timezone.utc),

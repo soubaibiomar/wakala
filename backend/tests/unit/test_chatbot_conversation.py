@@ -31,6 +31,7 @@ async def test_three_turn_conversation_is_grounded_and_keeps_context():
     fake_llm = AsyncMock()
     fake_llm.ainvoke.return_value.content = "Peugeot 3008 2022, diesel, a Casablanca : 285000 MAD."
     chain._get_llm = lambda: fake_llm
+    chain._validate_query = AsyncMock(return_value=None)
 
     with patch("app.rag.chatbot_chain.search_vehicles", return_value=[vehicle]) as search, \
          patch("app.rag.chatbot_chain.search_reviews", return_value=[]), \
@@ -49,6 +50,7 @@ async def test_three_turn_conversation_is_grounded_and_keeps_context():
 @pytest.mark.asyncio
 async def test_empty_retrieval_never_calls_the_llm_or_invents_a_vehicle():
     chain = ChatbotChain()
+    chain._validate_query = AsyncMock(return_value=None)
     with patch("app.rag.chatbot_chain.search_vehicles", return_value=[]), \
          patch("app.rag.chatbot_chain.search_reviews", return_value=[]), \
          patch.object(chain, "_get_llm") as get_llm:

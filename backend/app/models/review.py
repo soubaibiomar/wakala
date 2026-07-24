@@ -62,7 +62,10 @@ class Review(Base):
 
     # ─── Relations ─────────────────────────────────────────────
     author: Mapped["User"] = relationship(  # noqa: F821
-        "User", back_populates="reviews_authored", foreign_keys=[author_id], lazy="selectin"
+        "User", back_populates="authored_reviews", foreign_keys=[author_id], lazy="selectin"
+    )
+    seller: Mapped["User | None"] = relationship(  # noqa: F821
+        "User", back_populates="received_reviews", foreign_keys=[seller_id], lazy="selectin"
     )
     vehicle: Mapped["Vehicle | None"] = relationship(  # noqa: F821
         "Vehicle", back_populates="reviews", lazy="selectin"

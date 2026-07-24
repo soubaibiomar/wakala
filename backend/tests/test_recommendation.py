@@ -170,7 +170,7 @@ def test_cold_start():
         {"vehicle_id": "v2", "collaborative_score": 0.0},
     ]
     response = engine.combine(content_scores, collaborative_scores, cold_start=True)
-    assert response.method == "content-based"
+    assert response.method == "cold-start"
     v1 = response.items[0]
     expected = round(0.9 * 100, 1)
     assert abs(v1.match_score - expected) < 0.1, (
@@ -228,7 +228,7 @@ def test_feature_extraction_parsing():
 if __name__ == "__main__":
     sep = "=" * 60
     print(sep)
-    print("  AutoMind - Test Moteur de Recommandation Hybride")
+    print("  Wakala - Test Moteur de Recommandation Hybride")
     print(sep)
     print()
 

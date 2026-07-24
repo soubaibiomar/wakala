@@ -15,9 +15,10 @@ interface VehicleCardProps {
   vehicle: Vehicle;
   animationDelay?: number;
   matchScore?: number;
+  badges?: string[];
 }
 
-export default function VehicleCard({ vehicle, matchScore }: VehicleCardProps) {
+export default function VehicleCard({ vehicle, matchScore, badges }: VehicleCardProps) {
   const { addVehicle, compareList } = useCompare();
   const isCompared = compareList.some((v) => v.id === vehicle.id);
 
@@ -50,6 +51,25 @@ export default function VehicleCard({ vehicle, matchScore }: VehicleCardProps) {
             ⭐ Premium
           </div>
         )}
+        
+        {/* Render dynamic NLP matching badges if provided */}
+        {badges && badges.length > 0 && (
+          <div style={{ position: 'absolute', bottom: 12, left: 12, display: 'flex', gap: '4px', flexWrap: 'wrap', zIndex: 2 }}>
+            {badges.map((b, idx) => (
+              <span key={idx} style={{ 
+                backgroundColor: 'var(--color-accent-purple, #8B5CF6)', 
+                color: 'white', 
+                fontSize: '0.7rem', 
+                padding: '2px 8px', 
+                borderRadius: '12px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+              }}>
+                ✨ {b}
+              </span>
+            ))}
+          </div>
+        )}
+
         {matchScore !== undefined && <MatchScoreBadge score={matchScore} />}
         
         {/* Compare Button */}

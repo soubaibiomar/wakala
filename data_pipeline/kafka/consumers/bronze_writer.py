@@ -9,7 +9,7 @@ from datetime import datetime
 
 KAFKA_CONFIG = {
     "bootstrap.servers": "localhost:9092",
-    "group.id": "automind-bronze-writer",
+    "group.id": "wakala-bronze-writer",
     "auto.offset.reset": "earliest",
 }
 

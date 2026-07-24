@@ -1,3 +1,3 @@
 """
-Scrapers package for AutoMind data pipeline.
+Scrapers package for Wakala data pipeline.
 """

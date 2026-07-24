@@ -1,9 +1,9 @@
 # ═══════════════════════════════════════════════════════════════
-# AutoMind Data Pipeline — Docker Image
+# Wakala Data Pipeline — Docker Image
 # Includes scrapers, Kafka producers, Spark jobs, Airflow DAGs
 # ═══════════════════════════════════════════════════════════════
 
-FROM python:3.11-slim
+FROM python:3.11-bookworm
 
 # System dependencies for building packages and running scrapers
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -16,8 +16,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Install Python dependencies
-COPY data_pipeline/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY data_pipeline/requirements-scraper.txt .
+RUN pip install --no-cache-dir -r requirements-scraper.txt && \
+    playwright install --with-deps chromium
 
 # Copy the entire data_pipeline module
 COPY data_pipeline/ ./data_pipeline/

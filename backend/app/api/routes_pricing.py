@@ -91,7 +91,9 @@ async def predict_price(input_data: PricePredictionInput):
             market_trend=trend
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import logging
+        logging.error(f"Erreur prédiction: {e}")
+        raise HTTPException(status_code=500, detail="Erreur interne lors de la prédiction de prix")
 
 
 @router.post("/predict-price/batch", response_model=BatchPredictionResponse)

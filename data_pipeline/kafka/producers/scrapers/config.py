@@ -6,7 +6,7 @@ BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 TOPIC_RAW = "listings.raw"
 
 # --- User Agent ---
-USER_AGENT = "VenteAutoBot/1.0 - projet académique - contact: contact@automind.local"
+USER_AGENT = "VenteAutoBot/1.0 - projet académique - contact: contact@wakala.local"
 
 # --- Rate Limiting ---
 MIN_DELAY_SECONDS = 3
@@ -25,4 +25,4 @@ PAGES_PER_SOURCE = 3
 FIXTURE_DIR = Path(__file__).parent.parent.parent.parent / "tests" / "fixtures" / "scraped_html"
 
 # --- Scheduler ---
-SCHEDULE_INTERVAL_HOURS = 12
+SCHEDULE_INTERVAL_HOURS = int(os.getenv("SCHEDULE_INTERVAL_HOURS", "1"))

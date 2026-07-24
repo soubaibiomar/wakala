@@ -45,7 +45,7 @@ export default function VehicleSEO({ vehicle, currency = "MAD", image }: Vehicle
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData).replace(/</g, '\\u003c') }}
     />
   );
 }

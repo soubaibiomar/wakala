@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════
-# AutoMind — Script d'installation complet (Linux / macOS)
+# Wakala — Script d'installation complet (Linux / macOS)
 #
 # Usage :
 #   chmod +x setup.sh
@@ -41,7 +41,7 @@ done
 # ─── Header ───────────────────────────────────────────────────
 echo ""
 echo -e "${CYAN}${BOLD}═══════════════════════════════════════════════════════${NC}"
-echo -e "${CYAN}${BOLD}  🚗 AutoMind — Installation de la plateforme${NC}"
+echo -e "${CYAN}${BOLD}  🚗 Wakala — Installation de la plateforme${NC}"
 echo -e "${CYAN}${BOLD}═══════════════════════════════════════════════════════${NC}"
 echo ""
 
@@ -244,7 +244,7 @@ else
     # Attendre que PostgreSQL soit prêt
     echo -e "  ${YELLOW}→${NC} Attente de PostgreSQL..."
     RETRIES=0
-    until docker compose exec -T postgres pg_isready -U automind_user -d automind > /dev/null 2>&1; do
+    until docker compose exec -T postgres pg_isready -U wakala_user -d wakala > /dev/null 2>&1; do
         RETRIES=$((RETRIES+1))
         if [ $RETRIES -gt 30 ]; then
             echo -e "  ${RED}✗${NC} PostgreSQL n'a pas démarré après 30s"
@@ -261,7 +261,7 @@ else
     echo -e "  ${YELLOW}→${NC} Exécution des migrations PostgreSQL..."
     for migration in "$PROJECT_ROOT"/database/postgres/migrations/*.sql; do
         filename=$(basename "$migration")
-        docker compose exec -T postgres psql -U automind_user -d automind -f "/docker-entrypoint-initdb.d/$filename" > /dev/null 2>&1 && \
+        docker compose exec -T postgres psql -U wakala_user -d wakala -f "/docker-entrypoint-initdb.d/$filename" > /dev/null 2>&1 && \
             echo -e "  ${GREEN}✓${NC} $filename" || \
             echo -e "  ${YELLOW}⚠${NC} $filename (déjà appliquée ou erreur)"
     done

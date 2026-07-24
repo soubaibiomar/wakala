@@ -62,7 +62,7 @@ def run_consumer():
 
     consumer = Consumer({
         "bootstrap.servers": BOOTSTRAP_SERVERS,
-        "group.id": "automind-bronze-interactions",
+        "group.id": "wakala-bronze-interactions",
         "auto.offset.reset": "earliest",
         "enable.auto.commit": True,
     })

@@ -182,7 +182,14 @@ export default function CustomsPage() {
                 <div style={{ color: 'var(--text-primary)', lineHeight: 1.6, fontSize: '1.05rem' }}>
                   <p style={{ display: 'flex', gap: 8, alignItems: 'flex-start', margin: 0 }}>
                     <Sparkles size={20} color="var(--accent-gold)" style={{ flexShrink: 0, marginTop: 4 }} />
-                    <span dangerouslySetInnerHTML={{ __html: result.ai_verdict.replace(/\n/g, '<br/>') }} />
+                    <span>
+                      {result.ai_verdict.split('\n').map((line, i) => (
+                        <React.Fragment key={i}>
+                          {line}
+                          <br />
+                        </React.Fragment>
+                      ))}
+                    </span>
                   </p>
                 </div>
               </div>

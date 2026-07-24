@@ -1,0 +1,7 @@
+CREATE TABLE failed_scrapes (
+    id UUID PRIMARY KEY,
+    url VARCHAR(500) NOT NULL,
+    error_reason TEXT NOT NULL,
+    is_resolved BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

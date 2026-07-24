@@ -14,12 +14,17 @@ from typing import Annotated, Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+import bcrypt
 
-from app.core.config import settings
+from passlib.context import CryptContext
+import passlib.handlers.bcrypt
+passlib.handlers.bcrypt.detect_wrap_bug = lambda ident: False
+
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+
 from app.core.database import get_db
+from app.core.config import settings
 
 # ─── Password hashing ─────────────────────────────────────────
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -27,12 +32,12 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password: str) -> str:
     """Hash un mot de passe en clair."""
-    return pwd_context.hash(password)
+    return pwd_context.hash(password[:72])
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Vérifie un mot de passe contre son hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    return pwd_context.verify(plain_password[:72], hashed_password)
 
 
 # ─── JWT ───────────────────────────────────────────────────────

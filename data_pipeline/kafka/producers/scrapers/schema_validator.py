@@ -48,7 +48,21 @@ class SchemaValidator:
             if not isinstance(mileage, (int, float)):
                 errors.append(f"Mileage must be numeric")
             elif mileage < 0 or mileage > 1000000:
-                errors.append(f"Mileage {mileage} out of realistic range")
+                errors.append(f"Mileage {mileage} out of bounds")
+        # 5. Trust fields validation
+        warranty_months = listing.get("warranty_months")
+        if warranty_months is not None:
+            if not isinstance(warranty_months, int):
+                errors.append(f"warranty_months must be an int, got {type(warranty_months)}")
+            elif warranty_months < 0 or warranty_months > 120:
+                errors.append(f"warranty_months {warranty_months} out of realistic range")
                 
+        inspection_points = listing.get("inspection_points")
+        if inspection_points is not None:
+            if not isinstance(inspection_points, int):
+                errors.append(f"inspection_points must be an int, got {type(inspection_points)}")
+            elif inspection_points <= 0 or inspection_points > 500:
+                errors.append(f"inspection_points {inspection_points} out of realistic range")
+
         is_valid = len(errors) == 0
         return is_valid, errors

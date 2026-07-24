@@ -1,5 +1,5 @@
 """
-AutoMind Scraper Producer Package
+Wakala Scraper Producer Package
 ==================================
 
 Real web scrapers (Avito.ma, Moteur.ma) as the sole Kafka producer

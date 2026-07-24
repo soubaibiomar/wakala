@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import update
 
-from app.core.database import async_session_maker
+from app.core.database import async_session_factory
 from app.models.vehicle import Vehicle
 
 logger = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ async def run_health_checker_loop():
     
     while True:
         try:
-            async with async_session_maker() as session:
+            async with async_session_factory() as session:
                 # Récupère tous les véhicules "available" ayant une URL
                 stmt = select(Vehicle).where(Vehicle.status == 'available').where(Vehicle.source_url.isnot(None))
                 result = await session.execute(stmt)

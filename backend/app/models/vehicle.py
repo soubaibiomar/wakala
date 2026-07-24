@@ -102,6 +102,23 @@ class Vehicle(Base):
     reviews: Mapped[list["Review"]] = relationship(  # noqa: F821
         "Review", back_populates="vehicle", lazy="selectin"
     )
+    services: Mapped[list["VehicleService"]] = relationship( # noqa: F821
+        "VehicleService", back_populates="vehicle", lazy="selectin"
+    )
+    reminders: Mapped[list["ServiceReminder"]] = relationship( # noqa: F821
+        "ServiceReminder", back_populates="vehicle", lazy="selectin"
+    )
+
+    @property
+    def images(self) -> list[dict]:
+        active_listing = next((l for l in self.listings if l.status == "active"), None)
+        # Fallback to draft/any listing if no active listing
+        if not active_listing and self.listings:
+            active_listing = self.listings[0]
+            
+        if active_listing and active_listing.images_urls:
+            return [{"file_path": url} for url in active_listing.images_urls]
+        return []
 
     def __repr__(self) -> str:
         return f"<Vehicle {self.brand} {self.model} ({self.year}) — {self.price} MAD>"

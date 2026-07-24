@@ -48,7 +48,7 @@ def _check_quality(**context):
 
 
 default_args = {
-    "owner": "automind",
+    "owner": "wakala",
     "depends_on_past": False,
     "retries": 1,
     "retry_delay": timedelta(minutes=2),
@@ -61,7 +61,7 @@ with DAG(
     schedule="0 * * * *",
     start_date=datetime(2024, 1, 1),
     catchup=False,
-    tags=["automind", "quality"],
+    tags=["wakala", "quality"],
 ) as dag:
 
     quality_check = PythonOperator(

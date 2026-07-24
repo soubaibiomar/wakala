@@ -1,0 +1,22 @@
+version: "2026-07-20"
+listing_card: ".listing-card"
+fields:
+  url: "a[href]"
+  price: ".price"
+  title: ".title"
+  city: ".city"
+  year: ".year"
+  mileage: ".mileage"
+  fuel_type: ".fuel"
+  transmission: ".transmission"
+  body_type: ".body"
+  is_inspected: ".inspected-badge"
+  inspection_points: ".inspection-points"
+  has_warranty: ".warranty-badge"
+  warranty_months: ".warranty-duration"
+  is_certified: ".certified-badge"
+fallback_fields:
+  listing_card: [".card", "article"]
+  url: ["a"]
+  price: [".price-tag", "span.price"]
+  title: ["h3", "h4", "h2"]

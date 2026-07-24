@@ -2,7 +2,7 @@
 set -e
 
 # ═══════════════════════════════════════════════════════════════
-# AutoMind — Demo du pipeline temps reel
+# Wakala — Demo du pipeline temps reel
 # Lance producers + consumers + affiche un resume apres N minutes.
 #
 # Usage:
@@ -33,7 +33,7 @@ mkdir -p "$LOG_DIR"
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════╗"
-echo "║   AutoMind - Pipeline Temps Reel                        ║"
+echo "║   Wakala - Pipeline Temps Reel                        ║"
 echo "║   Duree: ${DURATION}min  Mode: ${FAST:-normal}                    ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo ""

@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════
-# AutoMind — Script d'installation complet (Windows PowerShell)
+# Wakala — Script d'installation complet (Windows PowerShell)
 #
 # Usage :
 #   .\setup.ps1                 # Installation complète
@@ -28,7 +28,7 @@ if ($Help) {
 # ─── Header ───────────────────────────────────────────────────
 Write-Host ""
 Write-Host "═══════════════════════════════════════════════════════" -ForegroundColor Cyan
-Write-Host "  🚗 AutoMind — Installation de la plateforme" -ForegroundColor Cyan
+Write-Host "  🚗 Wakala — Installation de la plateforme" -ForegroundColor Cyan
 Write-Host "═══════════════════════════════════════════════════════" -ForegroundColor Cyan
 Write-Host ""
 
@@ -225,7 +225,7 @@ if ($SkipDocker) {
     do {
         $Retries++
         Start-Sleep -Seconds 1
-        $Ready = docker compose exec -T postgres pg_isready -U automind_user -d automind 2>&1
+        $Ready = docker compose exec -T postgres pg_isready -U wakala_user -d wakala 2>&1
     } while ($LASTEXITCODE -ne 0 -and $Retries -lt 30)
 
     if ($Retries -lt 30) {

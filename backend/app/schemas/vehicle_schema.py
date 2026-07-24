@@ -75,6 +75,8 @@ class VehicleRead(BaseModel):
     condition_score: Optional[float] = None
     popularity_score: Optional[float] = None
 
+    images: Optional[list[dict]] = None
+
     created_at: datetime
     updated_at: datetime
 
@@ -99,6 +101,7 @@ class VehicleReadBrief(BaseModel):
     price: float
     condition_score: Optional[float] = None
     popularity_score: Optional[float] = None
+    images: Optional[list[dict]] = None
 
     model_config = {"from_attributes": True}
 

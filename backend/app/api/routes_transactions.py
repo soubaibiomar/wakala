@@ -2,7 +2,9 @@ import os
 import uuid
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status, Request
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
 from app.models.transaction import Transaction
@@ -28,11 +30,12 @@ class TransactionResponse(BaseModel):
 @router.post("/initiate", response_model=TransactionResponse)
 async def initiate_transaction(
     request: InitiateTransactionRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """Initie une transaction Escrow pour sécuriser les fonds."""
-    listing = db.query(Listing).filter(Listing.id == request.listing_id).first()
+    result = await db.execute(select(Listing).where(Listing.id == request.listing_id))
+    listing = result.scalar_one_or_none()
     if not listing:
         raise HTTPException(status_code=404, detail="Annonce introuvable.")
     
@@ -57,8 +60,8 @@ async def initiate_transaction(
     )
     
     db.add(new_tx)
-    db.commit()
-    db.refresh(new_tx)
+    await db.commit()
+    await db.refresh(new_tx)
     
     return {
         "id": str(new_tx.id),
@@ -72,21 +75,23 @@ async def initiate_transaction(
 async def webhook_payment_success(
     tx_id: str, 
     request: Request, 
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     # SÉCURITÉ : Validation de la provenance du Webhook (mock)
     webhook_secret = request.headers.get("X-Webhook-Secret")
-    if not webhook_secret or webhook_secret != "wakala_mock_secret":
+    expected_secret = os.environ.get("WEBHOOK_SECRET", "wakala_mock_secret")
+    if not webhook_secret or webhook_secret != expected_secret:
         raise HTTPException(status_code=403, detail="Signature Webhook invalide.")
 
-    tx = db.query(Transaction).filter(Transaction.id == tx_id).first()
+    result = await db.execute(select(Transaction).where(Transaction.id == tx_id))
+    tx = result.scalar_one_or_none()
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction non trouvée.")
         
     res = await payment_service.simulate_webhook_payment_success(tx.payment_intent_id)
     if res["status"] == "succeeded":
         tx.status = "FUNDS_SECURED"
-        db.commit()
+        await db.commit()
         return {"status": "FUNDS_SECURED", "message": "Les fonds sont bloqués sur le compte Wakala."}
     return {"status": tx.status}
 
@@ -94,10 +99,11 @@ async def webhook_payment_success(
 async def upload_transfer_document(
     tx_id: str,
     file: UploadFile = File(...),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user) # Idéalement, seul l'acheteur ou le vendeur peut faire ça
 ):
-    tx = db.query(Transaction).filter(Transaction.id == tx_id).first()
+    result = await db.execute(select(Transaction).where(Transaction.id == tx_id))
+    tx = result.scalar_one_or_none()
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction non trouvée.")
         
@@ -114,19 +120,22 @@ async def upload_transfer_document(
     document_text = ocr_validator.extract_text(file_content)
     
     # On récupère le nom du vendeur pour validation
-    seller = db.query(User).filter(User.id == tx.seller_id).first()
+    result_seller = await db.execute(select(User).where(User.id == tx.seller_id))
+    seller = result_seller.scalar_one_or_none()
+    if not seller:
+        raise HTTPException(status_code=404, detail="Vendeur non trouvé.")
     
     # Validation OCR
-    is_valid = ocr_validator.validate_ownership_transfer(document_text, seller.name)
+    is_valid = ocr_validator.validate_ownership_transfer(document_text, seller.full_name)
     
     if is_valid:
         # Libération des fonds simulée
         await payment_service.release_funds(tx.payment_intent_id, str(seller.id))
         tx.status = "COMPLETED"
         tx.document_url = "s3://wakala-escrow/doc_" + str(uuid.uuid4())
-        db.commit()
+        await db.commit()
         return {"status": "COMPLETED", "message": "Transfert de propriété validé par l'IA. Fonds libérés au vendeur."}
     else:
         tx.status = "DISPUTED"
-        db.commit()
+        await db.commit()
         raise HTTPException(status_code=400, detail="Validation OCR échouée. Le document ne correspond pas au vendeur.")

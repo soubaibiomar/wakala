@@ -8,6 +8,13 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from . import config
 from .avito_scraper import AvitoScraper
 from .moteur_scraper import MoteurScraper
+from .wandaloo_scraper import WandalooScraper
+from .leguideauto_scraper import LeguideautoScraper
+from .carz_scraper import CarzScraper
+from .kifal_scraper import KifalScraper
+from .otoclic_scraper import OtoclicScraper
+from .global_occaz_scraper import GlobalOccazScraper
+from .spoticar_scraper import SpoticarScraper
 from .normalizer import ScraperNormalizer
 from .kafka_publisher import KafkaPublisher
 from .schema_validator import SchemaValidator
@@ -27,7 +34,17 @@ def run_scraping_job(dry_run: bool = True) -> int:
     """
     logger.info(f"Starting scraping job. Dry Run: {dry_run}")
 
-    scrapers = [AvitoScraper(), MoteurScraper()]
+    scrapers = [
+        AvitoScraper(), 
+        MoteurScraper(),
+        WandalooScraper(),
+        LeguideautoScraper(),
+        CarzScraper(),
+        KifalScraper(),
+        OtoclicScraper(),
+        GlobalOccazScraper(),
+        SpoticarScraper()
+    ]
     normalizer = ScraperNormalizer()
     publisher = KafkaPublisher() if not dry_run else None
 
@@ -90,7 +107,7 @@ def run_scraping_job(dry_run: bool = True) -> int:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="AutoMind Scraper Producer - Real scrapers as sole Kafka source")
+    parser = argparse.ArgumentParser(description="Wakala Scraper Producer - Real scrapers as sole Kafka source")
     parser.add_argument("--live", action="store_true", help="Disable dry-run and perform actual HTTP requests")
     parser.add_argument("--schedule", action="store_true", help="Run continuously with APScheduler")
     parser.add_argument("--once", action="store_true", help="Run a single scraping job and exit")

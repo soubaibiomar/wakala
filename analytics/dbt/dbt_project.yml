@@ -1,8 +1,8 @@
-name: 'automind_analytics'
+name: 'wakala_analytics'
 version: '1.0.0'
 config-version: 2
 
-profile: 'automind'
+profile: 'wakala'
 
 model-paths: ["models"]
 analysis-paths: ["analyses"]

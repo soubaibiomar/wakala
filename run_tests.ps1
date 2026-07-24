@@ -1,11 +1,11 @@
-# AutoMind -- Run All Tests (PowerShell)
+# Wakala -- Run All Tests (PowerShell)
 param([switch]$Backend,[switch]$Frontend)
 
 $RUN_BACKEND = $Backend -or (!$Backend -and !$Frontend)
 $RUN_FRONTEND = $Frontend -or (!$Backend -and !$Frontend)
 $FAILED_TESTS = @()
 
-Write-Host "--- AutoMind -- Suite de Tests ---"
+Write-Host "--- Wakala -- Suite de Tests ---"
 Write-Host ""
 
 if ($RUN_BACKEND) {

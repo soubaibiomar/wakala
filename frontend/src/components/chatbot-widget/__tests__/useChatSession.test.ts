@@ -2,20 +2,18 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useChatSession } from '../useChatSession';
 
-const mockApiPost = vi.fn();
+const mockStreamMessage = vi.fn();
 
-vi.mock('../../../services/api', () => ({
-  default: {
-    post: (...args: unknown[]) => mockApiPost(...args),
-    get: vi.fn(),
-    interceptors: { request: { use: vi.fn() }, response: { use: vi.fn() } },
+vi.mock('../../services/chatbotService', () => ({
+  chatbotService: {
+    streamMessage: (...args: unknown[]) => mockStreamMessage(...args),
   },
 }));
 
 describe('useChatSession', () => {
   beforeEach(() => {
     sessionStorage.clear();
-    mockApiPost.mockReset();
+    mockStreamMessage.mockReset();
   });
 
   it('starts with empty messages', () => {
@@ -26,8 +24,8 @@ describe('useChatSession', () => {
   });
 
   it('adds user message when sending', async () => {
-    mockApiPost.mockResolvedValue({
-      data: { reply: 'Reponse test', sources: [], session_id: 'test' },
+    mockStreamMessage.mockImplementation(async (msg, hist, onChunk) => {
+      onChunk('Reponse test');
     });
 
     const { result } = renderHook(() => useChatSession());
@@ -51,7 +49,7 @@ describe('useChatSession', () => {
   });
 
   it('handles API error gracefully', async () => {
-    mockApiPost.mockRejectedValue(new Error('Network error'));
+    mockStreamMessage.mockRejectedValue(new Error('Network error'));
 
     const { result } = renderHook(() => useChatSession());
     await act(async () => {
@@ -59,7 +57,7 @@ describe('useChatSession', () => {
     });
 
     expect(result.current.messages.length).toBe(2);
-    expect(result.current.messages[1].content).toContain('Desole');
+    expect(result.current.messages[1].content).toContain('Désolé');
     expect(result.current.error).toBeTruthy();
   });
 
@@ -78,21 +76,21 @@ describe('useChatSession', () => {
     const apiPromise = new Promise((resolve) => {
       resolvePromise = resolve;
     });
-    mockApiPost.mockReturnValue(apiPromise);
+    mockStreamMessage.mockReturnValue(apiPromise);
 
     const { result } = renderHook(() => useChatSession());
 
+    let sendPromise: Promise<void>;
     act(() => {
-      result.current.sendMessage('Test');
+      sendPromise = result.current.sendMessage('Test');
     });
 
     expect(result.current.isTyping).toBe(true);
 
     await act(async () => {
-      resolvePromise!({
-        data: { reply: 'Reponse', sources: [], session_id: 'test' },
-      });
+      resolvePromise!();
       await apiPromise;
+      await sendPromise;
     });
 
     expect(result.current.isTyping).toBe(false);

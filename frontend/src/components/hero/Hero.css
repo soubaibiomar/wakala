@@ -293,6 +293,145 @@
   color: var(--color-text-muted);
 }
 
+/* ─── NLP Badges (Extracted criteria) ──────────────── */
+.search-bar-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm, 16px);
+}
+
+.nlp-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  animation: nlp-badges-enter 0.4s ease-out;
+}
+
+@keyframes nlp-badges-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nlp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill, 9999px);
+  font-size: 0.78rem;
+  font-weight: 500;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  line-height: 1;
+  white-space: nowrap;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  animation: nlp-badge-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.nlp-badge:nth-child(1) { animation-delay: 0s; }
+.nlp-badge:nth-child(2) { animation-delay: 0.06s; }
+.nlp-badge:nth-child(3) { animation-delay: 0.12s; }
+.nlp-badge:nth-child(4) { animation-delay: 0.18s; }
+.nlp-badge:nth-child(5) { animation-delay: 0.24s; }
+.nlp-badge:nth-child(6) { animation-delay: 0.30s; }
+
+@keyframes nlp-badge-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.nlp-badge__icon {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.nlp-badge__label {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+
+.nlp-badge__value {
+  font-weight: 600;
+}
+
+/* ── Badge variants ── */
+.nlp-badge--budget {
+  background: rgba(174, 140, 78, 0.15);
+  border-color: rgba(174, 140, 78, 0.3);
+  color: #c9a24b;
+}
+
+.nlp-badge--usage {
+  background: rgba(59, 122, 158, 0.15);
+  border-color: rgba(59, 122, 158, 0.3);
+  color: #5ba3c9;
+}
+
+.nlp-badge--priorite {
+  background: rgba(45, 134, 89, 0.15);
+  border-color: rgba(45, 134, 89, 0.3);
+  color: #4db87a;
+}
+
+.nlp-badge--profil {
+  background: rgba(107, 76, 138, 0.15);
+  border-color: rgba(107, 76, 138, 0.3);
+  color: #a080c4;
+}
+
+/* ── Skeleton loading ── */
+.nlp-badges--loading {
+  animation: none;
+}
+
+.nlp-badge-skeleton {
+  width: 120px;
+  height: 32px;
+  border-radius: var(--radius-pill, 9999px);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.06) 25%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.06) 75%
+  );
+  background-size: 200% 100%;
+  animation: nlp-skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+.nlp-badge-skeleton:nth-child(2) {
+  width: 100px;
+  animation-delay: 0.15s;
+}
+
+.nlp-badge-skeleton:nth-child(3) {
+  width: 90px;
+  animation-delay: 0.3s;
+}
+
+@keyframes nlp-skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 /* ─── Responsive ───────────────────────────────────── */
 @media (max-width: 768px) {
   .hero {
@@ -310,5 +449,17 @@
   }
   .confidence-badge {
     display: none;
+  }
+  .nlp-badge {
+    font-size: 0.7rem;
+    padding: 5px 10px;
+    gap: 4px;
+  }
+  .nlp-badge__label {
+    display: none;
+  }
+  .nlp-badge-skeleton {
+    width: 80px;
+    height: 28px;
   }
 }

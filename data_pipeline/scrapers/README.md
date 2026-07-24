@@ -1,4 +1,4 @@
-# AutoMind - Scraper Producer Module
+# Wakala - Scraper Producer Module
 
 Real web scrapers (Avito.ma, Moteur.ma) as the **sole** Kafka producer for the `listings.raw` topic.
 No simulated data anywhere in the ingestion pipeline.

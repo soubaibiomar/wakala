@@ -120,6 +120,34 @@ class MoteurScraper(BaseScraper):
                 )
                 if year_text:
                     year = self._parse_int(year_text)
+                    
+            description = ""
+            images_urls = []
+            
+            # Fetch detail page to get description and images
+            if source_url:
+                try:
+                    detail_html = self.fetch_page(source_url)
+                    if detail_html:
+                        detail_soup = BeautifulSoup(detail_html, 'html.parser')
+                        
+                        # Extract description
+                        desc_elem = detail_soup.select_one(".details-desc, .description, .detail-description, [itemprop='description'], .detail-text")
+                        if desc_elem:
+                            description = desc_elem.get_text(separator=' ', strip=True)
+                        else:
+                            main_content = detail_soup.select_one("main, .content, #content")
+                            if main_content:
+                                description = " ".join([p.get_text(strip=True) for p in main_content.find_all("p")])
+                                
+                        # Extract images
+                        img_elems = detail_soup.select(".picture-slide img, .gallery img, .slider img, [itemprop='image'], .car-image img")
+                        for img in img_elems:
+                            src = img.get('src') or img.get('data-src')
+                            if src and src.startswith('http') and src not in images_urls:
+                                images_urls.append(src)
+                except Exception as e:
+                    logger.warning(f"Failed to fetch or parse detail page for {source_url}: {e}")
 
             raw_data = {
                 "source": self.source_name,
@@ -134,7 +162,8 @@ class MoteurScraper(BaseScraper):
                 "body_type": body_type,
                 "transmission": transmission,
                 "scraped_at": datetime.utcnow().isoformat(),
-                "images_urls": []
+                "images_urls": images_urls,
+                "description": description
             }
             return raw_data
         except Exception as e:

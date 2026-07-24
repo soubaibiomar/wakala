@@ -1,5 +1,5 @@
-﻿import React, { useEffect, useState, useRef } from 'react';
-import { View, StyleSheet, Text, Image, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, StyleSheet, Text, Image, ScrollView, TouchableOpacity, Dimensions, Alert } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import PagerView from 'react-native-pager-view';
 
@@ -138,7 +138,10 @@ export default function VehicleDetailScreen() {
 
       {/* Bouton Contact Sticky */}
       <View style={styles.stickyFooter}>
-        <TouchableOpacity style={styles.contactButton}>
+        <TouchableOpacity 
+          style={styles.contactButton}
+          onPress={() => Alert.alert('Contact', 'Contacter le vendeur (Simulation)')}
+        >
           <Text style={styles.contactButtonText}>Contacter le Vendeur</Text>
         </TouchableOpacity>
       </View>

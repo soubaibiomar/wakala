@@ -1,4 +1,4 @@
-import { BentoGrid, BentoWidget } from '../../components/dashboard/BentoGrid';
+import { BentoGrid } from '../../components/dashboard/BentoGrid';
 import { AiStatusWidget } from '../../components/dashboard/widgets/AiStatusWidget';
 import { ArgusQuickWidget } from '../../components/dashboard/widgets/ArgusQuickWidget';
 import { ListingHealthWidget } from '../../components/dashboard/widgets/ListingHealthWidget';

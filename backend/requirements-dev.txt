@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════
-# AutoMind Backend — requirements-dev.txt (développement uniquement)
+# Wakala Backend — requirements-dev.txt (développement uniquement)
 #
 # Installer avec :
 #   pip install -r requirements.txt -r requirements-dev.txt

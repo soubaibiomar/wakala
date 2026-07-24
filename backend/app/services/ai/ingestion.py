@@ -5,7 +5,7 @@ from sqlalchemy.future import select
 from langchain_openai import OpenAIEmbeddings
 from qdrant_client.http import models as qmodels
 
-from app.core.database import async_session_maker
+from app.core.database import async_session_factory
 from app.core.config import settings
 from app.models.vehicle import Vehicle
 from app.services.ai.qdrant import get_qdrant_client, ensure_collection_exists
@@ -46,7 +46,7 @@ async def ingest_vehicles():
         openai_api_key=settings.OPENAI_API_KEY
     )
 
-    async with async_session_maker() as session:
+    async with async_session_factory() as session:
         result = await session.execute(select(Vehicle))
         vehicles = result.scalars().all()
         
@@ -72,6 +72,7 @@ async def ingest_vehicles():
                 "price": float(v.price),
                 "fuel_type": v.fuel_type,
                 "city": v.city,
+                "status": v.status,
                 "text_content": text_content
             }
             

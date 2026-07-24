@@ -1,4 +1,4 @@
-﻿# ═══════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════
 # Wakala Backend — requirements.txt (production)
 #
 # Versions épinglées et compatibles entre elles.
@@ -21,6 +21,7 @@ email-validator==2.2.0           # Validation EmailStr dans Pydantic
 # JWT + hashing mot de passe (bcrypt)
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+bcrypt==3.2.2
 
 # ─── Base de données — PostgreSQL ─────────────────────────────
 # ORM async (asyncpg) + migrations (Alembic)
@@ -40,7 +41,7 @@ qdrant-client==1.11.3
 sentence-transformers==3.1.1
 langchain==0.3.0
 langchain-openai==0.2.0
-langchain-groq==1.1.3
+langchain-groq
 langchain-community==0.3.0
 
 # ─── Machine Learning — Recommandation & Pricing ──────────────
@@ -73,3 +74,4 @@ confluent-kafka==2.5.3
 python-dotenv==1.0.1             # Chargement .env
 httpx==0.27.2                    # Client HTTP async (appels inter-services)
 fastapi-mail
+slowapi==0.1.9

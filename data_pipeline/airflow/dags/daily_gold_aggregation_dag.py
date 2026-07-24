@@ -4,7 +4,7 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 
 default_args = {
-    "owner": "automind",
+    "owner": "wakala",
     "depends_on_past": False,
     "email_on_failure": False,
     "retries": 2,
@@ -18,7 +18,7 @@ with DAG(
     schedule="0 3 * * *",
     start_date=datetime(2024, 1, 1),
     catchup=False,
-    tags=["automind", "gold", "daily"],
+    tags=["wakala", "gold", "daily"],
 ) as dag:
 
     aggregate_gold = BashOperator(
@@ -32,7 +32,7 @@ with DAG(
     refresh_matview = BashOperator(
         task_id="refresh_materialized_view",
         bash_command=(
-            "psql -U automind_user -d automind -h postgres "
+            "psql -U wakala_user -d wakala -h postgres "
             "-c 'REFRESH MATERIALIZED VIEW CONCURRENTLY mv_user_item_matrix;'"
         ),
     )

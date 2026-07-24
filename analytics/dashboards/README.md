@@ -1,4 +1,4 @@
-# 📊 Dashboards AutoMind
+# 📊 Dashboards Wakala
 
 Ce répertoire contient les configurations et exports pour les dashboards
 de la couche décisionnelle marketing/économique.

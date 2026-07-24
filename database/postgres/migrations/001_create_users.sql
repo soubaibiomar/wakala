@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════
--- AutoMind — Migration 001 : Table users
+-- Wakala — Migration 001 : Table users
 -- Acheteurs et vendeurs de la marketplace
 -- ═══════════════════════════════════════════════════════════════
 

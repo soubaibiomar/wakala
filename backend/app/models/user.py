@@ -19,10 +19,10 @@ class User(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    full_name: Mapped[str] = mapped_column("name", String(255), nullable=False)
+    full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     phone: Mapped[str] = mapped_column(String(30), nullable=False)
-    hashed_password: Mapped[str] = mapped_column("password_hash", String(255), nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(
         Enum("buyer", "seller", "admin", name="user_role", create_type=False),
         nullable=False,
@@ -44,8 +44,14 @@ class User(Base):
     vehicles: Mapped[list["Vehicle"]] = relationship(  # noqa: F821
         "Vehicle", back_populates="seller", lazy="selectin"
     )
-    reviews_authored: Mapped[list["Review"]] = relationship(  # noqa: F821
-        "Review", back_populates="author", foreign_keys="Review.author_id", lazy="selectin"
+    authored_reviews: Mapped[list["Review"]] = relationship(  # noqa: F821
+        "Review", foreign_keys="Review.author_id", back_populates="author", lazy="selectin"
+    )
+    received_reviews: Mapped[list["Review"]] = relationship(  # noqa: F821
+        "Review", foreign_keys="Review.seller_id", back_populates="seller", lazy="selectin"
+    )
+    services: Mapped[list["VehicleService"]] = relationship(  # noqa: F821
+        "VehicleService", back_populates="user", lazy="selectin"
     )
 
     def __repr__(self) -> str:

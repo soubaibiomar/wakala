@@ -21,7 +21,7 @@ async def _get_or_create_default_seller(session: AsyncSession) -> uuid.UUID:
 
     default_seller = User(
         full_name="Vendeur Wakala",
-        email=PRO_USER_EMAIL,
+        email="contact@wakala.ma",
         phone="+212600000000",
         hashed_password="$2b$12$placeholder",
         role="seller",

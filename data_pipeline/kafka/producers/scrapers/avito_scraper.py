@@ -165,7 +165,8 @@ class AvitoScraper(BaseScraper):
                 "body_type": body_type,
                 "transmission": transmission,
                 "scraped_at": datetime.utcnow().isoformat(),
-                "images_urls": ad.get('images', []) or []
+                "images_urls": ad.get('images', []) or [],
+                "description": ad.get('description', '') or ad.get('body', '') or ''
             }
             return raw_data
         except Exception as e:
@@ -201,10 +202,10 @@ class AvitoScraper(BaseScraper):
             return {
                 "source": self.source_name,
                 "source_url": source_url,
-                "price": price_elem.get_text(strip=True) if price_elem else None,
+                "price": price,
                 "brand": brand,
                 "model": model,
-                "city": location_elem.get_text(strip=True) if location_elem else None,
+                "city": city,
                 "year": None,
                 "mileage": None,
                 "fuel_type": None,

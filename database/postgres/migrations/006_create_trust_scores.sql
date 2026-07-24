@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════
--- AutoMind — Migration 006 : Table trust_scores
+-- Wakala — Migration 006 : Table trust_scores
 -- Score de confiance composite (vision + fraude + vendeur)
 -- Consommé par l'affichage frontend et le matchmaker
 -- ═══════════════════════════════════════════════════════════════

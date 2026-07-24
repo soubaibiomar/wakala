@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AutoMind Scraper Producer - Entry Point
+Wakala Scraper Producer - Entry Point
 ========================================
 
 Single entry point for the Kafka producer using REAL scrapers
@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 def main():
     parser = argparse.ArgumentParser(
-        description="AutoMind Scraper Producer - Real scrapers as sole Kafka source",
+        description="Wakala Scraper Producer - Real scrapers as sole Kafka source",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:

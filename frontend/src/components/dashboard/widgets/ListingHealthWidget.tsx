@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { BentoWidget } from '../BentoGrid';
-import { Activity, ArrowUpCircle } from 'lucide-react';
+import { ArrowUpCircle } from 'lucide-react';
 
 export function ListingHealthWidget() {
   const { data, isLoading } = useQuery({

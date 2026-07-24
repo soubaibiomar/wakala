@@ -1,6 +1,6 @@
 """
 ═══════════════════════════════════════════════════════════════
-AutoMind — Initialisation du Vector Store (Qdrant)
+Wakala — Initialisation du Vector Store (Qdrant)
 Collections : vehicle_embeddings + review_embeddings
 ═══════════════════════════════════════════════════════════════
 
@@ -318,7 +318,7 @@ def seed_demo_data(client: QdrantClient) -> None:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Initialise les collections Qdrant pour AutoMind"
+        description="Initialise les collections Qdrant pour Wakala"
     )
     parser.add_argument("--host", default="localhost", help="Hôte Qdrant (défaut: localhost)")
     parser.add_argument("--port", type=int, default=6333, help="Port Qdrant (défaut: 6333)")
@@ -327,7 +327,7 @@ def main():
     args = parser.parse_args()
 
     print("═" * 60)
-    print("  AutoMind — Initialisation Vector Store (Qdrant)")
+    print("  Wakala — Initialisation Vector Store (Qdrant)")
     print("═" * 60)
 
     client = get_client(args.host, args.port)

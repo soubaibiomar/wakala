@@ -26,7 +26,7 @@ def ensure_topics(bootstrap_servers: str = BOOTSTRAP_SERVERS) -> None:
         if name not in existing:
             new_topics.append(
                 NewTopic(
-                    name=name,
+                    topic=name,
                     num_partitions=cfg["num_partitions"],
                     replication_factor=cfg["replication_factor"],
                     config=cfg["config"],

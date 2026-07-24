@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════
--- AutoMind — Migration 003 : Table listings
+-- Wakala — Migration 003 : Table listings
 -- Annonces publiées avec gestion du cycle de vie et anti-fraude
 -- ═══════════════════════════════════════════════════════════════
 

@@ -4,5 +4,6 @@ from app.models.vehicle import Vehicle
 from app.models.listing import Listing
 from app.models.review import Review
 from app.models.auth import EmailVerification
+from app.models.maintenance import VehicleService
 
-__all__ = ["User", "Vehicle", "Listing", "Review", "EmailVerification"]
+__all__ = ["User", "Vehicle", "Listing", "Review", "EmailVerification", "VehicleService"]

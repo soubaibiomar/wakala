@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════
--- AutoMind — Migration 004 : Table reviews
+-- Wakala — Migration 004 : Table reviews
 -- Avis utilisateurs avec analyse de sentiment NLP
 -- ═══════════════════════════════════════════════════════════════
 

@@ -137,7 +137,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     print("=" * 60)
-    print("AutoMind - Generate Frozen Bronze Sample Data")
+    print("Wakala - Generate Frozen Bronze Sample Data")
     print("=" * 60)
     print(f"WARNING: This makes REAL HTTP requests to Avito.ma and Moteur.ma")
     print(f"Max per source: {args.max}")
