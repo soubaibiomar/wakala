@@ -125,6 +125,35 @@ async def list_listings(
 
 
 # ──────────────────────────────────────────────────────────────
+# GET /me — Mes annonces (vendeur)
+# ──────────────────────────────────────────────────────────────
+
+@router.get(
+    "/me",
+    response_model=list[ListingReadWithVehicle],
+    summary="Mes annonces",
+    description="Retourne la liste des annonces appartenant à l'utilisateur connecté via ses véhicules.",
+)
+async def get_my_listings(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(require_role("seller", "admin"))],
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+):
+    query = (
+        select(Listing)
+        .join(Vehicle, Listing.vehicle_id == Vehicle.id)
+        .where(Vehicle.seller_id == current_user.id)
+        .order_by(Listing.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+
+    result = await db.execute(query)
+    listings = result.scalars().all()
+    return listings
+
+# ──────────────────────────────────────────────────────────────
 # GET /{listing_id} — Détail d'une annonce
 # ──────────────────────────────────────────────────────────────
 

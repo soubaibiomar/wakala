@@ -4,6 +4,8 @@ import time
 from typing import List, Dict, Any
 
 from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.executors.pool import ThreadPoolExecutor
 
 from . import config
 from .avito_scraper import AvitoScraper
@@ -15,6 +17,10 @@ from .kifal_scraper import KifalScraper
 from .otoclic_scraper import OtoclicScraper
 from .global_occaz_scraper import GlobalOccazScraper
 from .spoticar_scraper import SpoticarScraper
+
+from .dealers.dealer_registry import DealerRegistry
+from .dealers.generic_dealer_scraper import GenericDealerScraper
+
 from .normalizer import ScraperNormalizer
 from .kafka_publisher import KafkaPublisher
 from .schema_validator import SchemaValidator
@@ -26,14 +32,86 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
-def run_scraping_job(dry_run: bool = True) -> int:
+def run_single_scraper(scraper, dry_run: bool = True):
     """
-    Executes the scraping pipeline for all configured sources.
-    Returns the number of listings published to Kafka.
+    Executes the scraping pipeline for a single isolated source.
     """
-    logger.info(f"Starting scraping job. Dry Run: {dry_run}")
+    logger.info(f"--- Starting isolated scraping job for {scraper.source_name} ---")
+    normalizer = ScraperNormalizer()
+    publisher = KafkaPublisher() if not dry_run else None
+    monitor = HealthMonitor(scraper.source_name)
+    
+    valid_listings = []
 
+    try:
+        if dry_run:
+            logger.info(f"[DRY-RUN] Would fetch up to {config.MAX_LISTINGS_PER_RUN} listings from {scraper.source_name}")
+            raw_listings = []
+        else:
+            raw_listings = scraper.fetch_listings(max_items=config.MAX_LISTINGS_PER_RUN)
+
+        if not raw_listings:
+            logger.warning(f"No listings retrieved from {scraper.source_name}")
+            return 0
+
+        logger.info(f"Retrieved {len(raw_listings)} raw listings from {scraper.source_name}")
+
+        for raw in raw_listings:
+            if not dry_run:
+                monitor.record_attempt()
+            
+            normalized = normalizer.normalize(raw)
+            
+            # Validate Schema
+            is_valid, errors = SchemaValidator.validate(normalized)
+            if not is_valid:
+                logger.warning(f"Validation failed for {scraper.source_name} listing: {errors}")
+                continue
+                
+            if not dry_run:
+                monitor.record_success(normalized)
+                
+            valid_listings.append(normalized)
+
+        if dry_run:
+            logger.info(f"[DRY-RUN] {scraper.source_name} generated {len(valid_listings)} valid listings.")
+            return 0
+
+        if valid_listings:
+            published = publisher.publish_listings(valid_listings)
+            logger.info(f"Successfully published {published} listings for {scraper.source_name}")
+            return published
+
+    except Exception as e:
+        logger.error(f"Isolated Error executing scraper {scraper.source_name}: {e}")
+    finally:
+        if not dry_run:
+            monitor.finalize_run()
+            if publisher:
+                publisher.close()
+    
+    return 0
+
+def get_interval_for_source(source_name: str) -> int:
+    """Returns interval in hours for a given source."""
+    if "avito" in source_name.lower():
+        return 0.33  # ~20 minutes
+    elif "wandaloo" in source_name.lower() or "moteur_new" in source_name.lower():
+        return 4.0   # 4 hours for new cars
+    elif "dealer_" in source_name.lower():
+        return 24.0  # 24 hours for generic dealers
+    return config.SCHEDULE_INTERVAL_HOURS
+
+def main():
+    parser = argparse.ArgumentParser(description="Wakala Scraper Orchestrator")
+    parser.add_argument("--live", action="store_true", help="Disable dry-run and perform actual HTTP requests")
+    parser.add_argument("--schedule", action="store_true", help="Run continuously with isolated APScheduler tasks")
+    parser.add_argument("--once", action="store_true", help="Run all active sources once in sequence and exit")
+    args = parser.parse_args()
+
+    dry_run = not args.live
+
+    # Base platform scrapers
     scrapers = [
         AvitoScraper(), 
         MoteurScraper(),
@@ -45,90 +123,60 @@ def run_scraping_job(dry_run: bool = True) -> int:
         GlobalOccazScraper(),
         SpoticarScraper()
     ]
-    normalizer = ScraperNormalizer()
-    publisher = KafkaPublisher() if not dry_run else None
 
-    all_normalized_listings = []
+    # Dynamically add dealer scrapers
+    registry = DealerRegistry()
+    active_dealers = registry.get_active_dealers()
+    for dealer_config in active_dealers:
+        scrapers.append(GenericDealerScraper(dealer_config))
 
-    for scraper in scrapers:
-        monitor = HealthMonitor(scraper.source_name)
-        try:
-            logger.info(f"Processing {scraper.source_name} (max {config.MAX_LISTINGS_PER_RUN} items)")
-
-            if dry_run:
-                logger.info(f"[DRY-RUN] Would fetch up to {config.MAX_LISTINGS_PER_RUN} listings from {scraper.source_name}")
-                # Return empty list in dry-run - real fixtures are used in tests
-                raw_listings = []
-            else:
-                raw_listings = scraper.fetch_listings(max_items=config.MAX_LISTINGS_PER_RUN)
-
-            if not raw_listings:
-                logger.warning(f"No listings retrieved from {scraper.source_name}")
-                continue
-
-            logger.info(f"Retrieved {len(raw_listings)} raw listings from {scraper.source_name}")
-
-            for raw in raw_listings:
-                if not dry_run:
-                    monitor.record_attempt()
-                
-                normalized = normalizer.normalize(raw)
-                
-                # Validate Schema
-                is_valid, errors = SchemaValidator.validate(normalized)
-                if not is_valid:
-                    logger.warning(f"Validation failed for {scraper.source_name} listing: {errors}")
-                    continue
-                    
-                if not dry_run:
-                    monitor.record_success(normalized)
-                    
-                all_normalized_listings.append(normalized)
-
-        except Exception as e:
-            logger.error(f"Error executing scraper {scraper.source_name}: {e}")
-        finally:
-            if not dry_run:
-                monitor.finalize_run()
-
-    if dry_run:
-        logger.info(f"[DRY-RUN] Would publish {len(all_normalized_listings)} listings to Kafka")
-        for item in all_normalized_listings:
-            logger.debug(f"[DRY-RUN] Normalized item: {item}")
-        return 0
-
-    if all_normalized_listings:
-        published = publisher.publish_listings(all_normalized_listings)
-        publisher.close()
-        return published
-    else:
-        logger.info("No listings gathered in this run.")
-        return 0
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Wakala Scraper Producer - Real scrapers as sole Kafka source")
-    parser.add_argument("--live", action="store_true", help="Disable dry-run and perform actual HTTP requests")
-    parser.add_argument("--schedule", action="store_true", help="Run continuously with APScheduler")
-    parser.add_argument("--once", action="store_true", help="Run a single scraping job and exit")
-    args = parser.parse_args()
-
-    dry_run = not args.live
+    logger.info(f"Loaded {len(scrapers)} active scrapers ({len(active_dealers)} from dealers.yaml).")
 
     if args.schedule:
-        logger.info(f"Starting APScheduler for periodic scraping (every {config.SCHEDULE_INTERVAL_HOURS}h). Dry Run: {dry_run}")
-        scheduler = BlockingScheduler()
-        scheduler.add_job(run_scraping_job, 'interval', hours=config.SCHEDULE_INTERVAL_HOURS, args=[dry_run])
+        logger.info(f"Starting APScheduler for isolated periodic scraping. Dry Run: {dry_run}")
+        
+        # Use ThreadPoolExecutor to ensure total isolation between scraper jobs
+        executors = {
+            'default': ThreadPoolExecutor(max_workers=5)
+        }
+        scheduler = BlockingScheduler(executors=executors)
+        
+        for scraper in scrapers:
+            interval_hours = get_interval_for_source(scraper.source_name)
+            interval_minutes = int(interval_hours * 60)
+            
+            logger.info(f"Scheduling {scraper.source_name} to run every {interval_minutes} minutes.")
+            
+            scheduler.add_job(
+                run_single_scraper,
+                'interval',
+                minutes=interval_minutes,
+                args=[scraper, dry_run],
+                id=f"job_{scraper.source_name}",
+                replace_existing=True,
+                max_instances=1 # Prevents overlaps if a job takes too long
+            )
+
         try:
-            # Run once immediately, then on schedule
-            run_scraping_job(dry_run)
+            # Trigger them all once immediately asynchronously
+            for scraper in scrapers:
+                scheduler.add_job(
+                    run_single_scraper,
+                    'date',
+                    run_date=None, # run immediately
+                    args=[scraper, dry_run]
+                )
+            
             scheduler.start()
         except (KeyboardInterrupt, SystemExit):
             logger.info("Scheduler stopped.")
     else:
-        # Single run (default)
-        run_scraping_job(dry_run)
-
+        # Single run
+        logger.info("Running single sequential execution of all active scrapers.")
+        total_published = 0
+        for scraper in scrapers:
+            total_published += run_single_scraper(scraper, dry_run)
+        logger.info(f"Finished single run. Total published: {total_published}")
 
 if __name__ == "__main__":
     main()

@@ -23,6 +23,14 @@ export const authService = {
   },
 
   /**
+   * Connexion avec Google OAuth
+   */
+  async googleLogin(token: string, remember_me: boolean = false): Promise<TokenResponse> {
+    const { data } = await api.post<TokenResponse>('/auth/google-login', { token, remember_me });
+    return data;
+  },
+
+  /**
    * Récupère le profil de l'utilisateur connecté.
    */
   async getMe(): Promise<User> {

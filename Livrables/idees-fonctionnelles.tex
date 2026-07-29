@@ -2,12 +2,12 @@
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
 \usepackage[T1]{fontenc}
-\usepackage[french]{babel}
+% \usepackage[french]{babel}
 \usepackage[margin=2cm]{geometry}
 \usepackage{longtable}
 \usepackage{booktabs}
 \usepackage{xcolor}
-\usepackage{hyperref}
+% % \usepackage{hyperref}
 
 \hypersetup{
     colorlinks=true,
@@ -76,26 +76,36 @@ Le tableau suivant présente la liste complète des idées, triées par catégor
 \multicolumn{3}{l}{\textbf{Transactions}} \\
 4 & Prédiction prix de revente & Transactions \\
 \midrule
-\multicolumn{3}{l}{\textbf{Confiance / Sécurité}} \\
-5 & Détection anomalies/fraude & Confiance \\
-15 & Computer Vision (photos) & Confiance \\
-19 & Profils vérifiés TrustBadge & Confiance \\
+
 \end{longtable}
 
 \newpage
 \section{Fiches détaillées par idée}
 
-\subsection{1. Chatbot RAG}
+\subsection{1. Chatbot (Assistant Virtuel)}
 \textbf{Catégorie :} Expérience B2C
 
 \textbf{Explication}\\
-Le Chatbot RAG (Retrieval-Augmented Generation) agit comme un assistant virtuel expert pour les acheteurs. Au lieu d'une simple recherche par filtres, l'utilisateur peut poser des questions complexes (ex. : "Quels SUV consomment moins de 5L/100km et sont disponibles près de Lyon ?"). Le système comprend l'intention, recherche les véhicules pertinents et formule une réponse naturelle et argumentée, tout en citant les annonces précises comme sources. Techniquement, cette fonctionnalité s'appuie sur des modèles de pointe comme OpenAI GPT-4 ou Gemini pour la compréhension et la génération du langage naturel. L'orchestration des requêtes et la gestion du contexte sont assurées par des frameworks dédiés tels que LangChain ou LlamaIndex. Pour garantir des temps de réponse optimaux lors de la recherche sémantique, les embeddings des annonces sont stockés dans une base de données vectorielle performante comme Qdrant ou Pinecone. L'ensemble est propulsé par une API temps réel sous FastAPI, interfacée avec une application React pour offrir une expérience conversationnelle fluide.
+Le Chatbot agit comme un conseiller virtuel expert pour les acheteurs. Au lieu d'une simple recherche par filtres, l'utilisateur peut exprimer son besoin naturellement (ex. : "Quels SUV consomment moins de 5L/100km et sont disponibles près de Lyon ?"). Le système comprend la phrase, cherche les véhicules pertinents et discute avec l'utilisateur pour l'orienter. 
 
-\subsection{2. Recommandation hybride (Matchmaker automobile)}
+\textbf{Détails et Cas d'Usage :} 
+Si un acheteur novice dit \textit{"Je veux une voiture familiale robuste, budget 120 000 DH"}, le Chatbot va :
+1. Comprendre l'intention (Famille = 5 places min, grand coffre / Robuste = fiabilité).
+2. Poser une question de précision si nécessaire : \textit{"Faites-vous plutôt de l'autoroute ou de la ville pour vous orienter sur du Diesel ou de l'Hybride ?"}
+3. Expliquer ses choix : \textit{"Je vous suggère cette Honda Civic car elle est réputée pour ne jamais tomber en panne."}
+Toute la complexité technologique est masquée pour offrir une discussion fluide et humaine.
+
+\subsection{2. Moteur de Recommandation}
 \textbf{Catégorie :} Expérience B2C
 
 \textbf{Explication}\\
-Ce système va au-delà de la simple suggestion "basée sur le contenu". Il fusionne plusieurs approches : le filtrage collaboratif, le filtrage basé sur le contenu, et l'historique de navigation récent. Le but est de créer un véritable "matchmaker" qui s'adapte en temps réel aux préférences changeantes de l'utilisateur. Pour ce faire, le filtrage collaboratif exploite des bibliothèques telles que Scikit-learn ou LightFM avec des modèles de factorisation matricielle. La compréhension approfondie des annonces est rendue possible par des modèles NLP avancés (Transformers via Hugging Face) qui encodent les descriptions des véhicules en embeddings. Afin de servir ces recommandations à très faible latence, les profils utilisateurs temporaires sont stockés et mis à jour en temps réel via un cache Redis.
+Ce système va bien au-delà de la simple suggestion de voitures similaires. Il agit comme un véritable entremetteur (Matchmaker) qui comprend les goûts de l'utilisateur et observe ce que les autres acheteurs ayant le même profil ont finalement choisi. Le but est de proposer "LA" bonne voiture, même si l'acheteur n'avait pas initialement pensé à ce modèle précis.
+
+\textbf{Détails de la Logique de Scoring :}
+La recommandation s'appuie sur plusieurs critères qui sont pondérés en temps réel :
+- \textbf{Affinité du profil :} Si le client regarde beaucoup de voitures avec des toits ouvrants, le moteur pousse des modèles similaires vers le haut de la liste.
+- \textbf{Besoins explicites :} Respect strict du budget et de la capacité (ex: coffre).
+- \textbf{Sérendipité (Effet de surprise) :} Le moteur introduit 1 ou 2 alternatives audacieuses mais très pertinentes (ex: suggérer un break très logeable et économique à quelqu'un qui cherchait absolument un SUV).
 
 \subsection{3. Pipeline ingestion temps réel (scrapers)}
 \textbf{Catégorie :} Data Analytics / Décisionnel
@@ -109,11 +119,6 @@ C'est le moteur de données de la plateforme. Il collecte en continu des donnée
 \textbf{Explication}\\
 Un estimateur de prix piloté par l'IA. Contrairement à une cote fixe, il prend en compte des centaines de variables, y compris la micro-saisonnalité, la couleur, et les données de marché en temps réel pour prédire la valeur exacte d'un véhicule. Pour un vendeur, il suggère le prix de vente optimal pour vendre rapidement. Ce modèle prédictif repose sur des algorithmes de Gradient Boosting extrêmement performants sur données tabulaires, tels que XGBoost ou LightGBM. Le cycle de vie et le versioning des modèles sont rigoureusement suivis via MLflow. Le modèle sélectionné est ensuite déployé via FastAPI, offrant une API d'inférence capable de répondre en moins de 100ms.
 
-\subsection{5. Détection anomalies/fraude (Anti-fraude scam detection)}
-\textbf{Catégorie :} Confiance / Sécurité
-
-\textbf{Explication}\\
-Ce module protège la plateforme contre les fausses annonces et les arnaques. Il analyse en temps réel chaque nouvelle annonce publiée pour détecter des schémas suspects : prix anormalement bas, description incohérente, ou réseau de vendeurs frauduleux. Les annonces suspectes sont bloquées automatiquement ou mises en quarantaine. L'intelligence derrière ce système combine des algorithmes non-supervisés (Isolation Forest ou Autoencodeurs) pour la détection d'anomalies statistiques avec des modèles NLP (Transformers) capables de repérer un langage typique de fraude. Pour aller plus loin, une base de données orientée graphe comme Neo4j permet d'identifier des relations cachées et des réseaux de fraude organisés.
 
 \subsection{6. Graphe de similarité (GraphRAG)}
 \textbf{Catégorie :} Data Analytics / Décisionnel
@@ -131,7 +136,7 @@ Une interface riche dédiée aux vendeurs professionnels. Ce dashboard agrège l
 \textbf{Catégorie :} Expérience B2C
 
 \textbf{Explication}\\
-Substitut ou complément aux filtres traditionnels. L'utilisateur tape simplement ce qu'il veut dans une barre de recherche globale. Le système extrait les entités, comprend les concepts flous et renvoie les résultats pertinents en classant par pertinence sémantique. Cette recherche intuitive s'appuie sur les Sentence Transformers d'Hugging Face, générant des embeddings denses pour comprendre l'intention de la requête. Ces vecteurs sont ensuite indexés dans un moteur de recherche performant (Elasticsearch avec recherche hybride ou Qdrant). L'ensemble du flux est géré par un backend Python/FastAPI assurant l'interface entre le frontend et le moteur d'indexation.
+En complément du Chatbot, l'utilisateur tape simplement ce qu'il veut dans une barre de recherche globale. Le système comprend les concepts flous ("voiture pour jeune permis pas chère") et renvoie les résultats pertinents en classant par pertinence sémantique, plutôt que de chercher des correspondances exactes de mots.
 
 \subsection{9. Segmentation acheteurs}
 \textbf{Catégorie :} Data Analytics / Décisionnel
@@ -169,11 +174,6 @@ Cartographie avancée permettant de visualiser des "heatmaps" d'offre et de dema
 \textbf{Explication}\\
 Une infrastructure qui permet de tester scientifiquement de nouveaux algorithmes. Les utilisateurs sont répartis dynamiquement en cohortes. Le système mesure des KPIs précis pour prouver la valeur ajoutée de l'IA avant un déploiement global. Ce déploiement granulaire est géré par des plateformes de Feature Flags comme Unleash ou LaunchDarkly. La persistance de la cohorte assignée à chaque utilisateur est maintenue efficacement en mémoire cache grâce à Redis, assurant une expérience cohérente. L'analyse finale des résultats des tests s'appuie sur des scripts Python mobilisant scipy.stats pour garantir la significativité statistique et orienter les décisions d'implémentation.
 
-\subsection{15. Computer Vision (détection chocs/rayures + floutage plaques)}
-\textbf{Catégorie :} Confiance / Sécurité
-
-\textbf{Explication}\\
-Lorsqu'un utilisateur upload des photos pour une annonce, des algorithmes de vision par ordinateur traitent immédiatement les images. Ils floutent automatiquement les plaques d'immatriculation pour protéger la vie privée, et analysent la carrosserie pour identifier les dommages évidents, renforçant la transparence. Ce traitement visuel utilise d'abord OpenCV pour les filtres et le redimensionnement de base. Les tâches d'identification complexes, comme la détection de rayures ou de plaques, reposent sur des modèles Deep Learning de pointe (YOLO ou Mask R-CNN) entraînés sous PyTorch. Pour garantir une expérience utilisateur sans latence, cette inférence lourde est exécutée de façon asynchrone par FastAPI couplé à des files d'attente Celery et RabbitMQ.
 
 \subsection{16. Simulateur TCO (Coût Total de Possession)}
 \textbf{Catégorie :} Expérience B2C
@@ -193,17 +193,12 @@ Un outil stratégique pour les professionnels de l'automobile. Il agrège les do
 \textbf{Explication}\\
 Inspiré par le secteur aérien, ce système suggère automatiquement des ajustements de prix aux vendeurs. Si une voiture ne génère aucune vue, il suggère une baisse. Si un modèle suscite un pic de recherches soudain, il recommande une augmentation de prix. Les modèles de décision évaluant l'élasticité prix-demande sont développés en Python avec Scikit-learn. L'architecture est totalement orientée événements, s'appuyant sur Apache Kafka pour ingérer et traiter en temps réel les flux de clics et de vues. Lorsqu'une opportunité d'ajustement de prix est détectée, le vendeur est alerté instantanément via une connexion WebSockets persistante gérée par Socket.io.
 
-\subsection{19. Profils vérifiés TrustBadge}
-\textbf{Catégorie :} Confiance / Sécurité
-
-\textbf{Explication}\\
-Un système de certification d'identité pour les vendeurs, octroyant un badge "Vendeur Vérifié". L'utilisateur scanne sa pièce d'identité et fait un selfie vidéo. Le système valide l'authenticité et ajoute un niveau de rassurance majeur pour les acheteurs, réduisant considérablement le risque d'arnaques. Plutôt que de redévelopper la biométrie en interne, ce service s'intègre via API à des fournisseurs KYC spécialisés (comme Onfido ou Stripe Identity). Le backend FastAPI sécurise et traite les webhooks envoyés par ces prestataires. L'ensemble des données sensibles est stocké sur PostgreSQL avec un chiffrement strict au repos, garantissant la pleine conformité aux normes RGPD.
 
 \subsection{20. Générateur d'annonces IA}
 \textbf{Catégorie :} Expérience B2C
 
 \textbf{Explication}\\
-Un assistant de rédaction pour les vendeurs. Plutôt que de rédiger péniblement une annonce, le vendeur renseigne la plaque d'immatriculation et l'état général. Le système récupère les données techniques, puis un LLM génère instantanément un texte de description attractif, optimisé SEO et mettant en avant les atouts spécifiques. L'enrichissement initial des spécifications du véhicule se fait par l'appel à des API externes spécialisées. Le texte est ensuite façonné par des API de génération de texte de pointe (OpenAI GPT-4 ou Anthropic Claude), orchestrées par un Prompt Engineering avancé. Le vendeur finalise et publie l'annonce directement depuis l'interface React à l'aide d'un éditeur de texte riche comme Draft.js ou Quill.
+Un assistant de rédaction pour les vendeurs. Plutôt que de rédiger péniblement une annonce, le vendeur renseigne la plaque d'immatriculation et l'état général. Le système récupère les données techniques, puis un LLM génère instantanément un texte de description attractif, optimisé SEO et mettant en avant les atouts spécifiques. L'enrichissement initial des spécifications du véhicule se fait par l'appel à des API externes spécialisées. Le texte est ensuite façonné par des modèles de génération locaux (via Ollama, Qwen 3 8B), orchestrés par un Prompt Engineering avancé. Le vendeur finalise et publie l'annonce directement depuis l'interface React à l'aide d'un éditeur de texte riche comme Draft.js ou Quill.
 
 \newpage
 \section{Vue d'ensemble par couche architecturale}
@@ -239,7 +234,7 @@ Afin de comprendre l'intégration de ces fonctionnalités dans l'écosystème gl
 \end{itemize}
 
 \section{Conclusion}
-Ce référentiel illustre l'ambition technique et fonctionnelle de la plateforme "Vente Auto Platform". En fusionnant des approches Data classiques (Pipelines temps réel, Data Engineering) avec des technologies de pointe en IA (LLMs, RAG, Graphes de connaissances, Machine Learning prédictif), le projet dépasse le simple site de petites annonces. Il pose les fondations d'un véritable écosystème intelligent, sécurisé et hautement personnalisé, orienté vers l'exploitation maximale de la valeur de la donnée.
+Ce référentiel illustre l'ambition fonctionnelle de la plateforme "Vente Auto Platform". Le projet repose sur deux piliers principaux : un Chatbot qui écoute et accompagne, et un Moteur de Recommandation qui trouve la perle rare. En simplifiant l'accès au marché automobile grâce à l'Intelligence Artificielle, le projet dépasse le simple site de petites annonces pour devenir un véritable assistant d'achat personnel.
 
 \newpage
 \appendix

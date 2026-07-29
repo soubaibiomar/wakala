@@ -3,7 +3,7 @@
 % --- Packages ---
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage[french]{babel}
+% \usepackage[french]{babel}
 \usepackage[margin=1.5cm, top=2cm, bottom=2cm]{geometry}
 \usepackage{xcolor}
 \usepackage{fancyhdr}
@@ -21,7 +21,7 @@
 % --- Styles de document ---
 \pagestyle{fancy}
 \fancyhf{}
-\fancyfoot[L]{\footnotesize \textcolor{gray}{Projet Wakala - Cadrage Stratégique (V1)}}
+\fancyfoot[L]{\footnotesize \textcolor{gray}{Projet Wakala - Cadrage Stratégique}}
 \fancyfoot[R]{\footnotesize \textcolor{gray}{Page \thepage}}
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0.4pt}
@@ -44,67 +44,48 @@
 
 % --- Introduction ---
 \section*{Introduction}
-Ce document formalise le cadrage stratégique du projet \textbf{Wakala}, à la suite de l'étude de marché menée sur le secteur automobile marocain et international. Il a pour objectif de définir de manière claire et actionnable le challenge à résoudre, les moyens réellement disponibles, la stratégie retenue, ainsi que les indicateurs permettant d'en mesurer le succès.
+Ce document présente le cadrage stratégique du projet \textbf{Wakala}. Notre ambition est simple : \textbf{offrir un Chatbot et un Moteur de Recommandation pour guider chaque client de A à Z dans l'achat de son véhicule}. L'objectif est de transformer la recherche classique d'annonces en une expérience d'accompagnement personnalisée.
 
 \vspace{0.3cm}
 
-% --- 1. Contexte et Objectifs ---
-\section*{1. Contexte et Objectifs}
-Au Maroc, quand on achète une voiture d'occasion sur internet, on ne peut faire confiance à personne. Les sites actuels ne vérifient pas les annonces, donc l'acheteur prend tous les risques (compteur trafiqué, accidents cachés). Faire appel à un expert coûte cher, donc peu de gens le font. 
+% --- Contenu ---
+\section*{1. Le Challenge et la Stratégie}
+Aujourd'hui, acheter une voiture en ligne est un processus long et complexe. Les plateformes actuelles utilisent des filtres rigides qui ne comprennent pas les vrais critères des acheteurs. Notre défi est de passer d'un simple catalogue d'annonces à une expérience d'accompagnement 100\% personnalisée.
 
-Notre défi principal est de créer un site qui rassure l'acheteur automatiquement, sans avoir besoin d'ouvrir des garages physiques ou d'embaucher des mécaniciens. Le problème n'est pas de trouver des voitures (il y en a plein sur les autres sites), c'est d'aider les gens à acheter sans se faire arnaquer.
-
-\vspace{0.3cm}
-
-% --- 2. Périmètre et Fonctionnalités Attendues ---
 \section*{2. Périmètre et Fonctionnalités Attendues}
-Voici notre plan d'action pour créer cette plateforme de confiance :
-
+Pour relever ce défi, Wakala utilise l'Intelligence Artificielle pour inverser l'approche traditionnelle. Voici notre plan d'action pour créer cette plateforme :
 \begin{itemize}[label=\textbullet]
-    \item \textbf{Donner une note de confiance :} Chaque annonce recevra une note calculée automatiquement. Si le prix est trop bas ou si le vendeur est suspect, la note baissera.
-    \item \textbf{Être totalement transparent :} Au lieu de dire que la voiture est "parfaite", on affichera clairement si l'annonce semble "fiable à 80\%", pour être toujours honnête avec l'acheteur.
-    \item \textbf{Guider l'acheteur pas à pas :} L'assistant virtuel préviendra l'acheteur s'il détecte un piège et lui expliquera exactement quoi vérifier lors du rendez-vous.
-    \item \textbf{Miser sur la qualité, pas la quantité :} On ne cherche pas à avoir des millions d'annonces. On veut juste que les acheteurs viennent chez nous quand ils veulent acheter en toute sécurité.
-    \item \textbf{Commencer par le virtuel, puis aller sur le terrain :} On lance d'abord le site 100\% informatique. Si les utilisateurs aiment, on s'associera plus tard avec de vrais garages pour proposer de vraies inspections.
+    \item \textbf{Comprendre avant de proposer :} Un agent conversationnel (Chatbot) discute avec l'utilisateur pour comprendre ses envies, son budget et ses contraintes.
+    \item \textbf{Recommander intelligemment :} Le moteur analyse le marché en temps réel pour suggérer la voiture idéale, en expliquant clairement pourquoi c'est le meilleur choix.
+    \item \textbf{Guider l'acheteur pas à pas :} L'assistant virtuel reproduit l'expérience humaine et rassurante d'un conseiller en concession, du recueil du besoin au choix final.
 \end{itemize}
 
-\vspace{0.3cm}
-
-% --- 3. Ressources et Moyens Alloués ---
 \section*{3. Ressources et Moyens Alloués}
-Pour réussir ce projet de manière agile et sans budget d'infrastructure lourde (comme des garages physiques), nous nous appuyons sur les ressources suivantes :
+Pour mettre en place cette stratégie de manière agile, nous nous appuyons sur :
 
 \vspace{0.2cm}
 \textbf{Ressources Humaines}
 \begin{itemize}[label=\textbullet]
-    \item \textbf{Une équipe technique restreinte mais spécialisée :} Des développeurs, des experts en intelligence artificielle (Data Scientists) et des concepteurs d'interface (UX/UI) pour construire la plateforme.
-    \item \textbf{Une approche sans intermédiaires physiques :} Nous n'embauchons pas de mécaniciens ni d'inspecteurs sur le terrain. L'équipe se concentre exclusivement sur la création d'outils numériques automatisés.
+    \item \textbf{Une expertise technique :} Une équipe spécialisée en Intelligence Artificielle et en développement logiciel pour concevoir les algorithmes.
 \end{itemize}
+
+\textbf{Ressources Technologiques}
+\begin{itemize}[label=\textbullet]
+    \item \textbf{Des technologies modernes :} L'utilisation de modèles de langage (IA générative) et de bases de données ultra-rapides pour analyser les annonces instantanément.
+\end{itemize}
+
+\newpage
+\section*{4. KPIs et Objectifs}
+Pour garantir le succès de ce projet, nous suivrons ces indicateurs de performance clés :
 
 \vspace{0.2cm}
-\textbf{Ressources Matérielles et Technologiques}
-\begin{itemize}[label=\textbullet]
-    \item \textbf{Outils d'Intelligence Artificielle :} Utilisation de modèles d'IA avancés pour analyser les photos (détection de dommages) et alimenter notre assistant virtuel interactif.
-    \item \textbf{Infrastructure Cloud et Données :} Des serveurs hébergés sur le cloud pour faire tourner nos bases de données complexes (qui croisent les prix, les historiques et les profils des vendeurs) ainsi que nos outils de collecte de données en continu.
-\end{itemize}
-
-En résumé, nos moyens sont 100\% concentrés sur l'expertise technologique (humaine) et l'infrastructure logicielle (matérielle), ce qui nous permet d'être rapides, efficaces et de limiter les coûts opérationnels.
-
-\vspace{0.3cm}
-
-% --- 4. Indicateurs de Succès (KPIs) ---
-\section*{4. Indicateurs de Succès (KPIs)}
-
-\begin{longtable}{L{4cm} L{5.2cm} L{4.8cm}}
+\begin{longtable}{L{4cm} L{6cm} L{5cm}}
 \toprule
 \rowcolor{primaryBlue}
-\textcolor{white}{\textbf{Objectif}} & \textcolor{white}{\textbf{KPI}} & \textcolor{white}{\textbf{Cible indicative}} \\
+\textcolor{white}{\textbf{Indicateur}} & \textcolor{white}{\textbf{Mesure}} & \textcolor{white}{\textbf{Objectif}} \\
 \midrule
 \endhead
-Valider l'utilité du scoring de fiabilité & Taux de clics sur annonces « score élevé » vs « score faible » & Score élevé cliqué 2 fois plus \\
-\rowcolor{lightBlue}
-Qualité de détection IA & Taux de détection d'incohérences photos/annonce sur jeu de test & Précision supérieure à 80\,\% sur dataset annoté manuellement \\
-Engagement chatbot & Taux de complétion du parcours de questions pré-achat & Plus de 60\,\% des utilisateurs vont au bout \\
+Engagement chatbot & Taux de complétion du parcours de questions pré-achat & Plus de 60 \% des utilisateurs vont au bout \\
 \rowcolor{lightBlue}
 Rétention sur la plateforme & Temps moyen passé dans l'interface par session & Supérieur à 3 minutes par visiteur \\
 Profondeur de l'interaction & Durée moyenne de communication avec le chatbot & Entre 3 et 5 minutes par conversation \\
@@ -113,10 +94,8 @@ Interactivité du chatbot & Nombre moyen de questions posées par l'utilisateur 
 \bottomrule
 \end{longtable}
 
-\vspace{0.3cm}
-
 % --- Synthèse ---
-\section*{Synthèse et Recommandations}
-Le cadrage stratégique de Wakala met en évidence un principe simple : l'avantage compétitif ne se joue pas sur le volume d'annonces, déjà dominé par les acteurs en place, mais sur la confiance. Bien que l'architecture technique (IA, graphes, RAG) soit avancée, sa valeur ne se justifie que si elle sert un objectif concret et mesurable : rendre visible, dès l'annonce, ce qui aujourd'hui coûte à l'acheteur une expertise payante et beaucoup d'incertitude.
+\section*{Synthèse}
+Le cadrage stratégique de Wakala met en évidence un principe simple : le futur de la vente automobile en ligne réside dans l'accompagnement personnalisé. En plaçant un \textbf{Chatbot IA et un Moteur de Recommandation} au cœur de l'expérience, le projet s'assure non seulement de proposer un sujet technologique de pointe (Deep Learning, NLP), mais aussi de répondre à un véritable besoin utilisateur : trouver la bonne voiture facilement et de manière personnalisée.
 
 \end{document}

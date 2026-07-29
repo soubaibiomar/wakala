@@ -45,6 +45,7 @@ export interface Vehicle {
 
   // Relations imbriquées (selon l'endpoint)
   seller?: import('./user').UserBrief;
+  source_url?: string;
 }
 
 export interface VehicleListResponse {
@@ -67,6 +68,7 @@ export interface VehicleFilters {
   year_min?: number;
   year_max?: number;
   mileage_max?: number;
+  condition?: 'neuf' | 'occasion';
   sort_by?: string;
   sort_order?: 'asc' | 'desc';
   page?: number;

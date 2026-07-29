@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderHook, act } from '@testing-library/react';
 import { useChatSession } from '../useChatSession';
 
 const mockStreamMessage = vi.fn();
@@ -88,7 +88,7 @@ describe('useChatSession', () => {
     expect(result.current.isTyping).toBe(true);
 
     await act(async () => {
-      resolvePromise!();
+      resolvePromise!(undefined);
       await apiPromise;
       await sendPromise;
     });

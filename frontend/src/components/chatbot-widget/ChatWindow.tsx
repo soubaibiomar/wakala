@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { Mic, Square } from 'lucide-react';
 import type { Message } from './useChatSession';
 import ChatMessage from './ChatMessage';
+import { useVoiceInput } from '../../hooks/useVoiceInput';
 import styles from './chatbot.module.css';
 
 interface ChatWindowProps {
@@ -22,7 +24,19 @@ export default function ChatWindow({
 }: ChatWindowProps) {
   const [input, setInput] = useState('');
   const endRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // ─── Saisie vocale (Web Speech API) ───────────────────────
+  const voice = useVoiceInput({
+    defaultLang: 'fr-FR',
+    onTranscript: (text) => {
+      // Injecte le texte transcrit dans le même state que le clavier
+      setInput((prev) => {
+        const separator = prev.trim() ? ' ' : '';
+        return prev + separator + text;
+      });
+    },
+  });
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -132,10 +146,14 @@ export default function ChatWindow({
             <span>A</span>
           </div>
           <textarea
-            ref={inputRef as any}
+            ref={inputRef}
             className={styles.inputField}
-            placeholder="Rechercher (ex: Dacia Duster Casablanca)"
-            value={input}
+            placeholder={
+              voice.status === 'listening'
+                ? 'Parlez maintenant...'
+                : 'Rechercher (ex: Dacia Duster Casablanca)'
+            }
+            value={voice.interimTranscript ? input + (input ? ' ' : '') + voice.interimTranscript : input}
             rows={1}
             style={{ resize: 'none', overflow: 'hidden', minHeight: '36px', maxHeight: '120px' }}
             onChange={(e) => {
@@ -145,7 +163,22 @@ export default function ChatWindow({
             }}
             onKeyDown={handleKeyDown}
             disabled={isTyping}
+            readOnly={voice.status === 'listening'}
           />
+
+          {/* ─── Bouton micro (masqué si non supporté) ──── */}
+          {voice.isSupported && (
+            <button
+              className={`${styles.micBtn} ${voice.status === 'listening' ? styles.micBtnListening : ''}`}
+              onClick={voice.toggleListening}
+              title={voice.status === 'listening' ? "Arrêter l'écoute" : 'Saisie vocale'}
+              type="button"
+              aria-label={voice.status === 'listening' ? 'Arrêter la reconnaissance vocale' : 'Activer la reconnaissance vocale'}
+            >
+              {voice.status === 'listening' ? <Square size={14} fill="currentColor" /> : <Mic size={16} />}
+            </button>
+          )}
+
           <button
             className={styles.inputBtn}
             onClick={handleSubmit}
@@ -156,6 +189,13 @@ export default function ChatWindow({
             </svg>
           </button>
         </div>
+
+        {/* ─── Erreur vocale ──────────────────────────────── */}
+        {voice.errorMessage && (
+          <div className={styles.voiceError} role="alert">
+            ⚠️ {voice.errorMessage}
+          </div>
+        )}
       </div>
     </div>
   );

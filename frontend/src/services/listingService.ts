@@ -21,6 +21,19 @@ export const listingService = {
   },
 
   /**
+   * Liste des annonces de l'utilisateur connecté (vendeur).
+   */
+  async getMyListings(
+    limit = 50,
+    offset = 0
+  ): Promise<Listing[]> {
+    const { data } = await api.get<Listing[]>('/listings/me', {
+      params: { limit, offset },
+    });
+    return data;
+  },
+
+  /**
    * Détail d'une annonce par ID.
    */
   async getListingById(id: string): Promise<Listing> {

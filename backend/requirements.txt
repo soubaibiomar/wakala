@@ -22,6 +22,7 @@ email-validator==2.2.0           # Validation EmailStr dans Pydantic
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 bcrypt==3.2.2
+google-auth==2.35.0
 
 # ─── Base de données — PostgreSQL ─────────────────────────────
 # ORM async (asyncpg) + migrations (Alembic)

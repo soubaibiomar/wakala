@@ -20,9 +20,13 @@ export default function Catalogue() {
 
   const [searchParams] = useSearchParams();
   const location = useLocation();
-  const recommendations = (location.state as { recommendations?: RecommendationResponse } | null)?.recommendations;
+  const initialRecommendations = (location.state as { recommendations?: RecommendationResponse } | null)?.recommendations;
+  
+  // Keep local state for recommendations so we can clear them when filters change
+  const [activeRecommendations, setActiveRecommendations] = useState<RecommendationResponse | null>(initialRecommendations || null);
+  
   const matchScores = Object.fromEntries(
-    (recommendations?.items ?? []).map((item) => [item.vehicle_id, item.match_score]),
+    (activeRecommendations?.items ?? []).map((item) => [item.vehicle_id, item.match_score]),
   );
   
   // Filter States
@@ -33,15 +37,29 @@ export default function Catalogue() {
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
   const [activeSort, setActiveSort] = useState('created_at-desc');
+  const [activeCondition, setActiveCondition] = useState('occasion');
   const [savedSearch, setSavedSearch] = useState(false);
 
   // Initialize from URL params
   useEffect(() => {
     const fuel = searchParams.get('fuel_type') as FuelType | '';
     const body = searchParams.get('body_type') as BodyType | '';
+    const isNew = searchParams.get('is_new');
+    const brand = searchParams.get('brand');
+    
     if (fuel) setActiveFuel(fuel);
     if (body) setActiveBody(body);
+    if (isNew === 'true') setActiveCondition('neuf');
+    if (brand) setSearchTerm(brand);
   }, [searchParams]);
+
+  const handleFilterChange = (setter: any, value: any) => {
+    setter(value);
+    setPage(1);
+    // If the user manually changes a filter, we drop the NLP recommendations
+    // and switch to standard backend filtering.
+    setActiveRecommendations(null);
+  };
 
   const fetchVehicles = useCallback(
     async (currentPage: number) => {
@@ -59,17 +77,23 @@ export default function Catalogue() {
       const [sort_by, sort_order] = activeSort.split('-');
       filters.sort_by = sort_by;
       filters.sort_order = sort_order as 'asc' | 'desc';
+      
+      if (activeCondition === 'neuf' || activeCondition === 'occasion') {
+        filters.condition = activeCondition;
+      }
 
       try {
-        if (recommendations) {
+        if (activeRecommendations) {
+          // If we have recommendations, just show them (no pagination implemented yet for NLP)
           const recommendedVehicles = await Promise.all(
-            recommendations.items.map((item) => vehicleService.getVehicleById(item.vehicle_id)),
+            activeRecommendations.items.map((item) => vehicleService.getVehicleById(item.vehicle_id)),
           );
-          setVehicles(recommendedVehicles);
-          setTotal(recommendations.total);
-          setPages(Math.max(1, Math.ceil(recommendations.total / PAGE_SIZE)));
+          setVehicles(recommendedVehicles.filter(v => v !== null) as Vehicle[]);
+          setTotal(activeRecommendations.total);
+          setPages(Math.max(1, Math.ceil(activeRecommendations.total / PAGE_SIZE)));
           return;
         }
+        
         const res = await vehicleService.getVehicles({
           ...filters,
           page: currentPage,
@@ -87,7 +111,7 @@ export default function Catalogue() {
         setLoading(false);
       }
     },
-    [activeFuel, activeBody, city, priceMin, priceMax, searchTerm, activeSort, recommendations]
+    [activeFuel, activeBody, city, priceMin, priceMax, searchTerm, activeSort, activeCondition, activeRecommendations]
   );
 
   useEffect(() => {
@@ -102,7 +126,9 @@ export default function Catalogue() {
     setPriceMin('');
     setPriceMax('');
     setActiveSort('created_at-desc');
+    setActiveCondition('');
     setPage(1);
+    setActiveRecommendations(null);
   };
 
   const getPaginationRange = (): (number | '...')[] => {
@@ -139,7 +165,7 @@ export default function Catalogue() {
                 <span className="catalogue__toggle-slider"></span>
               </label>
             </div>
-            {(activeFuel || activeBody || city || priceMin || priceMax || searchTerm) && (
+            {(activeFuel || activeBody || city || priceMin || priceMax || searchTerm || activeCondition) && (
               <button className="catalogue__clear-btn" onClick={handleClearFilters}>
                 Effacer
               </button>
@@ -154,7 +180,7 @@ export default function Catalogue() {
                 placeholder="Que recherchez-vous ?" 
                 className="catalogue__input"
                 value={searchTerm}
-                onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+                onChange={(e) => handleFilterChange(setSearchTerm, e.target.value)}
               />
             </div>
           </div>
@@ -165,7 +191,7 @@ export default function Catalogue() {
               <select 
                 className="catalogue__select"
                 value={activeFuel}
-                onChange={(e) => { setActiveFuel(e.target.value as FuelType); setPage(1); }}
+                onChange={(e) => handleFilterChange(setActiveFuel, e.target.value as FuelType)}
               >
                 <option value="">Tous les carburants</option>
                 {Object.entries(FUEL_LABELS).map(([key, label]) => (
@@ -181,12 +207,27 @@ export default function Catalogue() {
               <select 
                 className="catalogue__select"
                 value={activeBody}
-                onChange={(e) => { setActiveBody(e.target.value as BodyType); setPage(1); }}
+                onChange={(e) => handleFilterChange(setActiveBody, e.target.value as BodyType)}
               >
                 <option value="">Toutes les catégories</option>
                 {Object.entries(BODY_LABELS).map(([key, label]) => (
                   <option key={key} value={key}>{label}</option>
                 ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="catalogue__filter-block">
+            <label className="catalogue__label">État du véhicule</label>
+            <div className="catalogue__select-wrapper">
+              <select 
+                className="catalogue__select"
+                value={activeCondition}
+                onChange={(e) => handleFilterChange(setActiveCondition, e.target.value)}
+              >
+                <option value="">Tous les véhicules</option>
+                <option value="neuf">Neuf</option>
+                <option value="occasion">Occasion</option>
               </select>
             </div>
           </div>
@@ -198,7 +239,7 @@ export default function Catalogue() {
               <select 
                 className="catalogue__select catalogue__select--with-icon"
                 value={city}
-                onChange={(e) => { setCity(e.target.value); setPage(1); }}
+                onChange={(e) => handleFilterChange(setCity, e.target.value)}
               >
                 <option value="">Choisir ville - secteur</option>
                 <option value="Casablanca">Casablanca</option>
@@ -219,7 +260,7 @@ export default function Catalogue() {
                   placeholder="Min" 
                   className="catalogue__input catalogue__input--price"
                   value={priceMin}
-                  onChange={(e) => { setPriceMin(e.target.value); setPage(1); }}
+                  onChange={(e) => handleFilterChange(setPriceMin, e.target.value)}
                 />
                 <span className="catalogue__price-suffix">MAD</span>
               </div>
@@ -229,7 +270,7 @@ export default function Catalogue() {
                   placeholder="Max" 
                   className="catalogue__input catalogue__input--price"
                   value={priceMax}
-                  onChange={(e) => { setPriceMax(e.target.value); setPage(1); }}
+                  onChange={(e) => handleFilterChange(setPriceMax, e.target.value)}
                 />
                 <span className="catalogue__price-suffix">MAD</span>
               </div>
@@ -242,7 +283,7 @@ export default function Catalogue() {
               <select 
                 className="catalogue__select"
                 value={activeSort}
-                onChange={(e) => { setActiveSort(e.target.value); setPage(1); }}
+                onChange={(e) => handleFilterChange(setActiveSort, e.target.value)}
               >
                 <option value="created_at-desc">Plus récentes</option>
                 <option value="price-asc">Prix croissant</option>
@@ -266,7 +307,7 @@ export default function Catalogue() {
           {/* Active filters summary */}
           <div className="catalogue__main-header">
             <h1 className="catalogue__main-title">
-              Voitures d'occasion au Maroc
+              {activeCondition === 'neuf' ? 'Voitures neuves au Maroc' : activeCondition === 'occasion' ? "Voitures d'occasion au Maroc" : 'Voitures au Maroc'}
             </h1>
             <span className="catalogue__main-count">1 - {vehicles.length} sur {total} annonces</span>
           </div>

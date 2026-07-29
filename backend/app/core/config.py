@@ -1,4 +1,4 @@
-﻿"""
+"""
 core/config.py — Configuration centralisée via variables d'environnement.
 Charge automatiquement le fichier .env à la racine du backend.
 """
@@ -62,23 +62,25 @@ class Settings(BaseSettings):
     # ─── Kafka ─────────────────────────────────────────────────
     KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
 
-    # ─── Groq — LLM ultra-rapide ──────────────────────────────
+    # ─── Groq — LLM ultra-rapide (Désactivé) ──────────────────
     GROQ_API_KEY: str = ""
 
     @property
     def groq_api_key(self) -> str:
         if not self.GROQ_API_KEY:
-            raise ValueError(
-                "GROQ_API_KEY manquante — vérifie ton fichier .env. "
-                "Obtenir une clé : https://console.groq.com/keys"
-            )
+            # We don't raise error since we use Ollama now
+            return ""
         return self.GROQ_API_KEY
 
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
-    # ─── LLM / RAG (fallback OpenAI) ──────────────────────────
-    OPENAI_API_KEY: str = ""
-    LLM_MODEL: str = "gpt-4o-mini"
+    # ─── LLM / RAG (Ollama) ───────────────────────────────────
+    OLLAMA_BASE_URL: str = "http://localhost:11434/v1"
+    OLLAMA_MODEL_TEXT: str = "qwen3:8b"
+    OLLAMA_MODEL_CODE: str = "qwen2.5-coder:7b"
+    
+    OPENAI_API_KEY: str = "ollama" # placeholder needed for langchain_openai
+    LLM_MODEL: str = "qwen3:8b"
     EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
 
     class Config:

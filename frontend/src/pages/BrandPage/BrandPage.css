@@ -1,0 +1,142 @@
+.brand-page {
+  padding-bottom: 4rem;
+  background-color: var(--color-bg-secondary);
+  min-height: 100vh;
+}
+
+.brand-hero {
+  background: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
+  border-bottom: 1px solid var(--color-glass-border);
+  padding: 4rem 2rem;
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.brand-hero__content {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.brand-hero__logo {
+  height: 80px;
+  width: auto;
+  object-fit: contain;
+  margin-bottom: 1rem;
+}
+
+.brand-hero__title {
+  font-family: 'Playfair Display', serif;
+  font-size: 3.5rem;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.brand-hero__subtitle {
+  font-size: 1.1rem;
+  color: var(--color-text-muted);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.brand-content {
+  padding: 0 1.5rem;
+}
+
+.brand-filters {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 3rem;
+}
+
+.brand-filter-btn {
+  background-color: transparent;
+  border: 1px solid var(--color-glass-border);
+  color: var(--color-text-primary);
+  padding: 0.75rem 1.5rem;
+  border-radius: 2rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.brand-filter-btn:hover {
+  background-color: var(--color-glass-bg);
+}
+
+.brand-filter-btn.active {
+  background-color: var(--color-accent-gold);
+  border-color: var(--color-accent-gold);
+  color: white;
+  box-shadow: 0 4px 12px rgba(174, 140, 78, 0.2);
+}
+
+.brand-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.brand-loading,
+.brand-error,
+.brand-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+  background-color: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--color-glass-border);
+}
+
+.brand-error {
+  color: #ef4444;
+  border-color: #fca5a5;
+  background-color: #fef2f2;
+}
+
+.brand-page--not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  min-height: 50vh;
+}
+
+.brand-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 4rem;
+}
+
+.brand-pagination-info {
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 768px) {
+  .brand-hero {
+    padding: 3rem 1.5rem;
+  }
+  
+  .brand-hero__title {
+    font-size: 2.5rem;
+  }
+  
+  .brand-hero__logo {
+    height: 60px;
+  }
+  
+  .brand-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}

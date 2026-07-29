@@ -1,12 +1,12 @@
 from typing import Any, Optional
 
 try:
-    from langchain_groq import ChatGroq
+    from langchain_openai import ChatOpenAI
     from langchain_core.prompts import ChatPromptTemplate
     from langchain_core.messages import HumanMessage, SystemMessage
     LANGCHAIN_AVAILABLE = True
 except ImportError:  # Allows retrieval/no-match routes and unit tests to run in a slim environment.
-    class ChatGroq:  # type: ignore[no-redef]
+    class ChatOpenAI:  # type: ignore[no-redef]
         def __init__(self, *args: Any, **kwargs: Any) -> None: pass
     LANGCHAIN_AVAILABLE = False
 
@@ -169,11 +169,12 @@ class ChatbotChain:
 
     def _get_llm(self) -> Any:
         if not LANGCHAIN_AVAILABLE:
-            raise RuntimeError("LangChain/Groq n'est pas installe")
+            raise RuntimeError("LangChain/OpenAI n'est pas installe")
         if self._llm is None:
-            self._llm = ChatGroq(
-                api_key=settings.groq_api_key,
-                model=settings.GROQ_MODEL,
+            self._llm = ChatOpenAI(
+                base_url=settings.OLLAMA_BASE_URL,
+                api_key=settings.OPENAI_API_KEY,
+                model=settings.OLLAMA_MODEL_TEXT,
                 temperature=0.3,
                 max_tokens=600,
             )

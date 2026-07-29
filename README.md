@@ -4,6 +4,14 @@
 
 ---
 
+## 🎯 Objectif du Projet de Stage
+
+Ce projet, réalisé dans le cadre d'un stage, a pour objectif principal d'améliorer et de faciliter l'expérience utilisateur lors de l'achat d'un véhicule d'occasion. Il s'articule autour de deux axes majeurs :
+- **Un Chatbot interactif** : pour aider le client à identifier et formuler précisément ses besoins.
+- **Un Moteur de Recommandation IA** : pour cibler et recommander la ou les voitures qui lui conviennent le plus.
+
+---
+
 ## 🏗️ Architecture
 
 ```

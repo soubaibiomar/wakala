@@ -2,7 +2,7 @@ import asyncio
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from langchain_openai import OpenAIEmbeddings
+from langchain_community.embeddings import OllamaEmbeddings
 from qdrant_client.http import models as qmodels
 
 from app.core.database import async_session_factory
@@ -37,13 +37,14 @@ async def ingest_vehicles():
     """
     logger.info("Début de l'ingestion des véhicules vers Qdrant...")
     
-    # Assurez-vous que la collection existe (dimension 1536 pour text-embedding-3-small)
-    await ensure_collection_exists(settings.QDRANT_COLLECTION, vector_size=1536)
+    # Assurez-vous que la collection existe (dimension 1024 pour bge-m3)
+    await ensure_collection_exists(settings.QDRANT_COLLECTION, vector_size=1024)
     qdrant = get_qdrant_client()
     
-    embeddings_model = OpenAIEmbeddings(
-        model="text-embedding-3-small", 
-        openai_api_key=settings.OPENAI_API_KEY
+    _ollama_base = settings.OLLAMA_BASE_URL.replace("/v1", "") if settings.OLLAMA_BASE_URL else "http://localhost:11434"
+    embeddings_model = OllamaEmbeddings(
+        base_url=_ollama_base,
+        model="bge-m3"
     )
 
     async with async_session_factory() as session:

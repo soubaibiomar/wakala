@@ -20,14 +20,19 @@ import Home from './pages/Home';
 import Catalogue from './pages/Catalogue';
 import VehicleDetail from './pages/VehicleDetail';
 import AuthPage from './pages/Auth/AuthPage';
+import BrandPage from './pages/BrandPage/BrandPage';
 import AdminDashboard from './pages/AdminDashboard';
 import MaintenanceBook from './pages/Dashboard/MaintenanceBook';
 import CustomsPage from './pages/CustomsPage';
 import TransactionPage from './pages/TransactionPage';
+import ChatbotPage from './pages/ChatbotPage';
 import ChatbotWidget from './components/chatbot-widget/ChatbotWidget';
 import CompareDrawer from './components/compare/CompareDrawer';
 import DashboardLayout from './components/dashboard/DashboardLayout';
 import DashboardIndex from './pages/Dashboard';
+import SellerListings from './pages/Dashboard/SellerListings';
+import NewListing from './pages/Dashboard/NewListing';
+import Messages from './pages/Dashboard/Messages';
 import './styles/globals.css';
 
 // ─── React Query Client ───────────────────────────────────────
@@ -65,6 +70,7 @@ function Navbar() {
             <li>
               <Link to="/catalogue" className={isActive('/catalogue')}>Catalogue</Link>
             </li>
+
             <li>
               <Link to="/dedouanement" className={isActive('/dedouanement')}>Dédouanement</Link>
             </li>
@@ -217,7 +223,10 @@ function AppRoutes() {
       <Route element={<MainLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/catalogue" element={<Catalogue />} />
-        <Route path="/vehicule/:id" element={<VehicleDetail />} />
+        <Route path="/vehicles/:id" element={<VehicleDetail />} />
+        <Route path="/marque/:brandName" element={<BrandPage />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/chat" element={<ChatbotPage />} />
         <Route path="/login" element={<AuthPage />} />
         <Route path="/register" element={<AuthPage />} />
         <Route path="/dedouanement" element={<CustomsPage />} />
@@ -230,8 +239,9 @@ function AppRoutes() {
       <Route path="/dashboard" element={<DashboardLayout />}>
         <Route index element={<DashboardIndex />} />
         <Route path="maintenance" element={<MaintenanceBook />} />
-        {/* Placeholder for other routes like listings, favorites */}
-        <Route path="listings" element={<div>Mes Annonces (À venir)</div>} />
+        <Route path="listings" element={<SellerListings />} />
+        <Route path="new-listing" element={<NewListing />} />
+        <Route path="messages" element={<Messages />} />
         <Route path="favorites" element={<div>Favoris (À venir)</div>} />
         <Route path="argus" element={<div>Argus Complet (À venir)</div>} />
         {/* L'Admin Bento est géré par l'index qui check le role, ou on peut le forcer ici */}

@@ -1,0 +1,101 @@
+# ═══════════════════════════════════════════════════════════════
+# Wakala Scraper — Configuration des plateformes
+# Chaque entrée définit les URLs et sélecteurs CSS par site
+# ═══════════════════════════════════════════════════════════════
+
+moteur:
+  base_url: "https://www.moteur.ma"
+  search_url: "https://www.moteur.ma/fr/voiture/achat-voiture-occasion/recherche/?page={page}"
+  new_url: "https://www.moteur.ma/fr/voiture/voiture-neuve/"
+  listing_type: "both"
+  delay: [2.0, 4.0]
+  selectors:
+    listing_links: "div.item-card9-imgs a.link, div.picture a"
+    new_listing_links: "a[href*='/fr/neuf/voiture/']"
+    title: "h1, h3.title, h3"
+    price: "div.price, .price"
+    brand: "div.detail_auto span.brand"
+    model: "div.detail_auto span.model"
+    year: "div.detail_auto span.year"
+    mileage: "div.detail_auto span.mileage"
+    fuel_type: "div.detail_auto span.fuel"
+    transmission: "div.detail_auto span.transmission"
+    city: "div.detail_auto span.city"
+    images: "div.slider img, .picture img"
+    description: "div.desc, .text-content"
+
+wandaloo:
+  base_url: "https://www.wandaloo.com"
+  used_url: "https://www.wandaloo.com/occasion/?page={page}"
+  new_url: "https://www.wandaloo.com/neuf/"
+  listing_type: "both"
+  delay: [3.0, 5.0]
+  selectors:
+    listing_links: "p.titre a, ul.listing li a, .car-item a"
+    new_brand_links: "a[href*='/neuf/']"
+    title: "h1"
+    price: "div.price, .price"
+
+avito:
+  base_url: "https://www.avito.ma"
+  used_url: "https://www.avito.ma/fr/maroc/voitures_d_occasion-%C3%A0_vendre?p={page}"
+  new_url: "https://www.avito.ma/fr/maroc/voitures_neuves"
+  listing_type: "both"
+  delay: [3.0, 6.0]
+  selectors:
+    listing_links: "a[href*='/voitures_d_occasion/']"
+    new_listing_links: "a[href*='/voitures_neuves/']"
+
+otoclic:
+  base_url: "https://www.otoclic.com"
+  search_url: "https://www.otoclic.com/acheter-votre-voiture-doccasion/?cars_pp=24&cars_order=desc&page={page}"
+  listing_type: "occasion"
+  delay: [2.0, 4.0]
+  selectors:
+    listing_links: "a[href*='/cars/']"
+    title: "h1, .car-title"
+    price: ".price.car-price, .new-price"
+    images: ".gallery img, .car-gallery img"
+    description: ".car-description, .description"
+    mileage: ".vehicle-spec-value, [class*=mileage]"
+    fuel_type: ".vehicle-spec-value, [class*=fuel]"
+    year: ".vehicle-spec-value, [class*=year]"
+
+spoticar:
+  base_url: "https://www.spoticar.ma"
+  search_url: "https://www.spoticar.ma/voitures-occasion?page={page}"
+  listing_type: "occasion"
+  certified: true
+  delay: [5.0, 10.0]   # robots.txt indique Crawl-delay: 10
+  selectors:
+    listing_links: ".vehicle-card a, a[href*='/voitures-occasion/']"
+    title: "h1, .vehicle-title"
+    price: ".vehicle-card-price, .price-value"
+    images: ".vehicle-gallery img, .slider img"
+    description: ".vehicle-description, .description"
+
+kifal_auto:
+  base_url: "https://occasion.kifal.ma"
+  search_url: "https://occasion.kifal.ma/annonces?page={page}"
+  listing_type: "occasion"
+  certified: true
+  delay: [3.0, 5.0]
+  selectors:
+    listing_links: "a[href*='/annonce/']"
+    title: "h1, .annonce-title"
+    price: ".price, .annonce-price"
+    images: ".gallery img, .annonce-gallery img"
+    description: ".annonce-description, .description"
+
+global_occaz:
+  base_url: "https://www.globaloccaz.ma"
+  search_url: "https://www.globaloccaz.ma/vehicules?page={page}"
+  listing_type: "occasion"
+  enabled: false   # Site hors ligne (timeout DNS) — à réactiver si le site revient
+  delay: [2.0, 4.0]
+  selectors:
+    listing_links: "a[href*='/vehicule/']"
+    title: "h1"
+    price: ".price"
+    images: ".gallery img"
+    description: ".description"

@@ -93,6 +93,13 @@ class LoginRequest(BaseModel):
     """Schéma de connexion."""
     email: EmailStr
     password: str
+    remember_me: bool = False
+
+
+class GoogleLoginRequest(BaseModel):
+    """Schéma de connexion via Google OAuth."""
+    token: str
+    remember_me: bool = False
 
 
 class TokenResponse(BaseModel):

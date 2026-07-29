@@ -10,7 +10,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: var(--gradient-premium);
+  background: var(--gradient-hero);
   padding: var(--space-3xl) var(--space-xl);
   gap: var(--space-xl);
 }
@@ -194,7 +194,7 @@
 }
 
 .title-gradient {
-  background: var(--gradient-brand);
+  background: var(--gradient-cta);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -219,8 +219,8 @@
   background: rgba(255, 255, 255, 0.95);
   border-radius: var(--radius-pill);
   padding: 6px 6px 6px 20px;
-  box-shadow: var(--shadow-lg), var(--shadow-glow-blue);
-  transition: box-shadow var(--duration-normal) ease;
+  box-shadow: var(--shadow-lg), 0 0 20px rgba(96,165,250,0.15);
+  transition: box-shadow var(--transition-base);
 }
 .search-bar:focus-within {
   box-shadow: var(--shadow-lg), 0 0 40px rgba(96,165,250,0.35);
@@ -250,7 +250,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  background: var(--gradient-brand);
+  background: var(--gradient-cta);
   color: white;
   font-weight: 600;
   font-size: 0.9rem;
@@ -258,12 +258,12 @@
   border-radius: var(--radius-pill);
   border: none;
   cursor: pointer;
-  transition: transform var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+  transition: transform 150ms ease, box-shadow 150ms ease;
   white-space: nowrap;
 }
 .search-btn:hover {
   transform: translateY(-1px);
-  box-shadow: var(--shadow-glow-blue);
+  box-shadow: 0 0 20px rgba(96,165,250,0.3);
 }
 
 /* ─── AI badge ─────────────────────────────────────── */
@@ -432,6 +432,125 @@
   100% { background-position: -200% 0; }
 }
 
+/* ─── Mic button ───────────────────────────────────── */
+.mic-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: rgba(243, 244, 246, 0.5);
+  color: #6b7280;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-right: 8px;
+  transition: all 0.2s ease;
+}
+
+.mic-btn:hover {
+  background: rgba(229, 231, 235, 0.8);
+  color: #4b5563;
+}
+
+.mic-btn--listening {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  animation: mic-pulse 1.5s ease-in-out infinite;
+}
+
+.mic-btn--listening:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #dc2626;
+}
+
+@keyframes mic-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+}
+
+/* ─── Clarification box ────────────────────────────── */
+.clarification-box {
+  width: 100%;
+  background: rgba(254, 243, 199, 0.95);
+  backdrop-filter: blur(8px);
+  padding: 14px 18px;
+  border-radius: 12px;
+  color: #92400e;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+              0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  animation: clarification-enter 0.3s ease-out;
+}
+
+@keyframes clarification-enter {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.clarification-box__question {
+  margin: 0 0 10px 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.clarification-box__form {
+  display: flex;
+  gap: 8px;
+}
+
+.clarification-box__input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #d97706;
+  outline: none;
+  font-size: 0.92rem;
+  font-family: inherit;
+  background: white;
+  transition: border-color 0.2s;
+}
+
+.clarification-box__input:focus {
+  border-color: #b45309;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
+}
+
+.clarification-box__btn {
+  background: #d97706;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.clarification-box__btn:hover {
+  background: #b45309;
+}
+
+/* ─── Voice error ──────────────────────────────────── */
+.voice-error {
+  width: 100%;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #dc2626;
+  font-size: 0.82rem;
+  text-align: center;
+  animation: clarification-enter 0.3s ease-out;
+}
+
 /* ─── Responsive ───────────────────────────────────── */
 @media (max-width: 768px) {
   .hero {
@@ -461,5 +580,16 @@
   .nlp-badge-skeleton {
     width: 80px;
     height: 28px;
+  }
+  .mic-btn {
+    width: 36px;
+    height: 36px;
+    margin-right: 4px;
+  }
+  .clarification-box {
+    padding: 10px 14px;
+  }
+  .clarification-box__form {
+    flex-direction: column;
   }
 }

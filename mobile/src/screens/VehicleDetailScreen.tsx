@@ -61,6 +61,19 @@ export default function VehicleDetailScreen() {
         
         {/* Galerie Photo avec PagerView */}
         <View style={styles.galleryContainer}>
+          <View style={{ position: 'absolute', top: 16, left: 16, zIndex: 10, flexDirection: 'row' }}>
+            <View style={[
+              { paddingHorizontal: 12, paddingVertical: 6, borderRadius: tokens.radii.pill },
+              vehicle.mileage === 0 ? { backgroundColor: tokens.colors.accentGold } : { backgroundColor: tokens.colors.bgSecondary, borderWidth: 1, borderColor: tokens.borders.subtle }
+            ]}>
+              <Text style={[
+                { fontFamily: tokens.typography.sansBold, fontSize: 12, textTransform: 'uppercase' },
+                vehicle.mileage === 0 ? { color: tokens.colors.textInverse } : { color: tokens.colors.textPrimary }
+              ]}>
+                {vehicle.mileage === 0 ? 'Neuf' : 'Occasion'}
+              </Text>
+            </View>
+          </View>
           <PagerView 
             style={styles.pagerView} 
             initialPage={0}

@@ -1,7 +1,9 @@
 import { useCallback, useState } from 'react';
+import { Mic, Square } from 'lucide-react';
 import type { RecommendationResponse } from '../../services/recommendationService';
 import { parseSearchQuery, type NlpExtractionResult } from '../../services/searchParseService';
 import { useMatchmaker } from '../recommendation-form/useMatchmaker';
+import { useVoiceInput } from '../../hooks/useVoiceInput';
 
 interface SearchBarProps {
   userId?: string | null;
@@ -52,36 +54,69 @@ const BADGE_ICONS: Record<string, string> = {
   profil: '👤',
 };
 
+const LANG_FLAGS: Record<string, string> = {
+  'fr-FR': '🇫🇷',
+  'ar-MA': '🇲🇦',
+  'en-US': '🇬🇧',
+};
+const LANG_KEYS = Object.keys(LANG_FLAGS);
+
 export default function SearchBar({ userId, onResults }: SearchBarProps) {
   const [query, setQuery] = useState('');
+  const [clarificationAnswer, setClarificationAnswer] = useState('');
+  
   const { isLoading, recommend } = useMatchmaker();
   const [nlpResult, setNlpResult] = useState<NlpExtractionResult | null>(null);
   const [nlpLoading, setNlpLoading] = useState(false);
 
-  const submit = useCallback(async () => {
-    const trimmed = query.trim();
+  // ─── Saisie vocale (Web Speech API) ───────────────────────
+  const voice = useVoiceInput({
+    defaultLang: 'fr-FR',
+    onTranscript: (text) => {
+      // Injecte le texte transcrit dans le même state que le clavier
+      setQuery((prev) => {
+        const separator = prev.trim() ? ' ' : '';
+        return prev + separator + text;
+      });
+    },
+  });
+
+  const submitSearch = useCallback(async (textToSearch: string) => {
+    const trimmed = textToSearch.trim();
     if (!trimmed || isLoading) return;
 
-    // Lancer les deux appels en parallèle
     setNlpLoading(true);
     setNlpResult(null);
 
-    const [recResult, nlpData] = await Promise.all([
-      recommend({ query: trimmed, user_id: userId }),
-      parseSearchQuery(trimmed),
-    ]);
+    // Si on a déjà une question de clarification et une réponse, on les concatène
+    let finalQuery = trimmed;
+    if (nlpResult?.statut === 'clarification_requise' && clarificationAnswer.trim()) {
+      finalQuery = `${query} ${clarificationAnswer.trim()}`;
+      setQuery(finalQuery);
+      setClarificationAnswer('');
+    }
 
-    // Afficher les badges NLP
+    const nlpData = await parseSearchQuery(finalQuery);
+
     if (nlpData && !nlpData.erreur) {
       setNlpResult(nlpData);
+      
+      // Si la confiance est toujours basse et qu'une clarification est requise, 
+      // on s'arrête ici pour poser la question sans lancer la recommandation
+      if (nlpData.statut === 'clarification_requise') {
+        setNlpLoading(false);
+        return;
+      }
     } else {
       setNlpResult(null);
     }
+    
+    // Seulement si pas de clarification requise, on lance la recherche complète
+    const recResult = await recommend({ query: finalQuery, user_id: userId });
     setNlpLoading(false);
 
-    // Naviguer vers les résultats
-    if (recResult) onResults(trimmed, recResult);
-  }, [isLoading, onResults, query, recommend, userId]);
+    if (recResult) onResults(finalQuery, recResult);
+  }, [isLoading, onResults, recommend, userId, nlpResult, clarificationAnswer, query]);
 
   const hasBadges = nlpResult && (
     nlpResult.budget !== null ||
@@ -89,6 +124,8 @@ export default function SearchBar({ userId, onResults }: SearchBarProps) {
     nlpResult.priorites.length > 0 ||
     nlpResult.profil_passagers !== null
   );
+
+  const needsClarification = nlpResult?.statut === 'clarification_requise';
 
   return (
     <div className="search-bar-container">
@@ -100,7 +137,8 @@ export default function SearchBar({ userId, onResults }: SearchBarProps) {
           <div className="nlp-badge-skeleton" />
         </div>
       )}
-      {hasBadges && !nlpLoading && (
+      
+      {hasBadges && !nlpLoading && !needsClarification && (
         <div className="nlp-badges" aria-live="polite" aria-label="Critères extraits par IA">
           {nlpResult.budget !== null && (
             <span className="nlp-badge nlp-badge--budget">
@@ -132,6 +170,38 @@ export default function SearchBar({ userId, onResults }: SearchBarProps) {
         </div>
       )}
 
+      {/* ─── Clarification Loop ──────────────────────────── */}
+      {needsClarification && !nlpLoading && (
+        <div className="clarification-box">
+          <p className="clarification-box__question">
+            <strong>🤖 Assistant :</strong> {nlpResult.question}
+          </p>
+          <div className="clarification-box__form">
+            <input
+              type="text"
+              className="clarification-box__input"
+              value={clarificationAnswer}
+              onChange={(e) => setClarificationAnswer(e.target.value)}
+              placeholder="Votre réponse..."
+              onKeyDown={(e) => { if (e.key === 'Enter') void submitSearch(query); }}
+            />
+            <button 
+              className="clarification-box__btn"
+              onClick={() => void submitSearch(query)}
+            >
+              Répondre
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Voice error message ─────────────────────────── */}
+      {voice.errorMessage && (
+        <div className="voice-error" role="alert">
+          ⚠️ {voice.errorMessage}
+        </div>
+      )}
+
       {/* ─── Search Input ────────────────────────────────── */}
       <div className="search-bar">
         <div className="search-icon" aria-hidden="true">⌕</div>
@@ -139,16 +209,53 @@ export default function SearchBar({ userId, onResults }: SearchBarProps) {
           type="text"
           className="search-input"
           id="nlp-search-input"
-          placeholder="Décrivez le véhicule que vous cherchez — budget, usage, carburant..."
+          placeholder={
+            voice.status === 'listening'
+              ? 'Parlez maintenant...'
+              : 'Décrivez le véhicule que vous cherchez — budget, usage, carburant...'
+          }
           autoComplete="off"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          onKeyDown={(event) => { if (event.key === 'Enter') void submit(); }}
+          value={voice.interimTranscript ? query + (query ? ' ' : '') + voice.interimTranscript : query}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            if (needsClarification) setNlpResult(null);
+          }}
+          onKeyDown={(event) => { if (event.key === 'Enter') void submitSearch(query); }}
+          readOnly={voice.status === 'listening'}
         />
+        
+        {/* ─── Bouton micro (masqué si non supporté) ──── */}
+        {voice.isSupported && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <button
+              className="lang-btn"
+              type="button"
+              onClick={() => {
+                const currentIndex = LANG_KEYS.indexOf(voice.lang);
+                const nextIndex = (currentIndex + 1) % LANG_KEYS.length;
+                voice.setLang(LANG_KEYS[nextIndex]);
+              }}
+              title="Changer de langue"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 4px' }}
+            >
+              {LANG_FLAGS[voice.lang] || '🇫🇷'}
+            </button>
+            <button
+              className={`mic-btn ${voice.status === 'listening' ? 'mic-btn--listening' : ''}`}
+              onClick={voice.toggleListening}
+              title={voice.status === 'listening' ? 'Arrêter l\'écoute' : 'Recherche vocale'}
+              type="button"
+              aria-label={voice.status === 'listening' ? 'Arrêter la reconnaissance vocale' : 'Activer la reconnaissance vocale'}
+            >
+              {voice.status === 'listening' ? <Square size={16} fill="currentColor" /> : <Mic size={20} />}
+            </button>
+          </div>
+        )}
+
         <button
           className="search-btn"
           id="nlp-search-submit"
-          onClick={() => void submit()}
+          onClick={() => void submitSearch(query)}
           disabled={isLoading || nlpLoading || !query.trim()}
         >
           <span>

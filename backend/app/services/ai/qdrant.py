@@ -8,10 +8,10 @@ logger = logging.getLogger(__name__)
 # Initialize Qdrant client asynchronously
 qdrant_client = AsyncQdrantClient(host=settings.QDRANT_HOST, port=settings.QDRANT_PORT)
 
-async def ensure_collection_exists(collection_name: str, vector_size: int = 1536):
+async def ensure_collection_exists(collection_name: str, vector_size: int = 1024):
     """
     Ensure that the Qdrant collection exists.
-    If not, create it with the specified vector size (1536 for text-embedding-3-small).
+    If not, create it with the specified vector size (1024 for bge-m3).
     """
     try:
         # Check if collection exists

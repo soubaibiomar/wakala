@@ -112,7 +112,7 @@ async def parse_via_llm(html_content: str, url: str, db: AsyncSession) -> Option
     # Limiter la taille si la page est immense
     text_content = text_content[:15000]
 
-    llm = ChatOpenAI(model="gpt-4o-mini", openai_api_key=settings.OPENAI_API_KEY, temperature=0).with_structured_output(ScrapedVehicleData)
+    llm = ChatOpenAI(base_url=settings.OLLAMA_BASE_URL, model=settings.OLLAMA_MODEL_TEXT, openai_api_key=settings.OPENAI_API_KEY, temperature=0).with_structured_output(ScrapedVehicleData)
     
     prompt = ChatPromptTemplate.from_messages([
         ("system", "Tu es un extracteur de données expert. Ta tâche est de lire le texte extrait d'une page d'annonce automobile marocaine et d'extraire les informations exactes requises. Si une information est absente, déduis-la intelligemment ou mets une valeur par défaut."),

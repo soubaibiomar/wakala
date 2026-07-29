@@ -3,11 +3,11 @@ import logging
 from typing import Any
 
 try:
-    from langchain_groq import ChatGroq
+    from langchain_openai import ChatOpenAI
     from langchain_core.prompts import PromptTemplate
     LANGCHAIN_AVAILABLE = True
 except ImportError:
-    ChatGroq = Any
+    ChatOpenAI = Any
     PromptTemplate = Any
     LANGCHAIN_AVAILABLE = False
 
@@ -31,13 +31,15 @@ class CustomsChain:
             return
 
         try:
-            self.llm = ChatGroq(
-                api_key=settings.GROQ_API_KEY,
-                model_name="llama-3.3-70b-versatile",
+            self.llm = ChatOpenAI(
+                base_url=settings.OLLAMA_BASE_URL,
+                api_key=settings.OPENAI_API_KEY,
+                model=settings.OLLAMA_MODEL_TEXT,
                 temperature=0.2,
                 max_tokens=350,
             )
             
+
             self.prompt = PromptTemplate(
                 input_variables=[
                     "brand", "model", "year", "fuel_type", "fiscal_power",

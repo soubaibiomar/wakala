@@ -1,0 +1,66 @@
+[
+  {
+    "id": 1,
+    "description": "100% darija en alphabet latin",
+    "texte": "bghit chi tomobila sghira dyal mdina b 10 malyoun",
+    "expected": {
+      "budget": 100000,
+      "usage": "urbain",
+      "priorites": ["économique"],
+      "langue_detectee": "darija",
+      "confiance": "haute"
+    }
+  },
+  {
+    "id": 2,
+    "description": "100% darija en alphabet arabe",
+    "texte": "بغيت طوموبيل عائلية ما تفوتش 15 مليون",
+    "expected": {
+      "budget": 150000,
+      "usage": "familial",
+      "priorites": [],
+      "profil_passagers": "famille",
+      "langue_detectee": "darija",
+      "confiance": "haute"
+    }
+  },
+  {
+    "id": 3,
+    "description": "Anglais",
+    "texte": "I am looking for a reliable SUV for my family, around 300k",
+    "expected": {
+      "budget": 300000,
+      "usage": "familial",
+      "priorites": ["fiabilité", "espace"],
+      "profil_passagers": "famille",
+      "langue_detectee": "en",
+      "confiance": "haute"
+    }
+  },
+  {
+    "id": 4,
+    "description": "Mélange français / darija (code-switching)",
+    "texte": "je cherche une voiture fiable pour le travail, ma3endich budget kbir",
+    "expected": {
+      "budget": null,
+      "usage": "professionnel",
+      "priorites": ["fiabilité", "économique"],
+      "langue_detectee": "darija",
+      "confiance": "basse",
+      "statut": "clarification_requise"
+    }
+  },
+  {
+    "id": 5,
+    "description": "Phrase vague nécessitant clarification",
+    "texte": "je veux une voiture",
+    "expected": {
+      "budget": null,
+      "usage": null,
+      "priorites": [],
+      "langue_detectee": "fr",
+      "confiance": "basse",
+      "statut": "clarification_requise"
+    }
+  }
+]

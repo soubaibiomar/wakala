@@ -4,6 +4,26 @@
 # ═══════════════════════════════════════════════════════════════
 
 services:
+  # ─── Ollama ────────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+
   # ─── PostgreSQL ────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
@@ -134,11 +154,15 @@ services:
       # Set SCRAPER_MODE=live for production, leave unset for dry-run (default)
       SCRAPER_MODE: "live"
       SCHEDULE_INTERVAL_HOURS: "1"
+      OLLAMA_BASE_URL: "http://ollama:11434/v1"
+      OLLAMA_MODEL_TEXT: "qwen3:8b"
+      OLLAMA_MODEL_CODE: "qwen2.5-coder:7b"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - .:/app
-    # In dry-run mode (default), no actual HTTP requests are made
-    # Set SCRAPER_MODE=live in environment for real scraping
-    command: ["python", "-m", "data_pipeline.kafka.producers.scrapers.run_producer", "--live", "--schedule"]
+    # Run the new unified scraper pipeline continuously
+    command: ["python", "data_pipeline/scrapers/main.py", "--schedule", "--interval", "10"]
 
   backend:
     build:
@@ -167,9 +191,59 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       MAIL_SERVER: mailhog
       MAIL_PORT: 1025
+      OLLAMA_BASE_URL: http://ollama:11434/v1
+      OLLAMA_MODEL_TEXT: qwen3:8b
+      OLLAMA_MODEL_CODE: qwen2.5-coder:7b
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - ./backend:/app
+
+  backend-consumer:
+    build:
+      context: ./backend
+    container_name: wakala-backend-consumer
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: wakala_user
+      POSTGRES_PASSWORD: wakala_secret_password
+      POSTGRES_DB: wakala
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    command: python consume_to_postgres.py
+    volumes:
+      - ./backend:/app
+
+  backend-scheduler:
+    build:
+      context: ./backend
+    container_name: wakala-scheduler
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: wakala_user
+      POSTGRES_PASSWORD: wakala_secret_password
+      POSTGRES_DB: wakala
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: neo4j_secret_password
+      QDRANT_HOST: qdrant
+      OLLAMA_BASE_URL: http://ollama:11434/v1
+    command: python scheduler.py
+    volumes:
+      - ./backend:/app
+
 
   frontend:
     build:
@@ -193,3 +267,5 @@ volumes:
   qdrant_data:
   zookeeper_data:
   kafka_data:
+  ollama:
+    external: true

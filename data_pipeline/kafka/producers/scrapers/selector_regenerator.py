@@ -7,7 +7,7 @@ from typing import List, Dict, Any
 from bs4 import BeautifulSoup
 
 from dotenv import load_dotenv
-from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from .selector_review_queue import SelectorReviewQueue
@@ -21,17 +21,13 @@ logger = logging.getLogger(__name__)
 
 class SelectorRegenerator:
     def __init__(self):
-        # We use llama3-70b-8192 for high reasoning capabilities
-        api_key = os.getenv("GROQ_API_KEY")
-        if not api_key:
-            logger.warning("GROQ_API_KEY not set. Selector regeneration will not work.")
-            self.llm = None
-        else:
-            self.llm = ChatGroq(
-                api_key=api_key,
-                model="llama3-70b-8192",
-                temperature=0.1
-            )
+        # We use the Ollama code model for reasoning capabilities
+        self.llm = ChatOpenAI(
+            base_url="http://localhost:11434/v1",
+            api_key="ollama", # placeholder
+            model="qwen2.5-coder:7b",
+            temperature=0.1
+        )
         self.review_queue = SelectorReviewQueue()
 
     def regenerate_selectors(self, site: str, failing_fields: List[str]) -> None:

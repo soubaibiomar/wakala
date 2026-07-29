@@ -55,6 +55,7 @@ async def list_vehicles(
     year_min: Optional[int] = Query(None, ge=1950, description="Année minimum"),
     year_max: Optional[int] = Query(None, le=2030, description="Année maximum"),
     mileage_max: Optional[int] = Query(None, ge=0, description="Kilométrage maximum"),
+    condition: Optional[str] = Query(None, description="Condition (neuf/occasion)"),
     # Tri
     sort_by: str = Query("created_at", description="Champ de tri"),
     sort_order: str = Query("desc", pattern="^(asc|desc)$", description="Ordre de tri"),
@@ -84,6 +85,11 @@ async def list_vehicles(
         query = query.where(Vehicle.year <= year_max)
     if mileage_max is not None:
         query = query.where(Vehicle.mileage <= mileage_max)
+    
+    if condition == 'neuf':
+        query = query.where(Vehicle.description.ilike('%Véhicule Neuf Officiel%'))
+    elif condition == 'occasion':
+        query = query.where(~Vehicle.description.ilike('%Véhicule Neuf Officiel%'))
 
     # Compter le total
     count_query = select(func.count()).select_from(query.subquery())

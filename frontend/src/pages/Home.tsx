@@ -15,6 +15,7 @@ import { Search, Cpu, ShieldCheck, MessageSquare, LineChart, Network, BarChart3,
 import { vehicleService } from '../services/vehicleService';
 import type { Vehicle } from '../types/vehicle';
 import VehicleCard from '../components/vehicle-card/VehicleCard';
+import { POPULAR_BRANDS } from '../constants/brands';
 
 import HeroCar from '../components/hero/HeroCar';
 import HeroIntro from '../components/hero/HeroIntro';
@@ -60,24 +61,48 @@ function StatsSection() {
 // Featured Vehicles — appels API réels
 // ═══════════════════════════════════════════════════════════════
 
-function FeaturedSection() {
+interface CarSectionProps {
+  id: string;
+  tag: string;
+  title: string;
+  subtitle: string;
+  fetchParams: {
+    page_size: number;
+    sort_by: string;
+    sort_order: 'asc' | 'desc';
+    condition?: 'neuf' | 'occasion';
+  };
+  emptyMessage: string;
+}
+
+function CarSection({ id, tag, title, subtitle, fetchParams, emptyMessage }: CarSectionProps) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     vehicleService
-      .getVehicles({ page_size: 6, sort_by: 'created_at', sort_order: 'desc' })
-      .then((res) => setVehicles(res.items))
+      .getVehicles(fetchParams)
+      .then((res) => {
+        // If it's used cars (no mileage_max=0), we might get new cars. Let's filter locally if needed.
+        let items = res.items;
+        if (fetchParams.condition !== 'neuf') {
+           const usedItems = items.filter(v => !v.description?.toLowerCase().includes('véhicule neuf officiel'));
+           if (usedItems.length > 0) {
+             items = usedItems;
+           }
+        }
+        setVehicles(items.slice(0, 6)); // Ensure we only show 6
+      })
       .catch((err) => {
         console.error('Erreur chargement véhicules:', err);
         setError('Impossible de charger les véhicules');
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [fetchParams]);
 
   return (
-    <section className="home-featured" id="featured-vehicles">
+    <section className="home-featured" id={id}>
       <div className="home-featured__inner">
         
         <motion.div
@@ -87,10 +112,10 @@ function FeaturedSection() {
           viewport={{ once: true }}
         >
           <div className="home-featured__header-left">
-            <span className="home-featured__tag">Nouveautés</span>
-            <h2 className="home-featured__title">Véhicules populaires</h2>
+            <span className="home-featured__tag">{tag}</span>
+            <h2 className="home-featured__title">{title}</h2>
             <p className="home-featured__subtitle">
-              Dernières annonces ajoutées, analysées par notre IA
+              {subtitle}
             </p>
           </div>
           <Link to="/catalogue" className="home-featured__see-all">
@@ -109,8 +134,7 @@ function FeaturedSection() {
             <p className="home-featured__empty-icon">⚠️</p>
             <p className="home-featured__empty-msg">{error}</p>
             <p className="home-featured__empty-hint">
-              Assurez-vous que le backend est lancé sur{' '}
-              <a href="http://localhost:8000/docs" target="_blank" rel="noreferrer">localhost:8000</a>
+              Assurez-vous que le backend est lancé.
             </p>
           </div>
         ) : vehicles.length > 0 ? (
@@ -130,10 +154,9 @@ function FeaturedSection() {
         ) : (
           <div className="home-featured__empty-state">
             <p className="home-featured__empty-icon">🚗</p>
-            <p className="home-featured__empty-msg">Aucun véhicule disponible</p>
+            <p className="home-featured__empty-msg">{emptyMessage}</p>
             <p className="home-featured__empty-hint">
-              Créez des véhicules via l'API Swagger :{' '}
-              <a href="http://localhost:8000/docs" target="_blank" rel="noreferrer">/docs</a>
+              Revenez plus tard pour de nouvelles annonces.
             </p>
           </div>
         )}
@@ -163,7 +186,7 @@ function FeaturesSection() {
   ];
 
   return (
-    <section className="home-features">
+    <section className="home-features" id="features">
       <div className="home-features__inner">
         <motion.div
           className="home-features__header"
@@ -202,6 +225,46 @@ function FeaturesSection() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// Section Marques (Fiches Techniques)
+// ═══════════════════════════════════════════════════════════════
+
+
+function BrandsSection() {
+  return (
+    <section className="home-brands" id="brands-section">
+      <div className="home-brands__container">
+        <div className="home-brands__header">
+          <span className="home-brands__tag">Fiches Techniques & Neuf</span>
+          <h2 className="home-brands__title">Catalogue par Marque</h2>
+          <p className="home-brands__subtitle">
+            Explorez les véhicules neufs et consultez les fiches techniques détaillées de toutes les marques disponibles au Maroc.
+          </p>
+        </div>
+        
+        <div className="home-brands__grid">
+          {POPULAR_BRANDS.map((brandObj, i) => (
+            <motion.div
+              key={brandObj.name}
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.4, delay: i * 0.05 }}
+            >
+              <Link to={`/marque/${encodeURIComponent(brandObj.name)}?tab=neuf`} className="home-brands__card">
+                <div className="home-brands__card-content">
+                  <img src={brandObj.logo} alt={brandObj.name} className="home-brands__card-logo" />
+                  <span className="home-brands__card-name">{brandObj.name}</span>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Page Home
 // ═══════════════════════════════════════════════════════════════
 
@@ -216,7 +279,15 @@ export default function Home() {
         <>
           <HeroCar />
           <StatsSection />
-          <FeaturedSection />
+          <BrandsSection />
+          <CarSection
+            id="used-vehicles"
+            tag="Occasions"
+            title="Véhicules d'Occasion"
+            subtitle="Dernières annonces d'occasion ajoutées, analysées par notre IA."
+            fetchParams={{ page_size: 15, sort_by: 'created_at', sort_order: 'desc' }}
+            emptyMessage="Aucun véhicule d'occasion disponible."
+          />
           <FeaturesSection />
         </>
       )}

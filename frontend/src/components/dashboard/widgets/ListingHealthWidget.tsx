@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { BentoWidget } from '../BentoGrid';
-import { ArrowUpCircle } from 'lucide-react';
+import { ArrowUpCircle, ExternalLink } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export function ListingHealthWidget() {
   const { data, isLoading } = useQuery({
@@ -52,6 +53,11 @@ export function ListingHealthWidget() {
               </li>
             ))}
           </ul>
+          <div style={{ marginTop: '16px' }}>
+            <Link to="/dashboard/listings" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--color-accent)', textDecoration: 'none', fontWeight: 500 }}>
+              Gérer mes annonces <ExternalLink size={14} />
+            </Link>
+          </div>
         </div>
       </div>
     </BentoWidget>

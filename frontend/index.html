@@ -6,9 +6,7 @@
     <meta name="description" content="Wakala — La marketplace automobile intelligente au Maroc. Recherche intuitive, recommandation IA, score de confiance transparent." />
     <meta name="theme-color" content="#122135" />
 
-    <!-- Security Headers -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' http://localhost:8000 https://api.openai.com; frame-ancestors 'none';" />
-    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <!-- Removed CSP for dev environment compatibility -->
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
@@ -27,6 +25,20 @@
     <title>Wakala — Marketplace automobile IA</title>
   </head>
   <body>
+    <script>
+      window.onerror = function(msg, url, lineNo, columnNo, error) {
+        var div = document.createElement('div');
+        div.style = 'color:red;z-index:9999;position:fixed;top:0;left:0;background:white;padding:20px;border:2px solid red;width:100%;height:100%;overflow:auto;';
+        div.innerHTML = '<h1>Application Error</h1><p>' + msg + '</p><pre>' + (error ? error.stack : '') + '</pre>';
+        document.body.appendChild(div);
+      };
+      window.addEventListener('unhandledrejection', function(event) {
+        var div = document.createElement('div');
+        div.style = 'color:red;z-index:9999;position:fixed;top:0;left:0;background:white;padding:20px;border:2px solid red;width:100%;height:100%;overflow:auto;';
+        div.innerHTML = '<h1>Unhandled Promise Rejection</h1><pre>' + (event.reason ? event.reason.stack || event.reason : event) + '</pre>';
+        document.body.appendChild(div);
+      });
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

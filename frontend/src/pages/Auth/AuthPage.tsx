@@ -72,23 +72,21 @@ export default function AuthPage() {
 
   return (
     <div className="auth-page">
-      <div className="auth-split auth-split--right">
-        <div className="auth-form-container">
-          <div className="auth-logo-container">
-            <img src="/assets/wakala-logo.png" alt="Wakala Logo" className="auth-logo-img" />
-          </div>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={mode}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              {renderForm()}
-            </motion.div>
-          </AnimatePresence>
+      <div className="auth-container">
+        <div className="auth-logo-container">
+          <img src="/assets/wakala-logo.png" alt="Wakala Logo" className="auth-logo-img" />
         </div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={mode}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            {renderForm()}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -70,7 +70,7 @@ from app.api.routes_admin import router as admin_router
 from app.api.routes_customs import router as customs_router
 from app.api.routes_transactions import router as transactions_router
 from app.api.routes_search import router as search_router
-from app.api.routes_guided_journey import router as guided_journey_router
+from app.api.routes_messages import router as messages_router
 from app.api.v1.endpoints.ai import router as ai_router
 from app.api.v1.endpoints.maintenance import router as maintenance_router
 
@@ -133,7 +133,7 @@ app.include_router(vision_router, prefix="/api/v1", tags=["Computer Vision"])
 app.include_router(admin_router, prefix="/api/v1", tags=["Admin & Modération"])
 app.include_router(customs_router, prefix="/api/v1", tags=["Dédouanement"])
 app.include_router(transactions_router, prefix="/api/v1", tags=["Escrow & Séquestre"])
-app.include_router(guided_journey_router, prefix="/api/guided-journey", tags=["Parcours Guidé"])
+app.include_router(messages_router, prefix="/api/v1", tags=["Messagerie"])
 app.include_router(ai_router, prefix="/api/v1/ai", tags=["IA & RAG"])
 app.include_router(maintenance_router, prefix="/api/v1/services", tags=["Carnet d'Entretien"])
 

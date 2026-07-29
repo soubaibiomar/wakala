@@ -4,7 +4,7 @@ import { Camera, Calendar, Gauge, Wrench, Loader2, UploadCloud } from 'lucide-re
 import { useState } from 'react';
 
 type AddServiceFormData = {
-  service_type: str;
+  service_type: string;
   date_str: string;
   mileage: number;
   cost?: number;

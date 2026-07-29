@@ -27,6 +27,7 @@ interface AuthState {
   isAuthenticated: boolean;
   loading: boolean;
   login: (payload: LoginPayload) => Promise<User>;
+  googleLogin: (token: string, rememberMe?: boolean) => Promise<User>;
   register: (payload: RegisterPayload) => Promise<User>;
   logout: () => void;
 }
@@ -84,6 +85,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return response.user;
   };
 
+  const googleLogin = async (tokenStr: string, rememberMe?: boolean): Promise<User> => {
+    const response: TokenResponse = await authService.googleLogin(tokenStr, rememberMe);
+    setToken(response.access_token);
+    setUser(response.user);
+    return response.user;
+  };
+
   const register = async (payload: RegisterPayload): Promise<User> => {
     const newUser = await authService.register(payload);
     // Auto-login après inscription
@@ -110,13 +118,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: !!token && !!user,
       loading,
       login,
+      googleLogin,
       register,
       logout,
     }),
     [user, token, loading]
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, token, isAuthenticated: !!token, loading, login, googleLogin, register, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 // ─── Hook ─────────────────────────────────────────────────────

@@ -19,7 +19,8 @@ export interface User {
 /** Version allégée pour l'imbrication dans véhicules/reviews */
 export interface UserBrief {
   id: string;
-  name: string;
+  name?: string;
+  full_name?: string;
   role: UserRole;
   is_verified: boolean;
 }
@@ -27,6 +28,7 @@ export interface UserBrief {
 export interface LoginPayload {
   email: string;
   password: string;
+  remember_me?: boolean;
 }
 
 export interface RegisterPayload {

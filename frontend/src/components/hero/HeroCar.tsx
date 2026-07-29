@@ -1,6 +1,10 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { ChevronDown, ChevronRight, ArrowRight, Users, Car, MapPin } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import type { RecommendationResponse } from '../../services/recommendationService';
+import SearchBar from './SearchBar';
+import './Hero.css';
+import { ChevronDown, ChevronRight, ArrowRight } from 'lucide-react';
 import styles from './hero.module.css';
 
 // Utilisation des données Wakala
@@ -49,6 +53,13 @@ export default function HeroCar() {
   const [transitionState, setTransitionState] = useState('isEntering');
   const [isScrolled, setIsScrolled] = useState(false);
   
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  const handleResults = useCallback((query: string, recommendations: RecommendationResponse) => {
+    navigate(`/catalogue?q=${encodeURIComponent(query)}`, { state: { recommendations } });
+  }, [navigate]);
+  
   const autoPlayDelay = 5000;
 
   // Auto-play
@@ -83,8 +94,12 @@ export default function HeroCar() {
   };
 
   const handleWhyUsClick = () => {
-    // Scroll ou navigation au besoin
-    console.log("Pourquoi nous");
+    const featuresSection = document.getElementById('features');
+    if (featuresSection) {
+      featuresSection.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
+    }
   };
 
   const activeSlideData = slides[animatingTo]; // Les données du slide en cours de transition
@@ -143,6 +158,12 @@ export default function HeroCar() {
             <button type="button" className={styles.ghostBtn} onClick={handleWhyUsClick}>
               Pourquoi nous
             </button>
+          </div>
+        </div>
+        
+        <div className={styles.searchContainerRight}>
+          <div className="search-wrapper" style={{ margin: '0', maxWidth: '100%' }}>
+            <SearchBar userId={user?.id} onResults={handleResults} />
           </div>
         </div>
       </div>

@@ -1,0 +1,55 @@
+dealers:
+  - name: "m_automotiv"
+    brands: ["Renault", "Dacia", "Soueast", "KGM", "Exeed", "JAC Motors"]
+    base_url: "https://www.m-automotiv.ma"
+    selectors_file: "m_automotiv.yaml"
+    condition_default: "new"
+    scan_interval_hours: 24
+    active: false
+    note: "32 points de vente, premier distributeur Renault/Dacia. En attente validation robots.txt et test live."
+
+  - name: "auto_hall"
+    brands: ["Ford", "Opel", "Nissan", "Mitsubishi", "Fiat", "Jeep", "Alfa Romeo", "Maserati", "Chery", "DFSK", "Seres"]
+    base_url: "https://www.autohall.ma"
+    selectors_file: "auto_hall.yaml"
+    condition_default: "new"
+    scan_interval_hours: 24
+    active: false
+    note: "22 612 véhicules vendus en 2025, inclut hybrides. En attente validation."
+
+  - name: "cac_volkswagen_group"
+    brands: ["Volkswagen", "Audi", "Porsche", "Bentley", "SEAT", "Cupra", "Skoda"]
+    base_url: "https://www.cac.ma"
+    selectors_file: "cac.yaml"
+    condition_default: "new"
+    scan_interval_hours: 24
+    active: false
+    note: "Site purement institutionnel. Importateur exclusif groupe VW, 7 marques. Pas de catalogue central scrapable ici."
+
+  - name: "seat_cac_network"
+    brands: ["SEAT"]
+    base_url: "https://www.seat.ma"
+    selectors_file: "seat_network.yaml"
+    locations: ["Casablanca", "El Jadida", "Fès", "Meknès", "Rabat", "Kénitra", "Agadir", "Safi", "Marrakech", "Tanger", "Tétouan", "Oujda"]
+    condition_default: "new"
+    scan_interval_hours: 24
+    active: false
+    note: "Réseau SEAT décomposé par ville (cas d'usage locations)."
+
+  - name: "alliance_automotive"
+    brands: ["Fiat", "Jeep", "Alfa Romeo"]
+    base_url: "https://www.alliance-automotive.ma"
+    selectors_file: "alliance_automotive.yaml"
+    condition_default: "new"
+    scan_interval_hours: 24
+    active: false
+    note: "Points de vente Rabat, Tanger, Larache. Filiale Orbis. Pas de catalogue en ligne (redirige vers sites constructeurs)."
+
+  - name: "tractafric_motors"
+    brands: ["Great Wall Motors", "Mercedes-Benz"]
+    base_url: "https://www.tractafricmotors.ma"
+    selectors_file: "tractafric.yaml"
+    condition_default: "new"
+    scan_interval_hours: 24
+    active: false
+    note: "Casablanca, Rabat, Tanger. Pas de catalogue détaillé e-commerce."

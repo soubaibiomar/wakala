@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, Navigate } from 'react-router-dom';
-import { Home, List, Heart, TrendingUp, Menu, LogOut, ChevronLeft, BookOpen } from 'lucide-react';
+import { Home, List, Heart, TrendingUp, Menu, LogOut, ChevronLeft, BookOpen, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
 import styles from './DashboardLayout.module.css';
 import { useAuth } from '../../context/AuthContext';
@@ -28,6 +28,7 @@ export default function DashboardLayout() {
     { label: 'Accueil', icon: Home, path: '/dashboard' },
     { label: "Carnet d'Entretien", icon: BookOpen, path: '/dashboard/maintenance' },
     { label: 'Mes Annonces', icon: List, path: '/dashboard/listings' },
+    { label: 'Messagerie', icon: MessageSquare, path: '/dashboard/messages' },
     { label: 'Favoris', icon: Heart, path: '/dashboard/favorites' },
     { label: 'Argus', icon: TrendingUp, path: '/dashboard/argus' },
   ];

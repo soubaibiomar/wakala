@@ -31,10 +31,10 @@ export const chatbotService = {
     onChunk: (chunk: string) => void
   ) => {
     // Determine the base URL from the Axios instance or env
-    const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
     
     try {
-      const response = await fetch(`${baseURL}/api/v1/ai/chat`, {
+      const response = await fetch(`${baseURL}/v1/ai/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

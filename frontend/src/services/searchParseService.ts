@@ -1,30 +1,31 @@
 /**
- * services/searchParseService.ts — Appel API pour l'extraction NLP.
- *
- * Envoie une phrase de recherche en texte libre au backend
- * et récupère les critères structurés (budget, usage, priorités, profil).
+ * services/searchParseService.ts — Appel API pour l'extraction NLP et vocale.
  */
 
 import api from './api';
 
 export interface NlpExtractionResult {
-  /** Budget en MAD (entier), ou null si non mentionné / hors plage */
   budget: number | null;
-  /** Usage principal du véhicule (ex: "familial", "urbain") */
   usage: string | null;
-  /** Liste des priorités utilisateur (ex: ["économique", "fiabilité"]) */
   priorites: string[];
-  /** Profil passagers / type d'acheteur (ex: "famille") */
   profil_passagers: string | null;
-  /** True si l'extraction a échoué */
   erreur: boolean;
+  
+  // Nouveaux champs pour le multilinguisme et la clarification
+  confiance?: 'haute' | 'moyenne' | 'basse' | null;
+  langue_detectee?: 'fr' | 'ar' | 'darija' | 'en' | null;
+  statut?: string | null;
+  question?: string | null;
+}
+
+export interface VoiceSearchResponse {
+  texte_transcrit: string;
+  transcription_editable: boolean;
+  resultat_nlp: NlpExtractionResult | null;
 }
 
 /**
  * Parse une phrase de recherche en texte libre via le backend NLP.
- *
- * @param texte - La phrase utilisateur (FR/darija/arabizi)
- * @returns Les critères de recherche extraits
  */
 export async function parseSearchQuery(
   texte: string
@@ -42,6 +43,37 @@ export async function parseSearchQuery(
       priorites: [],
       profil_passagers: null,
       erreur: true,
+    };
+  }
+}
+
+/**
+ * Envoie un fichier audio pour transcription Whisper et extraction NLP.
+ */
+export async function parseVoiceQuery(
+  audioFile: File | Blob,
+  extension: string = 'webm'
+): Promise<VoiceSearchResponse> {
+  const formData = new FormData();
+  formData.append('file', audioFile, `audio.${extension}`);
+  
+  try {
+    const { data } = await api.post<VoiceSearchResponse>(
+      '/search/voice',
+      formData
+    );
+    return data;
+  } catch {
+    return {
+      texte_transcrit: '',
+      transcription_editable: true,
+      resultat_nlp: {
+        budget: null,
+        usage: null,
+        priorites: [],
+        profil_passagers: null,
+        erreur: true,
+      },
     };
   }
 }

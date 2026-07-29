@@ -40,7 +40,16 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
       });
       onRegisterSuccess(email);
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Une erreur s'est produite lors de l'inscription.");
+      const detail = err.response?.data?.detail;
+      let errorMsg = "Une erreur s'est produite lors de l'inscription.";
+      if (typeof detail === 'string') {
+        errorMsg = detail;
+      } else if (Array.isArray(detail)) {
+        errorMsg = detail.map(d => d.msg || JSON.stringify(d)).join(', ');
+      } else if (typeof detail === 'object' && detail !== null) {
+        errorMsg = detail.msg || JSON.stringify(detail);
+      }
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }

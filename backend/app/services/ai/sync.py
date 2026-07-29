@@ -5,7 +5,7 @@ from app.core.config import settings
 from app.models.vehicle import Vehicle
 from app.services.ai.qdrant import get_qdrant_client
 from app.services.ai.ingestion import generate_vehicle_description
-from langchain_openai import OpenAIEmbeddings
+from langchain_community.embeddings import OllamaEmbeddings
 
 logger = logging.getLogger(__name__)
 
@@ -15,9 +15,10 @@ async def upsert_vehicle_to_qdrant(vehicle: Vehicle):
     """
     try:
         qdrant = get_qdrant_client()
-        embeddings_model = OpenAIEmbeddings(
-            model="text-embedding-3-small", 
-            openai_api_key=settings.OPENAI_API_KEY
+        _ollama_base = settings.OLLAMA_BASE_URL.replace("/v1", "") if settings.OLLAMA_BASE_URL else "http://localhost:11434"
+        embeddings_model = OllamaEmbeddings(
+            base_url=_ollama_base,
+            model="bge-m3"
         )
 
         text_content = await generate_vehicle_description(vehicle)

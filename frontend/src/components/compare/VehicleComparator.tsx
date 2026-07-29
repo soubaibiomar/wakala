@@ -105,7 +105,7 @@ export default function VehicleComparator({ onClose }: { onClose: () => void }) 
                   }}>
                     <div style={{ height: 160, background: 'var(--bg-card)', position: 'relative' }}>
                       {v.images?.[0] ? (
-                        <img src={v.images[0]} alt={v.model} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={v.images[0].file_path} alt={v.model} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
                         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Sans image</div>
                       )}

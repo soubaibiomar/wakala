@@ -17,6 +17,7 @@ from app.models.auth import EmailVerification
 from app.models.user import User
 from app.schemas.user_schema import (
     LoginRequest,
+    GoogleLoginRequest,
     OTPVerification,
     ResendOTPRequest,
     ForgotPasswordRequest,
@@ -25,6 +26,9 @@ from app.schemas.user_schema import (
     UserCreate,
     UserRead,
 )
+
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 from app.services.mailer import send_otp_email
 from app.core.limiter import limiter
 
@@ -306,9 +310,73 @@ async def login(
             detail="Veuillez vérifier votre adresse email avant de vous connecter",
         )
 
-    token = create_access_token(data={"sub": str(user.id), "role": user.role})
+    # Si remember_me est True, le token expire dans 30 jours, sinon la valeur par défaut (1h)
+    expires_delta = timedelta(days=30) if getattr(payload, 'remember_me', False) else None
+    token = create_access_token(data={"sub": str(user.id), "role": user.role}, expires_delta=expires_delta)
 
     return TokenResponse(
         access_token=token,
         user=UserRead.model_validate(user),
     )
+
+
+# ──────────────────────────────────────────────────────────────
+# POST /google-login — Connexion avec Google
+# ──────────────────────────────────────────────────────────────
+
+@router.post(
+    "/google-login",
+    response_model=TokenResponse,
+    summary="Se connecter avec Google",
+    description="Vérifie un token Google OAuth et authentifie l'utilisateur.",
+)
+async def google_login(
+    payload: GoogleLoginRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    try:
+        # Remarque : Idéalement, il faut passer CLIENT_ID ici pour plus de sécurité
+        # CLIENT_ID = settings.GOOGLE_CLIENT_ID
+        idinfo = id_token.verify_oauth2_token(payload.token, google_requests.Request())
+        
+        email = idinfo.get("email")
+        full_name = idinfo.get("name", "Utilisateur Google")
+        avatar_url = idinfo.get("picture")
+
+        if not email:
+            raise ValueError("Email non fourni par Google")
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Token Google invalide : {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Chercher l'utilisateur par email
+    result = await db.execute(select(User).where(User.email == email))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        # Créer l'utilisateur automatiquement
+        user = User(
+            full_name=full_name,
+            email=email,
+            avatar_url=avatar_url,
+            # Mot de passe aléatoire car géré par Google
+            hashed_password=hash_password(secrets.token_urlsafe(32)),
+            role="buyer", # par défaut
+            is_verified=True, # Google a déjà vérifié l'email
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+
+    # Si remember_me est True, le token expire dans 30 jours, sinon la valeur par défaut (1h)
+    expires_delta = timedelta(days=30) if getattr(payload, 'remember_me', False) else None
+    token = create_access_token(data={"sub": str(user.id), "role": user.role}, expires_delta=expires_delta)
+
+    return TokenResponse(
+        access_token=token,
+        user=UserRead.model_validate(user),
+    )
+

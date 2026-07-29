@@ -21,7 +21,7 @@ Liste paginée des véhicules avec filtres.
 | max_price   | float  | Prix maximum               |
 
 ### `GET /vehicles/{id}`
-Détail d'un véhicule (inclut `trust_score` et `predicted_price`).
+Détail d'un véhicule (inclut `match_score` et `predicted_price`).
 
 ### `POST /vehicles/search`
 Recherche en langage naturel.
@@ -87,4 +87,4 @@ Métriques globales de la plateforme.
 Tendances de prix et demande.
 
 ### `GET /analytics/anomalies`
-Anomalies détectées (fraude potentielle).
+Analyse des profils d'acheteurs.

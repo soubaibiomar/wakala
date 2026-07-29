@@ -34,12 +34,26 @@ export default function ChatMessage({ message }: ChatMessageProps) {
                 const match = /language-(\w+)/.exec(className || '');
                 if (!inline && match && match[1] === 'json') {
                   try {
-                    const data = JSON.parse(String(children).replace(/\n$/, ''));
+                    const rawJson = Array.isArray(children) ? children.join('') : String(children);
+                    // Nettoyer les virgules traînantes courantes (trailing commas) générées par les LLM
+                    const cleanJson = rawJson.replace(/,\s*([\]}])/g, '$1').trim();
+                    const data = JSON.parse(cleanJson);
+                    
                     if (data.type === 'CAR_RECOMMENDATION') {
                       return <CarRecommendation {...data} />;
                     }
                   } catch (e) {
-                    // fall back to default rendering if not valid JSON
+                    const rawStr = Array.isArray(children) ? children.join('') : String(children);
+                    if (rawStr.includes('CAR_RECOMMENDATION')) {
+                       return (
+                         <div style={{ padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.1)', textAlign: 'center', margin: '8px 0' }}>
+                           <p style={{ fontSize: '0.8rem', color: 'var(--accent-gold)', margin: 0, opacity: 0.8 }}>
+                             ⏳ Chargement de la fiche véhicule...
+                           </p>
+                         </div>
+                       );
+                    }
+                    // fall back to default rendering if not valid JSON and not a car recommendation
                   }
                 }
                 return inline ? (

@@ -1,27 +1,23 @@
-\babel@toc {french}{}\relax 
-\contentsline {section}{\numberline {1}Introduction}{2}{section.1}%
-\contentsline {section}{\numberline {2}Tableau de synthèse global}{2}{section.2}%
-\contentsline {section}{\numberline {3}Fiches détaillées par idée}{3}{section.3}%
-\contentsline {subsection}{\numberline {3.1}1. Chatbot RAG}{3}{subsection.3.1}%
-\contentsline {subsection}{\numberline {3.2}2. Recommandation hybride (Matchmaker automobile)}{3}{subsection.3.2}%
-\contentsline {subsection}{\numberline {3.3}3. Pipeline ingestion temps réel (scrapers)}{3}{subsection.3.3}%
-\contentsline {subsection}{\numberline {3.4}4. Prédiction prix de revente (Argus intelligent)}{3}{subsection.3.4}%
-\contentsline {subsection}{\numberline {3.5}5. Détection anomalies/fraude (Anti-fraude scam detection)}{4}{subsection.3.5}%
-\contentsline {subsection}{\numberline {3.6}6. Graphe de similarité (GraphRAG)}{4}{subsection.3.6}%
-\contentsline {subsection}{\numberline {3.7}7. Dashboard analytics vendeur}{4}{subsection.3.7}%
-\contentsline {subsection}{\numberline {3.8}8. Recherche en langage naturel}{4}{subsection.3.8}%
-\contentsline {subsection}{\numberline {3.9}9. Segmentation acheteurs}{4}{subsection.3.9}%
-\contentsline {subsection}{\numberline {3.10}10. Analyse de sentiment avis clients}{5}{subsection.3.10}%
-\contentsline {subsection}{\numberline {3.11}11. Prévision de demande}{5}{subsection.3.11}%
-\contentsline {subsection}{\numberline {3.12}12. Data lineage / traçabilité}{5}{subsection.3.12}%
-\contentsline {subsection}{\numberline {3.13}13. Analyse géospatiale}{5}{subsection.3.13}%
-\contentsline {subsection}{\numberline {3.14}14. A/B testing recommandation}{6}{subsection.3.14}%
-\contentsline {subsection}{\numberline {3.15}15. Computer Vision (détection chocs/rayures + floutage plaques)}{6}{subsection.3.15}%
-\contentsline {subsection}{\numberline {3.16}16. Simulateur TCO (Coût Total de Possession)}{6}{subsection.3.16}%
-\contentsline {subsection}{\numberline {3.17}17. Cartographie de la demande (B2B)}{6}{subsection.3.17}%
-\contentsline {subsection}{\numberline {3.18}18. Tarification dynamique (yield management)}{6}{subsection.3.18}%
-\contentsline {subsection}{\numberline {3.19}19. Profils vérifiés TrustBadge}{7}{subsection.3.19}%
-\contentsline {subsection}{\numberline {3.20}20. Générateur d'annonces IA}{7}{subsection.3.20}%
-\contentsline {section}{\numberline {4}Vue d'ensemble par couche architecturale}{8}{section.4}%
-\contentsline {section}{\numberline {5}Conclusion}{8}{section.5}%
-\contentsline {section}{\numberline {A}Annexe : Idées écartées}{9}{appendix.A}%
+\contentsline {section}{\numberline {1}Introduction}{3}{}%
+\contentsline {section}{\numberline {2}Tableau de synthèse global}{3}{}%
+\contentsline {section}{\numberline {3}Fiches détaillées par idée}{4}{}%
+\contentsline {subsection}{\numberline {3.1}1. Chatbot (Assistant Virtuel)}{4}{}%
+\contentsline {subsection}{\numberline {3.2}2. Moteur de Recommandation}{4}{}%
+\contentsline {subsection}{\numberline {3.3}3. Pipeline ingestion temps réel (scrapers)}{4}{}%
+\contentsline {subsection}{\numberline {3.4}4. Prédiction prix de revente (Argus intelligent)}{4}{}%
+\contentsline {subsection}{\numberline {3.5}6. Graphe de similarité (GraphRAG)}{5}{}%
+\contentsline {subsection}{\numberline {3.6}7. Dashboard analytics vendeur}{5}{}%
+\contentsline {subsection}{\numberline {3.7}8. Recherche en langage naturel}{5}{}%
+\contentsline {subsection}{\numberline {3.8}9. Segmentation acheteurs}{5}{}%
+\contentsline {subsection}{\numberline {3.9}10. Analyse de sentiment avis clients}{5}{}%
+\contentsline {subsection}{\numberline {3.10}11. Prévision de demande}{6}{}%
+\contentsline {subsection}{\numberline {3.11}12. Data lineage / traçabilité}{6}{}%
+\contentsline {subsection}{\numberline {3.12}13. Analyse géospatiale}{6}{}%
+\contentsline {subsection}{\numberline {3.13}14. A/B testing recommandation}{6}{}%
+\contentsline {subsection}{\numberline {3.14}16. Simulateur TCO (Coût Total de Possession)}{7}{}%
+\contentsline {subsection}{\numberline {3.15}17. Cartographie de la demande (B2B)}{7}{}%
+\contentsline {subsection}{\numberline {3.16}18. Tarification dynamique (yield management)}{7}{}%
+\contentsline {subsection}{\numberline {3.17}20. Générateur d'annonces IA}{7}{}%
+\contentsline {section}{\numberline {4}Vue d'ensemble par couche architecturale}{8}{}%
+\contentsline {section}{\numberline {5}Conclusion}{8}{}%
+\contentsline {section}{\numberline {A}Annexe : Idées écartées}{9}{}%

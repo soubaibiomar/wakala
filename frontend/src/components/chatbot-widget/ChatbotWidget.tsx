@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useChatSession } from './useChatSession';
 import ChatTrigger from './ChatTrigger';
@@ -9,6 +10,7 @@ export default function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const { messages, isTyping, error, sendMessage, clearHistory } = useChatSession();
   const [notificationCount, setNotificationCount] = useState(0);
+  const location = useLocation();
 
   const toggleOpen = useCallback(() => {
     setIsOpen((prev) => {
@@ -28,6 +30,8 @@ export default function ChatbotWidget() {
 
   const hasNewMessage = messages.length > 0 && !isOpen;
   
+
+
   return (
     <>
       <motion.div 
