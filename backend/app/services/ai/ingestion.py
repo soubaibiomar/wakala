@@ -55,42 +55,67 @@ async def ingest_vehicles():
             logger.warning("Aucun véhicule trouvé dans la base de données.")
             return
 
+        batch_size = 100
         points = []
-        for v in vehicles:
-            # Création du texte
-            text_content = await generate_vehicle_description(v)
-            
-            # Génération de l'embedding (bloquant pour l'API HTTP, donc on l'enveloppe si besoin, 
-            # mais ainvoke est natif sur LangChain)
-            vector = await embeddings_model.aembed_query(text_content)
-            
-            # Préparation du Point Struct pour Qdrant
-            payload = {
-                "vehicle_id": str(v.id),
-                "brand": v.brand,
-                "model": v.model,
-                "year": v.year,
-                "price": float(v.price),
-                "fuel_type": v.fuel_type,
-                "city": v.city,
-                "status": v.status,
-                "text_content": text_content
-            }
-            
-            points.append(qmodels.PointStruct(
-                id=str(v.id),
-                vector=vector,
-                payload=payload
-            ))
-            logger.info(f"Préparation terminée pour le véhicule {v.id} ({v.brand} {v.model})")
-            
-        # Upsert en lot
+        for i, v in enumerate(vehicles):
+            try:
+                # Création du texte
+                text_content = await generate_vehicle_description(v)
+                
+                # Génération de l'embedding
+                vector = await embeddings_model.aembed_query(text_content)
+                
+                # Préparation du Point Struct pour Qdrant
+                payload = {
+                    "vehicle_id": str(v.id),
+                    "brand": v.brand,
+                    "model": v.model,
+                    "year": v.year,
+                    "price": float(v.price),
+                    "fuel_type": v.fuel_type,
+                    "city": v.city,
+                    "status": v.status,
+                    "text_content": text_content
+                }
+                
+                points.append(qmodels.PointStruct(
+                    id=str(v.id),
+                    vector=vector,
+                    payload=payload
+                ))
+                logger.info(f"Préparation terminée pour le véhicule {v.id} ({v.brand} {v.model})")
+                
+                # Upsert en lot
+                if len(points) >= batch_size:
+                    # check if qdrant client is async or sync
+                    if hasattr(qdrant, 'upsert') and asyncio.iscoroutinefunction(qdrant.upsert):
+                        await qdrant.upsert(
+                            collection_name=settings.QDRANT_COLLECTION,
+                            points=points
+                        )
+                    else:
+                        qdrant.upsert(
+                            collection_name=settings.QDRANT_COLLECTION,
+                            points=points
+                        )
+                    logger.info(f"Lot de {len(points)} véhicules inséré avec succès.")
+                    points = []
+            except Exception as e:
+                logger.error(f"Erreur pour le véhicule {v.id}: {e}")
+                
+        # Upsert final
         if points:
-            await qdrant.upsert(
-                collection_name=settings.QDRANT_COLLECTION,
-                points=points
-            )
-            logger.info(f"{len(points)} véhicules insérés avec succès dans Qdrant.")
+            if hasattr(qdrant, 'upsert') and asyncio.iscoroutinefunction(qdrant.upsert):
+                await qdrant.upsert(
+                    collection_name=settings.QDRANT_COLLECTION,
+                    points=points
+                )
+            else:
+                qdrant.upsert(
+                    collection_name=settings.QDRANT_COLLECTION,
+                    points=points
+                )
+            logger.info(f"{len(points)} véhicules insérés avec succès (dernier lot).")
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)

@@ -7,8 +7,8 @@ import math
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func, select, or_
 
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role
@@ -56,6 +56,7 @@ async def list_vehicles(
     year_max: Optional[int] = Query(None, le=2030, description="Année maximum"),
     mileage_max: Optional[int] = Query(None, ge=0, description="Kilométrage maximum"),
     condition: Optional[str] = Query(None, description="Condition (neuf/occasion)"),
+    group_by_model: Optional[bool] = Query(False, description="Grouper par marque et modèle (renvoie le moins cher)"),
     # Tri
     sort_by: str = Query("created_at", description="Champ de tri"),
     sort_order: str = Query("desc", pattern="^(asc|desc)$", description="Ordre de tri"),
@@ -63,8 +64,27 @@ async def list_vehicles(
     # Construction de la requête avec filtres
     query = select(Vehicle)
 
+    if group_by_model:
+        query = query.distinct(Vehicle.brand, Vehicle.model)
+
     if brand:
-        query = query.where(Vehicle.brand.ilike(f"%{brand}%"))
+        import re
+        # Remove accents for a broader search
+        brand_norm = brand.replace('ë', 'e').replace('é', 'e').replace('è', 'e').replace('Ë', 'E')
+        
+        # We check both the original brand name and the normalized one.
+        # Also, if the normalized one has 'e', we also try 'ë' and 'é' to be safe since DB might have them.
+        brand_e1 = brand_norm.replace('e', 'ë').replace('E', 'Ë')
+        brand_e2 = brand_norm.replace('e', 'é').replace('E', 'É')
+        
+        query = query.where(
+            or_(
+                Vehicle.brand.ilike(f"%{brand}%"),
+                Vehicle.brand.ilike(f"%{brand_norm}%"),
+                Vehicle.brand.ilike(f"%{brand_e1}%"),
+                Vehicle.brand.ilike(f"%{brand_e2}%")
+            )
+        )
     if model:
         query = query.where(Vehicle.model.ilike(f"%{model}%"))
     if city:
@@ -89,7 +109,12 @@ async def list_vehicles(
     if condition == 'neuf':
         query = query.where(Vehicle.description.ilike('%Véhicule Neuf Officiel%'))
     elif condition == 'occasion':
-        query = query.where(~Vehicle.description.ilike('%Véhicule Neuf Officiel%'))
+        query = query.where(
+            or_(
+                Vehicle.description.is_(None),
+                Vehicle.description.notilike('%Véhicule Neuf Officiel%')
+            )
+        )
 
     # Compter le total
     count_query = select(func.count()).select_from(query.subquery())
@@ -101,10 +126,13 @@ async def list_vehicles(
     if sort_by not in allowed_sort_fields:
         sort_by = "created_at"
     sort_column = getattr(Vehicle, sort_by)
-    if sort_order == "desc":
-        query = query.order_by(sort_column.desc())
+    
+    order_clause = sort_column.desc() if sort_order == "desc" else sort_column.asc()
+    
+    if group_by_model:
+        query = query.order_by(Vehicle.brand, Vehicle.model, order_clause)
     else:
-        query = query.order_by(sort_column.asc())
+        query = query.order_by(order_clause)
 
     # Pagination
     offset = (page - 1) * page_size
@@ -206,8 +234,16 @@ async def get_vehicle(
     vehicle_id: str,
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    result = await db.execute(select(Vehicle).where(Vehicle.id == vehicle_id))
-    vehicle = result.scalar_one_or_none()
+    from sqlalchemy import cast, String
+
+    if len(vehicle_id) == 8:
+        # Recherche par Short ID (les 8 premiers caractères de l'UUID)
+        result = await db.execute(select(Vehicle).where(cast(Vehicle.id, String).startswith(vehicle_id)))
+        vehicle = result.scalars().first()
+    else:
+        # Recherche classique par UUID complet
+        result = await db.execute(select(Vehicle).where(Vehicle.id == vehicle_id))
+        vehicle = result.scalar_one_or_none()
 
     if not vehicle:
         raise HTTPException(
@@ -216,6 +252,52 @@ async def get_vehicle(
         )
 
     return vehicle
+
+# ──────────────────────────────────────────────────────────────
+# GET /by-slug/{brand}/{model}/{version_slug} — Détail d'un véhicule par Slug (Neuf)
+# ──────────────────────────────────────────────────────────────
+
+@router.get(
+    "/by-slug/{brand}/{model}/{version_slug}",
+    response_model=VehicleReadWithSeller,
+    summary="Détail d'un véhicule par slug",
+    description="Recherche un véhicule par marque, modèle et slug de version.",
+)
+async def get_vehicle_by_slug(
+    brand: str,
+    model: str,
+    version_slug: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    import re
+    # Récupérer tous les véhicules de cette marque et modèle
+    result = await db.execute(
+        select(Vehicle)
+        .where(Vehicle.brand.ilike(brand))
+        .where(Vehicle.model.ilike(model))
+    )
+    vehicles = result.scalars().all()
+    
+    for v in vehicles:
+        # On génère le slug pour chaque véhicule
+        # Note: on utilise la même logique que côté frontend: "version-annee" (ou juste version si pas d'année)
+        parts = []
+        if v.version and v.version != 'Fiche Technique':
+            parts.append(v.version)
+        if v.year:
+            parts.append(str(v.year))
+            
+        generated_slug = '-'.join(parts).lower()
+        generated_slug = re.sub(r'[^a-z0-9]+', '-', generated_slug).strip('-')
+        
+        if generated_slug == version_slug:
+            return v
+            
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Véhicule non trouvé pour ce slug",
+    )
+
 
 
 # ──────────────────────────────────────────────────────────────

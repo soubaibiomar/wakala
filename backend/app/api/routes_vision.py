@@ -34,6 +34,9 @@ async def analyze_image(file: UploadFile = File(...)):
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Le fichier doit être une image.")
 
+    if file.size and file.size > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Le fichier est trop volumineux (maximum 5MB).")
+
     try:
         contents = await file.read()
         nparr = np.frombuffer(contents, np.uint8)

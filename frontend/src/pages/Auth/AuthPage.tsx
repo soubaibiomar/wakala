@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import LoginForm from '../../components/auth/LoginForm';
 import RegisterForm from '../../components/auth/RegisterForm';
 import OTPForm from '../../components/auth/OTPForm';
+import { useAuth } from '../../context/AuthContext';
 import './AuthPage.css';
 
 export type AuthMode = 'login' | 'register' | 'otp';
@@ -15,6 +16,13 @@ export default function AuthPage() {
   const [mode, setMode] = useState<AuthMode>(
     location.pathname === '/register' ? 'register' : 'login'
   );
+  const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
   
   // Sync state when URL changes (e.g. clicking Navbar links)
   useEffect(() => {

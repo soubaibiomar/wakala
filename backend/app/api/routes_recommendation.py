@@ -39,7 +39,25 @@ async def get_recommendations(
     else:
         semantic_ids = []
 
-    result = await db.execute(select(Vehicle))
+    from sqlalchemy.orm import load_only, noload
+    
+    result = await db.execute(
+        select(Vehicle).options(
+            noload('*'),
+            load_only(
+                Vehicle.id,
+                Vehicle.price,
+                Vehicle.year,
+                Vehicle.mileage,
+                Vehicle.body_type,
+                Vehicle.transmission,
+                Vehicle.fuel_type,
+                Vehicle.engine_power_hp,
+                Vehicle.brand,
+                Vehicle.city,
+            )
+        )
+    )
     all_vehicles: list[Vehicle] = list(result.scalars().all())
 
     if semantic_ids:

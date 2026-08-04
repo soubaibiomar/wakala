@@ -77,6 +77,8 @@ def candidate_vehicles_from_filters(
             continue
         if "body_type" in filters and v.body_type != filters["body_type"]:
             continue
+        if "body_type_in" in filters and v.body_type not in filters["body_type_in"]:
+            continue
         if "price_min" in filters and v.price < filters["price_min"]:
             continue
         if "price_max" in filters and v.price > filters["price_max"]:

@@ -19,12 +19,23 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    GOOGLE_CLIENT_ID: str = ""
 
     # ─── CORS ──────────────────────────────────────────────────
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
         "http://localhost:5173",
     ]
+
+    # ─── Emails (SMTP) ─────────────────────────────────────────
+    MAIL_SERVER: str = "mailhog"
+    MAIL_PORT: int = 1025
+    MAIL_USERNAME: str = ""
+    MAIL_PASSWORD: str = ""
+    MAIL_FROM: str = "noreply@wakala.ma"
+    MAIL_STARTTLS: bool = False
+    MAIL_SSL_TLS: bool = False
+    USE_CREDENTIALS: bool = False
 
     # ─── PostgreSQL ────────────────────────────────────────────
     POSTGRES_HOST: str = "localhost"

@@ -7,7 +7,14 @@
     <meta name="theme-color" content="#122135" />
 
     <!-- Removed CSP for dev environment compatibility -->
-
+    <script>
+      window.addEventListener('error', function(e) {
+        document.body.innerHTML = '<div style="color:red;padding:20px;z-index:999999;position:fixed;top:0;left:0;background:white;width:100%;height:100%;font-size:24px;">' + e.message + '<br/><pre>' + e.error?.stack + '</pre></div>';
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        document.body.innerHTML = '<div style="color:red;padding:20px;z-index:999999;position:fixed;top:0;left:0;background:white;width:100%;height:100%;font-size:24px;">' + e.reason + '</div>';
+      });
+    </script>
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Wakala — Marketplace automobile IA" />

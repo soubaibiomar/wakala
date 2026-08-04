@@ -1,0 +1,139 @@
+.formatted-description {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.desc-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.desc-category-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 8px;
+}
+
+.category-icon {
+  color: var(--color-accent-purple, #8B5CF6);
+  width: 24px;
+  height: 24px;
+}
+
+.desc-category-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Typography & Markdown resets */
+.desc-markdown-content {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.desc-markdown-content p {
+  margin-bottom: 1rem;
+}
+
+.desc-markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* Tables rendered from Markdown */
+.desc-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+}
+
+.desc-th, .desc-td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.desc-th {
+  background: var(--bg-body);
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+}
+
+.desc-table tr:last-child .desc-td {
+  border-bottom: none;
+}
+
+.desc-table tr:hover .desc-td {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.desc-td strong {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Status styles inside tables */
+.desc-td-yes {
+  color: #10b981; /* Emerald 500 */
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.desc-td-no {
+  color: #94a3b8; /* Slate 400 */
+}
+
+/* Lists from Markdown */
+.desc-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.desc-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-body);
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.desc-list-item:hover {
+  border-color: var(--border-subtle);
+  background: var(--bg-surface);
+}
+
+.list-bullet {
+  color: #10b981;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+@media (max-width: 640px) {
+  .desc-list {
+    grid-template-columns: 1fr;
+  }
+}

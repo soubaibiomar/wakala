@@ -54,12 +54,12 @@ const BADGE_ICONS: Record<string, string> = {
   profil: '👤',
 };
 
-const LANG_FLAGS: Record<string, string> = {
-  'fr-FR': '🇫🇷',
-  'ar-MA': '🇲🇦',
-  'en-US': '🇬🇧',
+const LANG_LABELS: Record<string, string> = {
+  'fr-FR': 'FR',
+  'ar-MA': 'AR',
+  'en-US': 'EN',
 };
-const LANG_KEYS = Object.keys(LANG_FLAGS);
+const LANG_KEYS = Object.keys(LANG_LABELS);
 
 export default function SearchBar({ userId, onResults }: SearchBarProps) {
   const [query, setQuery] = useState('');
@@ -120,7 +120,7 @@ export default function SearchBar({ userId, onResults }: SearchBarProps) {
 
   const hasBadges = nlpResult && (
     nlpResult.budget !== null ||
-    nlpResult.usage !== null ||
+    nlpResult.usage_prevu !== null ||
     nlpResult.priorites.length > 0 ||
     nlpResult.profil_passagers !== null
   );
@@ -147,11 +147,11 @@ export default function SearchBar({ userId, onResults }: SearchBarProps) {
               <span className="nlp-badge__value">{formatBudget(nlpResult.budget)}</span>
             </span>
           )}
-          {nlpResult.usage !== null && (
+          {nlpResult.usage_prevu !== null && (
             <span className="nlp-badge nlp-badge--usage">
               <span className="nlp-badge__icon">{BADGE_ICONS.usage}</span>
               <span className="nlp-badge__label">Usage</span>
-              <span className="nlp-badge__value">{humanize(nlpResult.usage)}</span>
+              <span className="nlp-badge__value">{humanize(nlpResult.usage_prevu)}</span>
             </span>
           )}
           {nlpResult.priorites.map((p, i) => (
@@ -217,8 +217,17 @@ export default function SearchBar({ userId, onResults }: SearchBarProps) {
           autoComplete="off"
           value={voice.interimTranscript ? query + (query ? ' ' : '') + voice.interimTranscript : query}
           onChange={(event) => {
-            setQuery(event.target.value);
+            const val = event.target.value;
+            setQuery(val);
             if (needsClarification) setNlpResult(null);
+            
+            // Détection automatique de la langue
+            const hasArabic = /[\u0600-\u06FF]/.test(val);
+            if (hasArabic && voice.lang !== 'ar-MA') {
+              voice.setLang('ar-MA');
+            } else if (!hasArabic && val.trim().length > 0 && voice.lang !== 'fr-FR' && voice.lang !== 'en-US') {
+              voice.setLang('fr-FR');
+            }
           }}
           onKeyDown={(event) => { if (event.key === 'Enter') void submitSearch(query); }}
           readOnly={voice.status === 'listening'}
@@ -227,19 +236,7 @@ export default function SearchBar({ userId, onResults }: SearchBarProps) {
         {/* ─── Bouton micro (masqué si non supporté) ──── */}
         {voice.isSupported && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <button
-              className="lang-btn"
-              type="button"
-              onClick={() => {
-                const currentIndex = LANG_KEYS.indexOf(voice.lang);
-                const nextIndex = (currentIndex + 1) % LANG_KEYS.length;
-                voice.setLang(LANG_KEYS[nextIndex]);
-              }}
-              title="Changer de langue"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 4px' }}
-            >
-              {LANG_FLAGS[voice.lang] || '🇫🇷'}
-            </button>
+
             <button
               className={`mic-btn ${voice.status === 'listening' ? 'mic-btn--listening' : ''}`}
               onClick={voice.toggleListening}

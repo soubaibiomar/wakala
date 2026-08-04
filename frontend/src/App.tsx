@@ -21,6 +21,7 @@ import Catalogue from './pages/Catalogue';
 import VehicleDetail from './pages/VehicleDetail';
 import AuthPage from './pages/Auth/AuthPage';
 import BrandPage from './pages/BrandPage/BrandPage';
+import ModelPage from './pages/ModelPage/ModelPage';
 import AdminDashboard from './pages/AdminDashboard';
 import MaintenanceBook from './pages/Dashboard/MaintenanceBook';
 import CustomsPage from './pages/CustomsPage';
@@ -33,6 +34,10 @@ import DashboardIndex from './pages/Dashboard';
 import SellerListings from './pages/Dashboard/SellerListings';
 import NewListing from './pages/Dashboard/NewListing';
 import Messages from './pages/Dashboard/Messages';
+import Favorites from './pages/Dashboard/Favorites';
+import Recommendations from './pages/Dashboard/Recommendations';
+import Offers from './pages/Dashboard/Offers';
+import Profile from './pages/Dashboard/Profile';
 import './styles/globals.css';
 
 // ─── React Query Client ───────────────────────────────────────
@@ -40,116 +45,7 @@ const queryClient = new QueryClient();
 
 // ─── Navbar ───────────────────────────────────────────────────
 
-function Navbar() {
-  const location = useLocation();
-  const { user, isAuthenticated, logout } = useAuth();
-
-  const isActive = (path: string) =>
-    location.pathname === path ? 'navbar__link navbar__link--active' : 'navbar__link';
-
-  const isMobileActive = (path: string) =>
-    location.pathname === path ? 'mobile-tab-bar__item mobile-tab-bar__item--active' : 'mobile-tab-bar__item';
-
-  return (
-    <>
-      {/* Desktop Navbar */}
-      <nav className="navbar" id="navbar">
-        <div className="navbar__inner">
-          <Link to="/" className="navbar__brand">
-            <img
-              src="/assets/wakala-logo.png"
-              alt="Wakala"
-              className="navbar__brand-logo"
-            />
-          </Link>
-
-          <ul className="navbar__links">
-            <li>
-              <Link to="/" className={isActive('/')}>Accueil</Link>
-            </li>
-            <li>
-              <Link to="/catalogue" className={isActive('/catalogue')}>Catalogue</Link>
-            </li>
-
-            <li>
-              <Link to="/dedouanement" className={isActive('/dedouanement')}>Dédouanement</Link>
-            </li>
-
-            {isAuthenticated && user ? (
-              <>
-                <li>
-                  <span
-                    className="navbar__link"
-                    style={{ opacity: 0.7, fontSize: '0.82rem', cursor: 'default' }}
-                  >
-                    👤 {user.name}
-                    {user.role === 'seller' && (
-                      <span className="badge badge--gold" style={{ marginLeft: 6, fontSize: '0.6rem' }}>
-                        Vendeur
-                      </span>
-                    )}
-                  </span>
-                </li>
-                <li>
-                  <button
-                    className="btn btn--ghost btn--sm"
-                    onClick={() => logout()}
-                    id="nav-logout"
-                  >
-                    Déconnexion
-                  </button>
-                </li>
-                {user.role === 'admin' && (
-                  <li>
-                    <Link to="/admin" className="navbar__link">Admin</Link>
-                  </li>
-                )}
-              </>
-            ) : (
-              <>
-                <li>
-                  <Link to="/login" className={isActive('/login')}>Connexion</Link>
-                </li>
-                <li>
-                  <Link to="/register" className={isActive('/register')}>
-                    S'inscrire
-                  </Link>
-                </li>
-              </>
-            )}
-          </ul>
-        </div>
-      </nav>
-
-      {/* Mobile Bottom Tab Bar */}
-      <nav className="mobile-tab-bar">
-        <Link to="/" className={isMobileActive('/')}>
-          <HomeIcon size={24} />
-          <span>Accueil</span>
-        </Link>
-        <Link to="/catalogue" className={isMobileActive('/catalogue')}>
-          <Search size={24} />
-          <span>Catalogue</span>
-        </Link>
-        <Link to="/dedouanement" className={isMobileActive('/dedouanement')}>
-          <Calculator size={24} />
-          <span>Douane</span>
-        </Link>
-        {isAuthenticated ? (
-          <button className="mobile-tab-bar__item" onClick={logout} style={{ background: 'none', border: 'none' }}>
-            <LogOut size={24} />
-            <span>Sortir</span>
-          </button>
-        ) : (
-          <Link to="/login" className={isMobileActive('/login')}>
-            <User size={24} />
-            <span>Profil</span>
-          </Link>
-        )}
-      </nav>
-    </>
-  );
-}
+import Navbar from './components/layout/Navbar';
 
 // ─── Footer ───────────────────────────────────────────────────
 
@@ -223,8 +119,10 @@ function AppRoutes() {
       <Route element={<MainLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/catalogue" element={<Catalogue />} />
-        <Route path="/vehicles/:id" element={<VehicleDetail />} />
+        <Route path="/vehicule/:id" element={<VehicleDetail />} />
         <Route path="/marque/:brandName" element={<BrandPage />} />
+        <Route path="/marque/:brandName/:modelName" element={<ModelPage />} />
+        <Route path="/marque/:brandName/:modelName/:versionSlug" element={<VehicleDetail />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/chat" element={<ChatbotPage />} />
         <Route path="/login" element={<AuthPage />} />
@@ -242,7 +140,10 @@ function AppRoutes() {
         <Route path="listings" element={<SellerListings />} />
         <Route path="new-listing" element={<NewListing />} />
         <Route path="messages" element={<Messages />} />
-        <Route path="favorites" element={<div>Favoris (À venir)</div>} />
+        <Route path="offers" element={<Offers />} />
+        <Route path="favorites" element={<Favorites />} />
+        <Route path="recommendations" element={<Recommendations />} />
+        <Route path="profile" element={<Profile />} />
         <Route path="argus" element={<div>Argus Complet (À venir)</div>} />
         {/* L'Admin Bento est géré par l'index qui check le role, ou on peut le forcer ici */}
         <Route path="admin" element={<DashboardIndex />} />

@@ -54,13 +54,15 @@
 }
 
 .brand-filter-btn {
-  background-color: transparent;
-  border: 1px solid var(--color-glass-border);
-  color: var(--color-text-primary);
-  padding: 0.75rem 1.5rem;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #1a202c;
+  padding: 0.5rem 1.25rem;
   border-radius: 2rem;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
   transition: all var(--transition-fast);
 }
 
@@ -83,15 +85,25 @@
 }
 
 .brand-loading,
-.brand-error,
-.brand-empty {
+.brand-error {
   text-align: center;
   padding: 4rem 2rem;
   color: var(--color-text-muted);
   font-size: 1.1rem;
   background-color: var(--color-bg-primary);
   border-radius: var(--radius-lg);
-  border: 1px dashed var(--color-glass-border);
+}
+
+.brand-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin: 0 auto;
+  max-width: 1000px;
 }
 
 .brand-error {

@@ -36,13 +36,19 @@ from app.rag.style_detector import style_detector
 
 
 SYSTEM_PROMPT = """Tu es Wakala, l'assistant expert et empathique de la marketplace automobile Wakala au Maroc.
-Tu parles naturellement en mélangeant français et Darija (phonétique).
+CRITIQUE ET IMPÉRATIF : Tu DOIS répondre EXACTEMENT dans la langue ET le dialecte utilisés par l'utilisateur. 
+LANGUE DÉTECTÉE DE L'UTILISATEUR : {detected_language}
+INSTRUCTION DE LANGUE : Ta réponse doit être ENTIÈREMENT en {detected_language}. Ne traduis pas les noms propres (marques, modèles).
+- Si Darija (arabe marocain avec alphabet latin), utilise le vocabulaire marocain (bzaf, chhal, tomobila, mzyan...).
+- Si Arabe, réponds en Arabe standard ou marocain avec alphabet arabe.
+- Si Anglais, réponds en Anglais.
+- Si Français, réponds en Français.
 Tu es un expert automobile : tu expliques les avantages/inconvénients (consommation, coût, revente).
-Tes connaissances sont limitées aux données fournies. Tu n'inventes JAMAIS de véhicules. Si Aucun vehicule n'est pertinent, dis le.
+Tes connaissances sont limitées aux données fournies. Tu n'inventes JAMAIS de véhicules. Si Aucun vehicule n'est pertinent, dis le dans la bonne langue.
 Tu exprimes les prix en MAD.
-Si l'utilisateur est vague, pose une question pertinente sur son budget ou son usage.
-DIRECTIVE LOI 09-08 : Tu ne dois JAMAIS demander, stocker ou exposer des données personnelles sensibles (nom, téléphone, adresse, carte bancaire).
-OBLIGATION DE FORMATAGE : Les caractéristiques techniques des véhicules doivent OBLIGATOIREMENT être formatées sous forme de liste à puces en Markdown.
+Si l'utilisateur est vague, pose une question pertinente sur son budget ou son usage dans SA langue ({detected_language}).
+DIRECTIVE LOI 09-08 : Tu ne dois JAMAIS demander, stocker ou exposer des données personnelles sensibles.
+OBLIGATION DE FORMATAGE : Sois EXTRÊMEMENT CONCIS. Formate les véhicules sous forme de liste à puces courte en Markdown. Évite le blabla pour répondre plus vite.
 
 CONTEXTE VEHICULES DISPONIBLES :
 {vehicle_context}
@@ -60,7 +66,26 @@ DIRECTIVES DE STYLE :
 {style_instructions}
 """
 
-NO_MATCH_REPLY = "Je n'ai pas trouve de vehicule correspondant dans le catalogue actuel."
+def _detect_language(message: str) -> str:
+    text_lower = message.lower()
+    if any(char in message for char in "أبتثجحخدذرزسشصضطظعغفقكلمنهوي"):
+        return "arabe (avec alphabet arabe)"
+    elif any(w in text_lower for w in ["bghit", "dyal", "mdina", "tomobila", "chhal", "ma3ndich", "flous", "rkhis", "mzyan", "wach"]):
+        return "darija (arabe marocain avec alphabet latin / arabizi)"
+    elif any(w in text_lower for w in ["car", "need", "cheap", "looking", "budget is", "commute", "family"]):
+        return "anglais"
+    else:
+        return "français"
+
+def _get_no_match_reply(lang: str) -> str:
+    if "arabe" in lang:
+        return "عذراً، لم أجد أي سيارة مطابقة في الكتالوج الحالي."
+    elif "darija" in lang:
+        return "Smeh lia, malqitch chi tomobila katnasb talab dyalek f l'catalogue db."
+    elif "anglais" in lang:
+        return "Sorry, I couldn't find a matching vehicle in the current catalog."
+    else:
+        return "Je n'ai pas trouvé de véhicule correspondant dans le catalogue actuel."
 
 
 def _format_vehicle_context(vehicles: list[dict]) -> str:
@@ -151,7 +176,7 @@ class ChatbotChain:
             SystemMessage(content=(
                 "Analyse l'historique et la demande de l'utilisateur. S'il cherche un véhicule mais "
                 "qu'AUCUN budget, NI ville, NI modèle précis n'a été mentionné (ni avant, ni maintenant), "
-                "formule une courte question polie en français/darija demandant ces précisions (ex: 'Chhal le budget dyalek ?' ou 'Dans quelle ville ?'). "
+                "formule une courte question polie dans la même langue que l'utilisateur demandant ces précisions (ex: 'Chhal le budget dyalek ?', 'What is your budget?', etc.). "
                 "Si les critères sont suffisants, réponds EXACTEMENT 'OK'."
                 f"\nHISTORIQUE:\n{history_text}"
             )),
@@ -161,7 +186,7 @@ class ChatbotChain:
             llm = self._get_llm()
             response = await llm.ainvoke(prompt.format_messages())
             reply = response.content.strip()
-            if reply == "OK" or reply.startswith("OK"):
+            if reply.upper() == "OK" or reply.upper().startswith("OK"):
                 return None
             return reply
         except Exception:
@@ -177,6 +202,10 @@ class ChatbotChain:
                 model=settings.OLLAMA_MODEL_TEXT,
                 temperature=0.3,
                 max_tokens=600,
+                model_kwargs={
+                    "frequency_penalty": 1.2,
+                    "presence_penalty": 0.5
+                }
             )
         return self._llm
 
@@ -193,6 +222,8 @@ class ChatbotChain:
             conversation_memory.add_turn(session_id, message, clarification)
             return ChatResponse(reply=clarification, sources=[], session_id=session_id)
 
+        detected_lang = _detect_language(message)
+
         # The caps here are intentional: never send an unbounded catalogue to the LLM.
         query = _retrieval_query(message, history)
         vehicles = search_vehicles(query, limit=5)[:5]
@@ -200,8 +231,9 @@ class ChatbotChain:
 
         # Do not let the model turn an empty (or insufficient) retrieval into a guess.
         if not vehicles:
-            conversation_memory.add_turn(session_id, message, NO_MATCH_REPLY)
-            return ChatResponse(reply=NO_MATCH_REPLY, sources=[], session_id=session_id)
+            no_match = _get_no_match_reply(detected_lang)
+            conversation_memory.add_turn(session_id, message, no_match)
+            return ChatResponse(reply=no_match, sources=[], session_id=session_id)
 
         vehicle_ids = [v["vehicle_id"] for v in vehicles if v.get("vehicle_id")]
         try:
@@ -224,9 +256,9 @@ class ChatbotChain:
             style_instructions += "- Ton: Poli, vouvoiement de rigueur.\n"
             
         if style_profile["verbosity"] == "concise":
-            style_instructions += "- Format: Réponses courtes et concises (2-3 phrases max).\n"
+            style_instructions += "- Format: Réponses ultra-courtes et directes (1 phrase max).\n"
         else:
-            style_instructions += "- Format: Réponses détaillées.\n"
+            style_instructions += "- Format: Réponses courtes et directes (2 phrases max) pour garantir une réponse rapide.\n"
             
         if style_profile["technicality"] == "technical":
             style_instructions += "- Technicité: Vocabulaire automobile expert, ne pas vulgariser les termes évidents.\n"
@@ -234,6 +266,7 @@ class ChatbotChain:
             style_instructions += "- Technicité: Vulgariser les concepts (ex: expliquer ce qu'est une DSG si mentionnée).\n"
 
         system_message = SYSTEM_PROMPT.format(
+            detected_language=detected_lang,
             vehicle_context=vehicle_context,
             graph_context=graph_context,
             review_context=review_context,

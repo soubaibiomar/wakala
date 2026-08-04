@@ -71,6 +71,7 @@ export interface VehicleFilters {
   condition?: 'neuf' | 'occasion';
   sort_by?: string;
   sort_order?: 'asc' | 'desc';
+  group_by_model?: boolean;
   page?: number;
   page_size?: number;
 }

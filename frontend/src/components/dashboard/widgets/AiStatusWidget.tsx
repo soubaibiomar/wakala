@@ -27,7 +27,7 @@ export function AiStatusWidget() {
         <div>
           <h3 style={{ fontSize: '1.2rem', margin: '0 0 8px 0' }}>Assistant IA Wakala</h3>
           <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', marginBottom: '16px' }}>
-            Bonjour {user?.name?.split(' ')[0]}, {data?.message}
+            Bonjour {user?.full_name?.split(' ')[0]}, {data?.message}
           </p>
           <button 
             style={{

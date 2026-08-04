@@ -23,6 +23,10 @@ async def send_otp_email(email: str, otp_code: str):
     """
     Envoie un email HTML contenant le code OTP.
     """
+    print(f"\n======================================")
+    print(f"OTP for {email}: {otp_code}")
+    print(f"======================================\n")
+
     html_content = f"""
     <!DOCTYPE html>
     <html lang="fr">

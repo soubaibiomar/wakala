@@ -3,8 +3,10 @@ api/routes_users.py — Gestion du profil utilisateur.
 """
 
 from typing import Annotated
+import os
+import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -54,6 +56,40 @@ async def update_me(
     await db.flush()
     await db.refresh(current_user)
     return current_user
+
+
+# ──────────────────────────────────────────────────────────────
+# POST /me/avatar — Mettre à jour la photo de profil
+# ──────────────────────────────────────────────────────────────
+
+@router.post(
+    "/me/avatar",
+    response_model=UserRead,
+    summary="Uploader une photo de profil",
+)
+async def upload_avatar(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    file: UploadFile = File(...),
+):
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Le fichier doit être une image.")
+        
+    os.makedirs("uploads/avatars", exist_ok=True)
+    ext = file.filename.split(".")[-1]
+    filename = f"{current_user.id}_{uuid.uuid4().hex[:8]}.{ext}"
+    filepath = os.path.join("uploads", "avatars", filename)
+    
+    with open(filepath, "wb") as buffer:
+        content = await file.read()
+        buffer.write(content)
+        
+    current_user.avatar_url = f"/uploads/avatars/{filename}"
+    await db.flush()
+    await db.refresh(current_user)
+    
+    return current_user
+
 
 
 # ──────────────────────────────────────────────────────────────

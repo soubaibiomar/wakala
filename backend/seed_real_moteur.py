@@ -4,7 +4,7 @@ import asyncio
 import uuid
 import random
 import re
-import urllib.request
+import httpx
 from datetime import datetime, timezone
 from bs4 import BeautifulSoup
 from pathlib import Path
@@ -23,97 +23,147 @@ def parse_int(val):
     digits = re.sub(r'[^\d]', '', str(val))
     return int(digits) if digits else None
 
+async def fetch_html(client: httpx.AsyncClient, url: str) -> str:
+    try:
+        response = await client.get(url, timeout=15.0)
+        return response.text
+    except Exception as e:
+        print(f"Failed to fetch {url}: {e}")
+        return ""
+
 async def seed():
+    print("Cleaning up old moteur.ma vehicles to fix mileage bug...")
+    async with async_session_factory() as db:
+        from sqlalchemy import text
+        await db.execute(text("DELETE FROM listings WHERE vehicle_id IN (SELECT id FROM vehicles WHERE source_url LIKE '%moteur.ma%')"))
+        await db.execute(text("DELETE FROM vehicles WHERE source_url LIKE '%moteur.ma%'"))
+        await db.commit()
+    print("Cleanup complete. Starting import...")
+    
     cars = []
     
-    MAX_PAGES = 50
+    page = 1
+    has_more = True
     urls = []
     
-    for page in range(1, MAX_PAGES + 1):
-        print(f"Fetching page {page}...")
-        search_url = f"https://www.moteur.ma/fr/voiture/achat-voiture-occasion/recherche/?page={page}"
-        req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0'})
-        try:
-            html = urllib.request.urlopen(req).read().decode('utf-8', 'ignore')
+    print("Fetching search pages dynamically...")
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+    }
+    async with httpx.AsyncClient(headers=headers) as client:
+        while has_more and page <= 100:
+            html = await fetch_html(client, f"https://www.moteur.ma/fr/voiture/achat-voiture-occasion/recherche/?page={page}")
+            if not html:
+                print(f"Empty HTML returned for page {page}.")
+                break
+                
             soup = BeautifulSoup(html, 'html.parser')
             links = soup.select("div.item-card9-imgs a.link, div.picture a")
+            
+            new_urls_count = 0
             for link in links:
                 href = link.get('href')
                 if href:
                     if not href.startswith("http"):
                         href = "https://www.moteur.ma" + href
-                    urls.append(href)
-        except Exception as e:
-            print(f"Failed to fetch search page {page}: {e}")
-            
-    urls = list(set(urls))
-    print(f"Found {len(urls)} unique listing URLs to scrape across {MAX_PAGES} pages.")
-    
-    for i, url in enumerate(urls): # Scrape all found listings
-        print(f"Scraping {i+1}/20: {url}")
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        try:
-            detail_html = urllib.request.urlopen(req).read().decode('utf-8', 'ignore')
-        except Exception as e:
-            print(f"Failed to fetch detail page {url}: {e}")
-            continue
-            
-        detail_soup = BeautifulSoup(detail_html, 'html.parser')
-        
-        # New parsing logic we fixed earlier
-        title_el = detail_soup.select_one("h1, h3.title, h3")
-        title = title_el.get_text(strip=True).replace("\n", " ") if title_el else ""
-        
-        price_el = detail_soup.select_one("div.price") or detail_soup.select_one(".price")
-        price = price_el.get_text(strip=True).replace("\n", "") if price_el else ""
-        
-        desc_el = detail_soup.select_one("div.desc") or detail_soup.select_one(".text-content")
-        desc = desc_el.get_text(strip=True) if desc_el else ""
-        
-        images = []
-        for img in detail_soup.select("div.slider img, .picture img, .carousel-item img, .ad-gallery-slide img, .slide-show-image img"):
-            src = img.get("src") or img.get("data-src")
-            if src:
-                if not src.startswith("http"): src = "https://www.moteur.ma" + src
-                images.append(src)
+                    if href not in urls:
+                        urls.append(href)
+                        new_urls_count += 1
+                        
+            print(f"Scanned page {page}, found {new_urls_count} new URLs.")
+            if new_urls_count == 0:
+                print(f"DEBUG HTML start: {html[:200]}")
+                has_more = False
+                break
                 
-        # Parse table specs
-        specs = {}
-        for row in detail_soup.find_all('tr'):
-            cols = row.find_all(['th', 'td'])
-            if len(cols) == 2:
-                key = cols[0].get_text(strip=True).lower()
-                val = cols[1].get_text(strip=True)
-                specs[key] = val
-                
-        # Get brand and model from title first, or specs
-        brand = specs.get("marque", "Inconnu")
-        model = specs.get("modèle", "Inconnu")
-        if brand == "Inconnu" and title:
-            parts = title.split()
-            brand = parts[0] if parts else "Inconnu"
-            model = " ".join(parts[1:]) if len(parts) > 1 else title
+            page += 1
+            await asyncio.sleep(0.5)
             
-        year = specs.get("année", "2015")
-        mileage = specs.get("kilométrage", "100000")
-        fuel = specs.get("carburant", "diesel")
-        trans = specs.get("boite de vitesses", "manuelle")
+        print(f"Found {len(urls)} unique listing URLs to scrape across {page-1} pages.")
         
-        cars.append({
-            "brand": brand,
-            "model": model,
-            "year": parse_int(year) or 2015,
-            "price": float(parse_int(price) or random.randint(50000, 300000)),
-            "mileage": parse_int(mileage) or 100000,
-            "fuel_type": "essence" if "essence" in fuel.lower() else ("hybride" if "hybride" in fuel.lower() else "diesel"),
-            "body_type": "suv" if "suv" in title.lower() else "berline",
-            "transmission": "automatique" if "auto" in trans.lower() else "manuelle",
-            "description": desc,
-            "images_urls": images,
-            "source": "Moteur",
-            "source_url": url,
-            "is_new": False
-        })
+        semaphore = asyncio.Semaphore(15)
+        
+        async def process_url(url):
+            async with semaphore:
+                detail_html = await fetch_html(client, url)
+                if not detail_html:
+                    return None
+                    
+                detail_soup = BeautifulSoup(detail_html, 'html.parser')
+                
+                title_el = detail_soup.select_one("h1, h3.title, h3")
+                title = title_el.get_text(strip=True).replace("\n", " ") if title_el else ""
+                if not title:
+                    return None
+                
+                price_el = detail_soup.select_one(".ad-hero-price-col") or detail_soup.select_one("div.price") or detail_soup.select_one(".price")
+                price = price_el.get_text(strip=True).replace("\n", "") if price_el else ""
+                
+                desc_el = detail_soup.select_one("div.desc") or detail_soup.select_one(".text-content")
+                desc = desc_el.get_text(strip=True) if desc_el else ""
+                # Prevent taking the Neuf banner as description
+                if "À partir de" in desc:
+                    desc = ""
+                
+                images = []
+                for img in detail_soup.select("div.slider img, .picture img, .carousel-item img, .ad-gallery-slide img, .slide-show-image img"):
+                    src = img.get("src") or img.get("data-src")
+                    if src:
+                        if not src.startswith("http"): src = "https://www.moteur.ma" + src
+                        images.append(src)
+                        
+                # Parse table specs
+                specs = {}
+                for row in detail_soup.find_all('tr'):
+                    cols = row.find_all(['th', 'td'])
+                    if len(cols) == 2:
+                        key = cols[0].get_text(strip=True).replace(':', '').lower()
+                        val = cols[1].get_text(strip=True)
+                        specs[key] = val
+                    elif len(cols) == 4:
+                        key1 = cols[0].get_text(strip=True).replace(':', '').lower()
+                        val1 = cols[1].get_text(strip=True)
+                        specs[key1] = val1
+                        
+                        key2 = cols[2].get_text(strip=True).replace(':', '').lower()
+                        val2 = cols[3].get_text(strip=True)
+                        specs[key2] = val2
+                        
+                # Get brand and model from title first, or specs
+                brand = specs.get("marque", "Inconnu")
+                model = specs.get("modèle", "Inconnu")
+                if brand == "Inconnu" and title:
+                    parts = title.split()
+                    brand = parts[0] if parts else "Inconnu"
+                    model = " ".join(parts[1:]) if len(parts) > 1 else title
+                    
+                year = specs.get("année", "2015")
+                mileage = specs.get("kilométrage", "100000")
+                fuel = specs.get("carburant", "diesel")
+                trans = specs.get("boite de vitesses", "manuelle")
+                
+                return {
+                    "brand": brand,
+                    "model": model,
+                    "year": parse_int(year) or 2015,
+                    "price": float(parse_int(price) or random.randint(50000, 300000)),
+                    "mileage": parse_int(mileage) or 100000,
+                    "fuel_type": "essence" if "essence" in fuel.lower() else ("hybride" if "hybride" in fuel.lower() else "diesel"),
+                    "body_type": "suv" if "suv" in title.lower() else "berline",
+                    "transmission": "automatique" if "auto" in trans.lower() else "manuelle",
+                    "description": desc,
+                    "images_urls": images,
+                    "source": "Moteur",
+                    "source_url": url,
+                    "is_new": False
+                }
+                
+        print(f"Processing detail pages...")
+        tasks = [process_url(u) for u in urls]
+        processed_cars = await asyncio.gather(*tasks)
+        cars = [c for c in processed_cars if c is not None]
         
     try:
         async with async_session_factory() as db:

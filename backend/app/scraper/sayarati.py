@@ -100,6 +100,9 @@ class SayaratiScraper(BaseScraper):
             if brand_el:
                 brand = brand_el.get_text(strip=True)
 
+        desc_el = soup.select_one(".description, [itemprop=description], #description, .detail-desc, p.desc")
+        description = desc_el.get_text(" ", strip=True) if desc_el else title
+
         return {
             "brand": brand,
             "model": model,
@@ -111,5 +114,5 @@ class SayaratiScraper(BaseScraper):
             "city": city,
             "source": self.SOURCE_NAME,
             "source_url": url,
-            "description": title,
+            "description": description,
         }

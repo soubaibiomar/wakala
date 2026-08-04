@@ -10,7 +10,7 @@ POST /api/search/voice
   Response : {"texte_transcrit": "...", "transcription_editable": true, "resultat_nlp": {...}}
 """
 
-from fastapi import APIRouter, Depends, UploadFile, File
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional
 
@@ -44,6 +44,9 @@ async def parse_voice_query(file: UploadFile = File(...)):
     Retourne également le texte transcrit pour permettre à l'utilisateur de l'éditer,
     car Whisper peut être incertain sur le Darija avec code-switching.
     """
+    if file.size and file.size > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Le fichier audio est trop volumineux (maximum 10MB).")
+        
     transcription = await transcrire_whisper(file)
     
     if transcription and not transcription.startswith("ERROR:"):

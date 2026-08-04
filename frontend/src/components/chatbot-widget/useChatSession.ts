@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 import { chatbotService } from '../../services/chatbotService';
 
 export interface SourceRef {
@@ -25,19 +25,63 @@ function generateId(): string {
 
 function getOrCreateSessionId(): string {
   const key = 'wakala_chat_session';
-  let sid = sessionStorage.getItem(key);
+  let sid = localStorage.getItem(key);
   if (!sid) {
     sid = 'chat-' + generateId();
-    sessionStorage.setItem(key, sid);
+    localStorage.setItem(key, sid);
   }
   return sid;
 }
 
+const HISTORY_KEY = 'wakala_chat_history';
+
 export function useChatSession() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const saved = localStorage.getItem(HISTORY_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Failed to parse chat history", e);
+        return [];
+      }
+    }
+    return [];
+  });
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sessionIdRef = useRef<string>(getOrCreateSessionId());
+
+  // Load history from DB on mount
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const history = await chatbotService.getChatHistory();
+        if (history && history.length > 0) {
+          // Take the most recent session's messages
+          const latestSession = history[0];
+          sessionIdRef.current = latestSession.session_id;
+          
+          const mappedMessages: Message[] = latestSession.messages.map((m: any) => ({
+            id: m.id,
+            role: m.role,
+            content: m.content,
+            timestamp: new Date(m.timestamp).getTime()
+          }));
+          
+          setMessages(mappedMessages);
+        }
+      } catch (err) {
+        console.error("Failed to load chat history", err);
+      }
+    };
+    loadHistory();
+  }, []);
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(messages));
+  }, [messages]);
 
   const sendMessage = useCallback(async (text: string) => {
     const trimmed = text.trim();
@@ -70,17 +114,21 @@ export function useChatSession() {
       // Actually, we can just pass the previous messages
       const history = messages.map(m => ({ role: m.role, content: m.content }));
       
-      await chatbotService.streamMessage(trimmed, history, (chunk: string) => {
-        setMessages((prev) => {
-          return prev.map(msg => {
-            if (msg.id === assistantId) {
-              return { ...msg, content: msg.content + chunk };
-            }
-            return msg;
+      await chatbotService.streamMessage(
+        trimmed,
+        history,
+        (chunk: string) => {
+          setMessages((prev) => {
+            return prev.map(msg => {
+              if (msg.id === assistantId) {
+                return { ...msg, content: msg.content + chunk };
+              }
+              return msg;
+            });
           });
-        });
-        // Scroll bottom effect can be triggered if needed, but handled by useEffect usually
-      });
+        },
+        sessionIdRef.current
+      );
       
     } catch {
       setMessages((prev) => {
@@ -100,9 +148,10 @@ export function useChatSession() {
   const clearHistory = useCallback(() => {
     setMessages([]);
     setError(null);
+    localStorage.removeItem(HISTORY_KEY);
     const newSid = 'chat-' + generateId();
     sessionIdRef.current = newSid;
-    sessionStorage.setItem('wakala_chat_session', newSid);
+    localStorage.setItem('wakala_chat_session', newSid);
   }, []);
 
   return {

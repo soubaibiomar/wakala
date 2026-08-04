@@ -84,13 +84,10 @@ function CarSection({ id, tag, title, subtitle, fetchParams, emptyMessage }: Car
     vehicleService
       .getVehicles(fetchParams)
       .then((res) => {
-        // If it's used cars (no mileage_max=0), we might get new cars. Let's filter locally if needed.
+        // Strictly filter out "neuf" if condition is 'occasion'
         let items = res.items;
-        if (fetchParams.condition !== 'neuf') {
-           const usedItems = items.filter(v => !v.description?.toLowerCase().includes('véhicule neuf officiel'));
-           if (usedItems.length > 0) {
-             items = usedItems;
-           }
+        if (fetchParams.condition === 'occasion') {
+           items = items.filter(v => !v.description?.toLowerCase().includes('véhicule neuf officiel'));
         }
         setVehicles(items.slice(0, 6)); // Ensure we only show 6
       })
@@ -269,8 +266,13 @@ function BrandsSection() {
 // ═══════════════════════════════════════════════════════════════
 
 export default function Home() {
-  const [introDone, setIntroDone] = useState(false);
-  const handleIntroComplete = useCallback(() => setIntroDone(true), []);
+  const [introDone, setIntroDone] = useState(() => {
+    return sessionStorage.getItem('wakala_intro_seen') === 'true';
+  });
+  const handleIntroComplete = useCallback(() => {
+    sessionStorage.setItem('wakala_intro_seen', 'true');
+    setIntroDone(true);
+  }, []);
 
   return (
     <>
@@ -285,7 +287,7 @@ export default function Home() {
             tag="Occasions"
             title="Véhicules d'Occasion"
             subtitle="Dernières annonces d'occasion ajoutées, analysées par notre IA."
-            fetchParams={{ page_size: 15, sort_by: 'created_at', sort_order: 'desc' }}
+            fetchParams={{ condition: 'occasion', page_size: 15, sort_by: 'created_at', sort_order: 'desc' }}
             emptyMessage="Aucun véhicule d'occasion disponible."
           />
           <FeaturesSection />

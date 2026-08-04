@@ -2,29 +2,32 @@
 Embeddings — Génération et gestion des embeddings véhicules.
 """
 
-from sentence_transformers import SentenceTransformer
+from langchain_community.embeddings import OllamaEmbeddings
 from app.core.config import settings
 
-
 class EmbeddingService:
-    """Génère des embeddings pour les descriptions de véhicules."""
+    """Génère des embeddings pour les descriptions de véhicules via Ollama (bge-m3)."""
 
     def __init__(self):
         self._model = None
 
     @property
-    def model(self) -> SentenceTransformer:
+    def model(self) -> OllamaEmbeddings:
         if self._model is None:
-            self._model = SentenceTransformer(settings.EMBEDDING_MODEL)
+            _ollama_base = settings.OLLAMA_BASE_URL.replace("/v1", "") if settings.OLLAMA_BASE_URL else "http://localhost:11434"
+            self._model = OllamaEmbeddings(
+                base_url=_ollama_base,
+                model="bge-m3"
+            )
         return self._model
 
     def embed_text(self, text: str) -> list[float]:
         """Encode un texte en vecteur d'embedding."""
-        return self.model.encode(text).tolist()
+        return self.model.embed_query(text)
 
     def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """Encode un batch de textes."""
-        return self.model.encode(texts).tolist()
+        return self.model.embed_documents(texts)
 
     def embed_vehicle(self, vehicle: dict) -> list[float]:
         """
@@ -37,6 +40,5 @@ class EmbeddingService:
             f"{vehicle.get('body_type', '')} {vehicle.get('description', '')}"
         )
         return self.embed_text(text.strip())
-
 
 embedding_service = EmbeddingService()

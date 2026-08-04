@@ -12,6 +12,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.config import settings
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.auth import EmailVerification
 from app.models.user import User
@@ -290,7 +291,9 @@ async def reset_password(
     summary="Se connecter",
     description="Authentifie un utilisateur et retourne un access token JWT.",
 )
+@limiter.limit("5/minute")
 async def login(
+    request: Request,
     payload: LoginRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
@@ -335,9 +338,11 @@ async def google_login(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     try:
-        # Remarque : Idéalement, il faut passer CLIENT_ID ici pour plus de sécurité
-        # CLIENT_ID = settings.GOOGLE_CLIENT_ID
-        idinfo = id_token.verify_oauth2_token(payload.token, google_requests.Request())
+        if settings.GOOGLE_CLIENT_ID:
+            idinfo = id_token.verify_oauth2_token(payload.token, google_requests.Request(), audience=settings.GOOGLE_CLIENT_ID)
+        else:
+            # Fallback for dev if client_id is not set, but not recommended for production
+            idinfo = id_token.verify_oauth2_token(payload.token, google_requests.Request())
         
         email = idinfo.get("email")
         full_name = idinfo.get("name", "Utilisateur Google")

@@ -113,6 +113,12 @@ async def upload_transfer_document(
     if tx.status != "FUNDS_SECURED":
         raise HTTPException(status_code=400, detail="Les fonds ne sont pas encore sécurisés.")
         
+    if not file.content_type in ["image/jpeg", "image/png", "application/pdf"]:
+        raise HTTPException(status_code=400, detail="Le document doit être une image (JPEG/PNG) ou un PDF.")
+        
+    if file.size and file.size > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Le fichier est trop volumineux (maximum 5MB).")
+        
     # On simule l'enregistrement du fichier
     file_content = await file.read()
     

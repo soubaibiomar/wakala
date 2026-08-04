@@ -1,9 +1,10 @@
 import { Link, Outlet, useLocation, Navigate } from 'react-router-dom';
-import { Home, List, Heart, TrendingUp, Menu, LogOut, ChevronLeft, BookOpen, MessageSquare } from 'lucide-react';
+import { Home, List, Heart, TrendingUp, Menu, LogOut, ChevronLeft, BookOpen, MessageSquare, Sparkles, User } from 'lucide-react';
 import { useState } from 'react';
 import styles from './DashboardLayout.module.css';
 import { useAuth } from '../../context/AuthContext';
 import ChatbotWidget from '../chatbot-widget/ChatbotWidget';
+import Navbar from '../layout/Navbar';
 
 export default function DashboardLayout() {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
@@ -29,16 +30,21 @@ export default function DashboardLayout() {
     { label: "Carnet d'Entretien", icon: BookOpen, path: '/dashboard/maintenance' },
     { label: 'Mes Annonces', icon: List, path: '/dashboard/listings' },
     { label: 'Messagerie', icon: MessageSquare, path: '/dashboard/messages' },
+    { label: 'Négociations', icon: MessageSquare, path: '/dashboard/offers' },
     { label: 'Favoris', icon: Heart, path: '/dashboard/favorites' },
+    { label: 'Pour Vous', icon: Sparkles, path: '/dashboard/recommendations' },
     { label: 'Argus', icon: TrendingUp, path: '/dashboard/argus' },
+    { label: 'Mon Profil', icon: User, path: '/dashboard/profile' },
   ];
 
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className={styles.layout}>
-      {/* Sidebar Desktop */}
-      <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.open : styles.closed}`}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <Navbar />
+      <div className={styles.layout}>
+        {/* Sidebar Desktop */}
+        <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.open : styles.closed}`}>
         <div className={styles.sidebarHeader}>
           {isSidebarOpen && (
             <Link to="/" className={styles.brand}>
@@ -51,7 +57,10 @@ export default function DashboardLayout() {
         </div>
 
         <nav className={styles.nav}>
-          {NAV_ITEMS.map((item) => (
+          {NAV_ITEMS.filter(item => {
+            if (item.path === '/dashboard/listings' && user?.role !== 'seller' && user?.role !== 'admin') return false;
+            return true;
+          }).map((item) => (
             <Link
               key={item.path}
               to={item.path}
@@ -71,6 +80,14 @@ export default function DashboardLayout() {
         </nav>
 
         <div className={styles.sidebarFooter}>
+          {user && (
+            <div style={{ padding: '15px 20px', color: 'var(--color-text-primary)', borderTop: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px', fontWeight: '500' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--color-brand-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                {user.full_name ? user.full_name.charAt(0).toUpperCase() : 'U'}
+              </div>
+              {isSidebarOpen && <span>{user.full_name}</span>}
+            </div>
+          )}
           <button className={styles.navItem} onClick={logout}>
             <LogOut size={24} className={styles.navIcon} />
             {isSidebarOpen && <span className={styles.navLabel}>Déconnexion</span>}
@@ -85,7 +102,7 @@ export default function DashboardLayout() {
             <img src="/assets/wakala-logo.png" alt="Wakala" className={styles.logo} />
           </Link>
           <div className={styles.userInfo}>
-            {user?.name}
+            {user?.full_name}
           </div>
         </header>
         
@@ -102,7 +119,7 @@ export default function DashboardLayout() {
             to={item.path}
             className={`${styles.bottomNavItem} ${isActive(item.path) ? styles.active : ''}`}
           >
-            <item.icon size={22} />
+            <item.icon size={20} />
             <span>{item.label}</span>
           </Link>
         ))}
@@ -110,6 +127,7 @@ export default function DashboardLayout() {
 
       {/* Persistent Chatbot in Dashboard */}
       <ChatbotWidget />
+      </div>
     </div>
   );
 }

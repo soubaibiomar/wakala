@@ -49,7 +49,7 @@ class VectorStore:
         )
         return [
             {
-                "vehicle_id": hit.payload.get("vehicle_id"),
+                "vehicle_id": hit.payload.get("id") or hit.payload.get("vehicle_id"),
                 "score": hit.score,
                 "metadata": hit.payload,
             }

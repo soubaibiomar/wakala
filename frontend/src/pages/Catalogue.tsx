@@ -39,6 +39,7 @@ export default function Catalogue() {
   const [activeSort, setActiveSort] = useState('created_at-desc');
   const [activeCondition, setActiveCondition] = useState('occasion');
   const [savedSearch, setSavedSearch] = useState(false);
+  const [activeModel, setActiveModel] = useState('');
 
   // Initialize from URL params
   useEffect(() => {
@@ -46,11 +47,13 @@ export default function Catalogue() {
     const body = searchParams.get('body_type') as BodyType | '';
     const isNew = searchParams.get('is_new');
     const brand = searchParams.get('brand');
+    const model = searchParams.get('model');
     
     if (fuel) setActiveFuel(fuel);
     if (body) setActiveBody(body);
     if (isNew === 'true') setActiveCondition('neuf');
     if (brand) setSearchTerm(brand);
+    if (model) setActiveModel(model);
   }, [searchParams]);
 
   const handleFilterChange = (setter: any, value: any) => {
@@ -73,6 +76,7 @@ export default function Catalogue() {
       if (priceMin) filters.price_min = parseInt(priceMin, 10);
       if (priceMax) filters.price_max = parseInt(priceMax, 10);
       if (searchTerm) filters.brand = searchTerm; // Simplified search mapping for now
+      if (activeModel) filters.model = activeModel;
 
       const [sort_by, sort_order] = activeSort.split('-');
       filters.sort_by = sort_by;
@@ -80,6 +84,10 @@ export default function Catalogue() {
       
       if (activeCondition === 'neuf' || activeCondition === 'occasion') {
         filters.condition = activeCondition;
+      }
+
+      if (activeCondition === 'neuf' && !activeModel) {
+        filters.group_by_model = true;
       }
 
       try {
@@ -111,7 +119,7 @@ export default function Catalogue() {
         setLoading(false);
       }
     },
-    [activeFuel, activeBody, city, priceMin, priceMax, searchTerm, activeSort, activeCondition, activeRecommendations]
+    [activeFuel, activeBody, city, priceMin, priceMax, searchTerm, activeModel, activeSort, activeCondition, activeRecommendations]
   );
 
   useEffect(() => {
@@ -127,6 +135,7 @@ export default function Catalogue() {
     setPriceMax('');
     setActiveSort('created_at-desc');
     setActiveCondition('');
+    setActiveModel('');
     setPage(1);
     setActiveRecommendations(null);
   };
@@ -307,7 +316,13 @@ export default function Catalogue() {
           {/* Active filters summary */}
           <div className="catalogue__main-header">
             <h1 className="catalogue__main-title">
-              {activeCondition === 'neuf' ? 'Voitures neuves au Maroc' : activeCondition === 'occasion' ? "Voitures d'occasion au Maroc" : 'Voitures au Maroc'}
+              {activeModel && searchTerm 
+                ? `${searchTerm} ${activeModel}`
+                : activeCondition === 'neuf' 
+                  ? 'Voitures neuves au Maroc' 
+                  : activeCondition === 'occasion' 
+                    ? "Voitures d'occasion au Maroc" 
+                    : 'Voitures au Maroc'}
             </h1>
             <span className="catalogue__main-count">1 - {vehicles.length} sur {total} annonces</span>
           </div>
@@ -341,7 +356,12 @@ export default function Catalogue() {
               <div className="catalogue__grid">
                 {vehicles.map((v) => (
                   <div key={v.id} className="catalogue__card-wrapper">
-                    <VehicleCard vehicle={v} animationDelay={0} matchScore={matchScores[v.id]} />
+                    <VehicleCard 
+                      vehicle={v} 
+                      animationDelay={0} 
+                      matchScore={matchScores[v.id]} 
+                      isGrouped={activeCondition === 'neuf' && !activeModel}
+                    />
                   </div>
                 ))}
               </div>

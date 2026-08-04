@@ -37,7 +37,15 @@ def parse_float(val):
 
 async def seed_catalog():
     # Only scraping a few prominent brands to keep it fast, but logic applies to all
-    target_brands = ['dacia', 'renault', 'peugeot', 'hyundai']
+    target_brands = [
+        'dacia', 'renault', 'peugeot', 'hyundai', 'volkswagen',
+        'fiat', 'kia', 'ford', 'citroen', 'opel', 
+        'toyota', 'nissan', 'audi', 'bmw', 'mercedes-benz', 
+        'jeep', 'skoda', 'seat', 'cupra', 'alfa-romeo', 
+        'suzuki', 'honda', 'mazda', 'mitsubishi', 'land-rover',
+        'volvo', 'porsche', 'lexus', 'jaguar', 'ds', 
+        'mini', 'chery', 'mg', 'geely', 'haval', 'byd'
+    ]
     
     brand_data_list = []
 

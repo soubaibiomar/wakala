@@ -90,7 +90,6 @@ export function useVoiceInput({
     if (!SpeechRecognitionAPI) return;
 
     const recognition = new SpeechRecognitionAPI();
-    recognition.lang = lang;
     recognition.continuous = continuous;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
@@ -124,12 +123,22 @@ export function useVoiceInput({
         setErrorMessage(null);
         return;
       }
+      
+      if (code === 'language-not-supported') {
+        if (lang !== 'fr-FR') {
+            setLangState('fr-FR');
+            setErrorMessage("Langue non supportée, passage au Français par défaut.");
+            setStatus('idle');
+            return;
+        }
+      }
 
       const messages: Record<string, string> = {
         'not-allowed': 'Accès au microphone refusé. Vérifiez les permissions.',
         'audio-capture': 'Aucun microphone détecté.',
-        'network': 'Erreur réseau — la reconnaissance vocale nécessite une connexion.',
+        'network': 'Erreur réseau — connexion instable ou navigateur non supporté (privilégiez Chrome).',
         'service-not-allowed': 'Service de reconnaissance vocale non disponible.',
+        'language-not-supported': 'La langue sélectionnée n\'est pas supportée par votre navigateur.'
       };
 
       setStatus('error');
@@ -137,6 +146,7 @@ export function useVoiceInput({
     };
 
     recognition.onend = () => {
+      // Si on n'est pas en erreur, on remet idle
       setStatus((prev) => (prev === 'error' ? prev : 'idle'));
       setInterimTranscript('');
     };
@@ -150,7 +160,14 @@ export function useVoiceInput({
         // ignore
       }
     };
-  }, [lang, continuous]);
+  }, [continuous]);
+
+  // Update language without recreating the entire recognition instance
+  useEffect(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.lang = lang;
+    }
+  }, [lang]);
 
   const startListening = useCallback(() => {
     if (!recognitionRef.current) return;

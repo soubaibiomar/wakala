@@ -28,7 +28,7 @@ export default function ChatWindow({
 
   // ─── Saisie vocale (Web Speech API) ───────────────────────
   const voice = useVoiceInput({
-    defaultLang: 'fr-FR',
+    defaultLang: 'ar-MA',
     onTranscript: (text) => {
       // Injecte le texte transcrit dans le même state que le clavier
       setInput((prev) => {

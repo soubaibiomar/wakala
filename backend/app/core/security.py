@@ -42,6 +42,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 # ─── JWT ───────────────────────────────────────────────────────
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 
 def create_access_token(
@@ -69,7 +70,6 @@ async def get_current_user(
 ):
     """
     Dépendance FastAPI — Extrait l'utilisateur du JWT.
-    Injecte un objet User ORM dans le handler.
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -95,6 +95,17 @@ async def get_current_user(
         raise credentials_exception
 
     return user
+
+async def get_current_user_optional(
+    token: Annotated[Optional[str], Depends(oauth2_scheme_optional)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    if not token:
+        return None
+    try:
+        return await get_current_user(token, db)
+    except HTTPException:
+        return None
 
 
 # ─── Dépendance : vérification de rôle ────────────────────────

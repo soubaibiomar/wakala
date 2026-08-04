@@ -15,9 +15,15 @@ from app.models.listing import Listing
 from sqlalchemy import text
 
 BRANDS = [
-    "dacia", "renault", "peugeot", "hyundai", "volkswagen", "fiat", "kia", "audi", "bmw", "mercedes",
-    "jeep", "citroen", "ford", "toyota", "nissan", "skoda", "seat", "opel", "honda", "volvo", "land-rover", "alfa-romeo", "porsche", "suzuki",
-    "byd", "mg", "chery", "geely", "changan", "dongfeng", "haval", "jac", "mazda", "mitsubishi", "mini", "lexus", "jaguar", "maserati", "baic", "seres", "omoda", "jaecoo"
+    "dacia", "renault", "peugeot", "hyundai", "volkswagen",
+    "fiat", "kia", "ford", "citroen", "opel", 
+    "toyota", "nissan", "audi", "bmw", "mercedes-benz", 
+    "jeep", "skoda", "seat", "cupra", "alfa-romeo", 
+    "suzuki", "honda", "mazda", "mitsubishi", "land-rover",
+    "volvo", "porsche", "lexus", "jaguar", "ds", 
+    "mini", "chery", "mg", "geely", "haval", "byd",
+    "omoda", "jaecoo", "xpeng", "dongfeng", "gac", "jac", 
+    "foton", "tata", "abarth", "smart", "ssangyong"
 ]
 
 def fetch_html(url):
@@ -64,34 +70,116 @@ async def seed():
             if not data['img'] or 'emoticon' in data['img']:
                 continue
                 
-            prices = [int(p.replace('.', '')) for p in re.findall(r'(\d{2,3}\.\d{3})', data['text'])]
-            versions_match = re.search(r'(\d+)\s+versions?', data['text'])
-            versions = int(versions_match.group(1)) if versions_match else 1
+            print(f"  Fetching model versions for {brand.capitalize()} {model_name}...")
+            # Fetch model page to get versions
+            model_html = fetch_html(data['url'])
+            if not model_html: continue
+            m_soup = BeautifulSoup(model_html, 'html.parser')
             
-            min_price = min(prices) if prices else 200000
-            max_price = max(prices) if prices else min_price
-            
-            for v in range(versions):
-                if versions > 1:
-                    price = min_price + (max_price - min_price) * (v / (versions - 1))
-                else:
-                    price = min_price
+            version_links = []
+            for a in m_soup.select('a'):
+                href = a.get('href', '')
+                if 'fiche-technique' in href and '.html' in href and not any(v['href'] == href for v in version_links):
+                    v_name = a.text.strip()
+                    if not v_name:
+                        v_name = a.get('title', '').replace('Fiche technique', '').replace('Fiche Technique', '').strip()
+                    if not v_name:
+                        v_name = href.split('/')[-1].replace('.html', '').replace('-', ' ')
+                    version_links.append({'href': href, 'name': v_name})
                     
+            if not version_links:
+                continue
+
+            for v_data in version_links:
+                v_link = v_data['href']
+                v_name = v_data['name']
+                v_html = fetch_html(v_link)
+                if not v_html: continue
+                v_soup = BeautifulSoup(v_html, 'html.parser')
+                
+                # Extract specs
+                price_el = v_soup.select_one('.price, [class*=prix]')
+                price_str = price_el.get_text() if price_el else ""
+                digits = re.sub(r'[^\d]', '', price_str)
+                price = int(digits) if digits else 200000
+
+                fuel = "diesel"
+                engine_hp = None
+                transmission = "manuelle"
+                conso = None
+                vmax = None
+                
+                # parse ul/li or td
+                specs_markdown = ""
+                description = ""
+                
+                for cell in v_soup.select('.cell'):
+                    category = cell.select_one('.head')
+                    if category:
+                        cat_name = category.get_text(strip=True)
+                        cat_name = re.sub(r'Afficher[\+\-]?', '', cat_name).strip()
+                        cat_name = re.sub(r'\(\d+\)$', '', cat_name).strip()
+                        
+                        if cat_name == 'En détail...':
+                            details = cell.select_one('.params2')
+                            if details:
+                                for hidden in details.select('.Hchouma'):
+                                    hidden.extract()
+                                description = details.get_text('\n', strip=True) + '\n'
+                        else:
+                            specs_markdown += f'\n### {cat_name}\n\n'
+                            specs_markdown += '| Caractéristique | Valeur |\n|---|---|\n'
+                            for li in cell.select('li'):
+                                param = li.select_one('.param')
+                                value = li.select_one('.value')
+                                if param and value:
+                                    val_text = value.get_text(strip=True)
+                                    if not val_text and value.select_one('img'):
+                                        img_src = value.select_one('img').get('src', '')
+                                        if 'oui' in img_src: val_text = 'Oui'
+                                        elif 'non' in img_src: val_text = 'Non'
+                                    
+                                    specs_markdown += f'| **{param.get_text(strip=True)}** | {val_text} |\n'
+                                    
+                                    # Extract key basic specs for DB columns
+                                    p_lower = param.get_text(strip=True).lower()
+                                    v_lower = val_text.lower()
+                                    
+                                    if 'energie' in p_lower:
+                                        if 'essence' in v_lower: fuel = 'essence'
+                                        elif 'diesel' in v_lower: fuel = 'diesel'
+                                        elif 'hybride' in v_lower: fuel = 'hybride'
+                                        elif 'electrique' in v_lower: fuel = 'electrique'
+                                    
+                                    if 'boîte' in p_lower or 'transmission' in p_lower:
+                                        if 'auto' in v_lower: transmission = 'automatique'
+                                        elif 'manuel' in v_lower: transmission = 'manuelle'
+                                        
+                                    if 'puissance' in p_lower and 'dynamique' in p_lower:
+                                        match = re.search(r'(\d+)', v_lower)
+                                        if match: engine_hp = int(match.group(1))
+
+                full_desc = f"Véhicule Neuf Officiel : {brand.capitalize()} {model_name} {v_name}.\n\n{description}\n## Fiche Technique Détaillée\n{specs_markdown}"
+
+                final_model_name = v_name if (len(v_name) > 3 and model_name.lower() in v_name.lower()) else f"{model_name} {v_name}"
+
                 cars.append({
                     "brand": brand.capitalize(),
-                    "model": f"{model_name} v{v+1}" if versions > 1 else model_name,
+                    "model": model_name,
+                    "version": v_name,
                     "year": 2024,
-                    "price": int(price),
+                    "price": price,
                     "mileage": 0,
-                    "fuel_type": "essence" if "essence" in data['text'].lower() else "diesel",
+                    "fuel_type": fuel,
                     "body_type": "suv" if "suv" in data['text'].lower() else "berline",
-                    "transmission": "automatique" if price > 250000 else "manuelle",
-                    "description": f"Véhicule Neuf Officiel : {brand.capitalize()} {model_name} Version {v+1}. Informations techniques complètes depuis le catalogue officiel.",
+                    "transmission": transmission,
+                    "engine_power_hp": engine_hp,
+                    "description": full_desc,
                     "images_urls": [data['img']],
-                    "source_url": data['url'] + f"#v{v+1}",
+                    "source_url": v_link,
                     "is_new": True
                 })
-                print(f"Added {brand.capitalize()} {model_name} v{v+1} ({int(price)} MAD)")
+                print(f"Added {brand.capitalize()} {final_model_name} ({price} MAD)")
 
     if not cars:
         print("No new cars found.")
@@ -123,10 +211,11 @@ async def seed():
             v_id = uuid.uuid4()
             v = Vehicle(
                 id=v_id, seller_id=user_id,
-                brand=car["brand"], model=car["model"],
+                brand=car["brand"], model=car["model"], version=car.get("version"),
                 year=car["year"], price=car["price"], mileage=car["mileage"],
                 fuel_type=car["fuel_type"], body_type=car["body_type"], transmission=car["transmission"],
                 city="Casablanca",
+                engine_power_hp=car.get("engine_power_hp"),
                 description=car["description"], source_url=car["source_url"]
             )
             db.add(v)

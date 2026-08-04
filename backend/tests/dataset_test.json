@@ -1,66 +1,66 @@
 [
   {
     "id": 1,
-    "description": "100% darija en alphabet latin",
-    "texte": "bghit chi tomobila sghira dyal mdina b 10 malyoun",
+    "description": "bghit siyara zwina b climatisation, 100k max",
+    "texte": "bghit siyara zwina b climatisation, 100k max",
     "expected": {
       "budget": 100000,
-      "usage": "urbain",
-      "priorites": ["économique"],
-      "langue_detectee": "darija",
-      "confiance": "haute"
+      "langue_principale": "darija",
+      "langues_presentes": ["darija", "fr"],
+      "melange_langues": true
     }
   },
   {
     "id": 2,
-    "description": "100% darija en alphabet arabe",
-    "texte": "بغيت طوموبيل عائلية ما تفوتش 15 مليون",
+    "description": "بغيت سيارة صغيرة للمدينة",
+    "texte": "بغيت سيارة صغيرة للمدينة",
     "expected": {
-      "budget": 150000,
-      "usage": "familial",
-      "priorites": [],
-      "profil_passagers": "famille",
-      "langue_detectee": "darija",
-      "confiance": "haute"
+      "langue_principale": "darija",
+      "langues_presentes": ["darija"],
+      "melange_langues": false
     }
   },
   {
     "id": 3,
-    "description": "Anglais",
-    "texte": "I am looking for a reliable SUV for my family, around 300k",
+    "description": "أبحث عن سيارة اقتصادية بميزانية 150 ألف درهم",
+    "texte": "أبحث عن سيارة اقتصادية بميزانية 150 ألف درهم",
     "expected": {
-      "budget": 300000,
-      "usage": "familial",
-      "priorites": ["fiabilité", "espace"],
-      "profil_passagers": "famille",
-      "langue_detectee": "en",
-      "confiance": "haute"
+      "budget": 150000,
+      "langue_principale": "ar",
+      "langues_presentes": ["ar"],
+      "melange_langues": false
     }
   },
   {
     "id": 4,
-    "description": "Mélange français / darija (code-switching)",
-    "texte": "je cherche une voiture fiable pour le travail, ma3endich budget kbir",
+    "description": "je cherche une voiture, budget 150k, w ana 3andi 3 drari",
+    "texte": "je cherche une voiture, budget 150k, w ana 3andi 3 drari",
     "expected": {
-      "budget": null,
-      "usage": "professionnel",
-      "priorites": ["fiabilité", "économique"],
-      "langue_detectee": "darija",
-      "confiance": "basse",
-      "statut": "clarification_requise"
+      "budget": 150000,
+      "langue_principale": "darija",
+      "langues_presentes": ["fr", "darija"],
+      "melange_langues": true
     }
   },
   {
     "id": 5,
-    "description": "Phrase vague nécessitant clarification",
-    "texte": "je veux une voiture",
+    "description": "looking for a reliable SUV under 200k MAD",
+    "texte": "looking for a reliable SUV under 200k MAD",
     "expected": {
-      "budget": null,
-      "usage": null,
-      "priorites": [],
-      "langue_detectee": "fr",
-      "confiance": "basse",
-      "statut": "clarification_requise"
+      "budget": 200000,
+      "langue_principale": "en",
+      "langues_presentes": ["en"],
+      "melange_langues": false
+    }
+  },
+  {
+    "id": 6,
+    "description": "salam, bghit voiture pas chere pour la ville",
+    "texte": "salam, bghit voiture pas chere pour la ville",
+    "expected": {
+      "langue_principale": "darija",
+      "langues_presentes": ["darija", "fr"],
+      "melange_langues": true
     }
   }
 ]

@@ -7,5 +7,7 @@ from app.models.auth import EmailVerification
 from app.models.maintenance import VehicleService
 from app.models.catalog import BrandCatalog, ModelCatalog, TechSpecCatalog
 from app.models.message import Message
+from app.models.offer import Offer
+from app.models.chat_history import ChatSession, ChatMessage
 
-__all__ = ["User", "Vehicle", "Listing", "Review", "EmailVerification", "VehicleService", "BrandCatalog", "ModelCatalog", "TechSpecCatalog", "Message"]
+__all__ = ["User", "Vehicle", "Listing", "Review", "EmailVerification", "VehicleService", "BrandCatalog", "ModelCatalog", "TechSpecCatalog", "Message", "Offer", "ChatSession", "ChatMessage"]

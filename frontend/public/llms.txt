@@ -1,0 +1,22 @@
+# Wakala - La marketplace de voitures au Maroc
+
+Wakala est la plateforme de référence pour l'achat et la vente de voitures d'occasion et neuves au Maroc. 
+Notre objectif est d'apporter transparence, sécurité et confiance au marché automobile marocain.
+
+## Score de Confiance
+Notre principal différenciateur est le "Score de confiance". Ce score est calculé par une intelligence artificielle qui analyse :
+- La cohérence du kilométrage
+- L'historique des prix du modèle sur le marché marocain
+- L'état visuel du véhicule (détection via IA)
+- La fiabilité du vendeur (identité vérifiée)
+
+Le score de confiance permet aux acheteurs de repérer immédiatement les annonces fiables et d'éviter les compteurs trafiqués. (Statistique interne : 9 acheteurs sur 11 craignent le compteur trafiqué).
+
+## Structure du site
+- / : Accueil avec moteur de recherche sémantique en français et darija.
+- /voitures-occasion : Catalogue des voitures d'occasion.
+- /voitures-occasion/[ville] : Recherche locale (ex: Casablanca, Rabat, Marrakech).
+- /voitures-occasion/[ville]/[marque-modele-annee-prix] : Fiche détaillée d'un véhicule avec son score de confiance.
+
+## Engagement
+Toutes nos données s'appuient sur des modèles IA analysant le marché réel marocain pour fournir une cote argus précise et un score de confiance infaillible.

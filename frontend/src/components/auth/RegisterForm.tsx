@@ -30,11 +30,16 @@ export default function RegisterForm({ onSwitchToLogin, onRegisterSuccess }: Reg
 
     setLoading(true);
 
+    let formattedPhone = phone ? phone.trim() : null;
+    if (formattedPhone && formattedPhone.startsWith('0')) {
+      formattedPhone = '+212' + formattedPhone.slice(1);
+    }
+
     try {
       await api.post('/auth/register', {
         full_name: fullName,
         email,
-        phone: phone || null,
+        phone: formattedPhone,
         password,
         role,
       });

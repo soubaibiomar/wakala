@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Send, Bot, User, CarFront } from 'lucide-react';
 import './ChatbotPage.css';
+import { chatbotService } from '../services/chatbotService';
 
 interface Message {
   id: string;
@@ -46,30 +47,33 @@ export default function ChatbotPage() {
     setInput('');
     setIsLoading(true);
 
+    const assistantId = (Date.now() + 1).toString();
+    const assistantMsg: Message = {
+      id: assistantId,
+      role: 'assistant',
+      content: ''
+    };
+    setMessages(prev => [...prev, assistantMsg]);
+
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-      const response = await fetch(`${apiUrl}/chat/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, session_id: sessionId })
-      });
+      const history = messages
+        .filter(m => m.id !== '1') // Optional: skip welcome msg in history
+        .map(m => ({ role: m.role, content: m.content }));
 
-      if (!response.ok) throw new Error('API Error');
-      const data = await response.json();
-
-      const assistantMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.reply
-      };
-      setMessages(prev => [...prev, assistantMsg]);
+      await chatbotService.streamMessage(
+        text,
+        history,
+        (chunk) => {
+          setMessages(prev => prev.map(m => 
+            m.id === assistantId ? { ...m, content: m.content + chunk } : m
+          ));
+        },
+        sessionId
+      );
     } catch (error) {
-      const errorMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: "Désolé, je suis temporairement indisponible. Veuillez réessayer plus tard."
-      };
-      setMessages(prev => [...prev, errorMsg]);
+      setMessages(prev => prev.map(m => 
+        m.id === assistantId ? { ...m, content: "Désolé, je suis temporairement indisponible. Veuillez réessayer plus tard." } : m
+      ));
     } finally {
       setIsLoading(false);
     }
@@ -91,7 +95,33 @@ export default function ChatbotPage() {
             <div className={`message ${msg.role}`}>
               <div className="message-content">
                 {msg.role === 'assistant' ? (
-                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  <ReactMarkdown
+                    components={{
+                      code({ node, inline, className, children, ...props }: any) {
+                        const match = /language-(\w+)/.exec(className || '');
+                        if (!inline && match && match[1] === 'json') {
+                          try {
+                            const data = JSON.parse(String(children).replace(/\n$/, ''));
+                            if (data.type === 'CAR_RECOMMENDATION') {
+                              return (
+                                <div style={{ border: '1px solid var(--border-subtle)', borderRadius: 8, padding: 16, marginTop: 12, marginBottom: 12, display: 'flex', gap: 16, alignItems: 'center', background: 'var(--bg-elevated)' }}>
+                                  <CarFront size={32} style={{ color: 'var(--accent-gold)', flexShrink: 0 }} />
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <h4 style={{ margin: '0 0 4px 0', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{data.brand} {data.model} {data.year && `(${data.year})`}</h4>
+                                    <p style={{ margin: 0, fontWeight: 'bold', color: 'var(--accent-gold)' }}>{data.price} MAD</p>
+                                  </div>
+                                  <a href={`/catalog/${data.id}`} target="_blank" rel="noreferrer" style={{ padding: '8px 16px', background: 'var(--accent-gold)', color: '#0f1a2b', textDecoration: 'none', borderRadius: 4, fontWeight: 'bold', flexShrink: 0 }}>Voir</a>
+                                </div>
+                              );
+                            }
+                          } catch (e) {
+                            // ignore json parse error
+                          }
+                        }
+                        return <code className={className} {...props}>{children}</code>;
+                      }
+                    }}
+                  >{msg.content}</ReactMarkdown>
                 ) : (
                   msg.content
                 )}

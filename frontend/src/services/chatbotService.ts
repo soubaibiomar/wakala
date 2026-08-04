@@ -28,22 +28,29 @@ export const chatbotService = {
   streamMessage: async (
     message: string, 
     history: Array<{ role: string; content: string }>,
-    onChunk: (chunk: string) => void
+    onChunk: (chunk: string) => void,
+    sessionId?: string
   ) => {
     // Determine the base URL from the Axios instance or env
     const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
     
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      const token = localStorage.getItem('token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${baseURL}/v1/ai/chat`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Optional: Add Auth header if required
-          // 'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
+        headers,
         body: JSON.stringify({
           message,
-          history
+          history,
+          session_id: sessionId
         })
       });
 
@@ -69,5 +76,21 @@ export const chatbotService = {
       console.error("Streaming error:", error);
       throw error;
     }
+  },
+  
+  /** Récupérer l'historique des sessions de chat de l'utilisateur */
+  getChatHistory: async () => {
+    const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const token = localStorage.getItem('token');
+    if (!token) return [];
+    
+    const response = await fetch(`${baseURL}/v1/ai/chat/history`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) return [];
+    return response.json();
   }
 };

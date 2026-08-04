@@ -113,6 +113,10 @@ class MoteurScraper(BaseScraper):
                 city_match = re.search(rf"^{re.escape(brand)}\s+\S+\s+(\S+)", full_text)
                 city = city_match.group(1) if city_match else None
 
+                # Description
+                desc_el = card.select_one(".text-description, .ad-desc, p.desc")
+                description = desc_el.get_text(" ", strip=True) if desc_el else ""
+
                 results.append({
                     "brand": brand,
                     "model": model,
@@ -122,7 +126,7 @@ class MoteurScraper(BaseScraper):
                     "fuel_type": fuel,
                     "transmission": transmission,
                     "city": city,
-                    "description": "",
+                    "description": description,
                     "source": self.SOURCE_NAME,
                     "source_url": f"https://www.moteur.ma{href}" if href and href.startswith("/") else href,
                 })

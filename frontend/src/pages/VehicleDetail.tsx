@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { vehicleService, reviewService } from '../services/vehicleService';
 import { pricingService } from '../services/pricingService';
 import { messageService } from '../services/messageService';
+import { favoriteService } from '../services/favoriteService';
+
+import { formatDistanceToNow } from 'date-fns';
+import { fr as dateFnsFr } from 'date-fns/locale';
 import type { Vehicle } from '../types/vehicle';
 import type { Review } from '../types/listing';
 import type { PricePredictionResult } from '../services/pricingService';
@@ -12,6 +16,8 @@ import { useAuth } from '../context/AuthContext';
 import fr from '../i18n/fr';
 import PriceBadge from '../components/pricing/PriceBadge';
 import VehicleSEO from '../components/seo/VehicleSEO';
+import FormattedDescription from '../components/formatted-description/FormattedDescription';
+
 import './VehicleDetail.css';
 
 function DetailSkeleton() {
@@ -113,11 +119,11 @@ function SpecsGrid({ vehicle }: { vehicle: Vehicle }) {
         fontSize: '0.85rem', fontFamily: 'var(--font-display)', fontWeight: 700,
         marginBottom: 12, color: 'var(--text-secondary)',
       }}>
-        Caractéristiques
+        Aperçu Rapide
       </h3>
       <table className="vehicle-specs">
         <tbody>
-          {specs.map((s) => (
+          {specs.slice(0, 5).map((s) => (
             <tr key={s.label}>
               <th>{s.label}</th>
               <td>{s.value}</td>
@@ -129,14 +135,120 @@ function SpecsGrid({ vehicle }: { vehicle: Vehicle }) {
   );
 }
 
+function DetailedTechSpecs({ vehicle }: { vehicle: Vehicle }) {
+  const specs = [
+    {
+      category: "Informations Générales",
+      items: [
+        { label: "Marque", value: vehicle.brand },
+        { label: "Modèle", value: vehicle.model },
+        { label: "Année", value: String(vehicle.year) },
+        { label: "Kilométrage", value: vehicle.mileage === 0 && vehicle.year >= new Date().getFullYear() - 2 ? "Neuf" : vehicle.mileage === 0 || vehicle.mileage === -1 ? "N/C" : `${vehicle.mileage.toLocaleString('fr-FR')} km` },
+        { label: "Ville", value: vehicle.city },
+      ]
+    },
+    {
+      category: "Moteur & Performances",
+      items: [
+        { label: "Énergie", value: FUEL_LABELS[vehicle.fuel_type] || vehicle.fuel_type },
+        { label: "Puissance fiscale", value: vehicle.engine_power_hp ? `${vehicle.engine_power_hp} CV` : '—' },
+        { label: "Boîte de vitesses", value: TRANSMISSION_LABELS[vehicle.transmission] || vehicle.transmission },
+      ]
+    },
+    {
+      category: "Carrosserie & Dimensions",
+      items: [
+        { label: "Type", value: BODY_LABELS[vehicle.body_type] || vehicle.body_type },
+        { label: "Nombre de portes", value: String(vehicle.doors) },
+        { label: "Nombre de places", value: String(vehicle.seats) },
+        { label: "Couleur", value: vehicle.color || '—' },
+      ]
+    }
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.25 }}
+      style={{
+        padding: '32px',
+        background: '#f7f6f2',
+        borderRadius: '12px',
+        marginBottom: '32px',
+        color: '#1a202c'
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+        {specs.map((section) => (
+          <div key={section.category}>
+            <div style={{ 
+              backgroundColor: '#efece1',
+              padding: '16px 20px',
+              borderRadius: '8px',
+              borderLeft: '5px solid #bba14f',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              <h4 style={{ 
+                fontSize: '1.2rem', 
+                fontWeight: 700, 
+                color: '#1a202c', 
+                margin: 0
+              }}>
+                {section.category}
+              </h4>
+            </div>
+            
+            <div style={{ padding: '0 20px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '1rem' }}>
+                <tbody>
+                  {section.items.map((item) => (
+                    <tr key={item.label}>
+                      <td style={{ padding: '16px 0', color: '#7b8b9a', width: '40%', fontWeight: 500 }}>
+                        {item.label}
+                      </td>
+                      <td style={{ padding: '16px 0', color: '#101820', fontWeight: 700 }}>
+                        {item.value}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
 export default function VehicleDetail() {
-  const { id } = useParams<{ id: string }>();
-  const { isAuthenticated } = useAuth();
+  const { id: routeId, brandName, modelName, versionSlug } = useParams<{ id?: string, brandName?: string, modelName?: string, versionSlug?: string }>();
+  
+  // Extrait le short ID de 8 caractères à la fin de l'URL pour les occasions (ex: renault-clio-2015-8d284cc3)
+  const shortIdRegex = /-([0-9a-f]{8})$/i;
+  // Ou l'ancien UUID pour compatibilité
+  const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  
+  const extractedId = routeId ? (routeId.match(uuidRegex)?.[0] || routeId.match(shortIdRegex)?.[1] || routeId) : undefined;
+
+  
+  const { user, isAuthenticated } = useAuth();
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [marketPrice, setMarketPrice] = useState<PricePredictionResult | null>(null);
+  
+  // Offer modal state
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [offerAmount, setOfferAmount] = useState('');
+  const [offerMessage, setOfferMessage] = useState('');
+  const [offerLoading, setOfferLoading] = useState(false);
   
   // Chat Modal State
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -148,16 +260,25 @@ export default function VehicleDetail() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
-    if (!id) return;
+    if (!extractedId && !versionSlug) return;
     setLoading(true);
     setError(null);
 
-    Promise.all([
-      vehicleService.getVehicleById(id),
-      reviewService.getReviews({ vehicle_id: id, limit: 10 }).catch(() => []),
-    ])
-      .then(([v, r]) => {
+    const fetchVehicle = brandName && modelName && versionSlug
+      ? vehicleService.getVehicleBySlug(brandName, modelName, versionSlug)
+      : vehicleService.getVehicleById(extractedId!);
+
+    fetchVehicle
+      .then((v) => {
         setVehicle(v);
+        if (isAuthenticated) {
+          favoriteService.getFavorites().then(favorites => {
+            setIsFavorite(favorites.some(fav => fav.id === v.id));
+          }).catch(console.error);
+        }
+        return reviewService.getReviews({ vehicle_id: v.id, limit: 10 }).catch(() => []);
+      })
+      .then((r) => {
         setReviews(r);
       })
       .catch((err) => {
@@ -165,7 +286,7 @@ export default function VehicleDetail() {
         setError(err.response?.status === 404 ? fr.error.notFound : fr.error.generic);
       })
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [extractedId, versionSlug, brandName, modelName, isAuthenticated]);
 
   useEffect(() => {
     if (!vehicle) return;
@@ -290,14 +411,16 @@ export default function VehicleDetail() {
                     border: '1px solid var(--border-subtle)', marginBottom: 'var(--space-lg)',
                   }}
                 >
-                  <h3 style={{ fontSize: '1rem', fontFamily: 'var(--font-display)', fontWeight: 700, marginBottom: 12, color: 'var(--text-primary)' }}>
-                    Description
+                  <h3 style={{ fontSize: '1.2rem', fontFamily: 'var(--font-display)', fontWeight: 700, marginBottom: 16, color: 'var(--text-primary)' }}>
+                    Description & Fiche Technique
                   </h3>
-                  <p style={{ color: 'var(--text-secondary)', lineHeight: 1.8, fontSize: '0.9rem', whiteSpace: 'pre-line' }}>
-                    {vehicle.description}
-                  </p>
+                  <div className="markdown-content">
+                    <FormattedDescription text={vehicle.description} />
+                  </div>
                 </motion.div>
               )}
+
+              <DetailedTechSpecs vehicle={vehicle} />
 
               <ReviewsList reviews={reviews} />
             </div>
@@ -317,124 +440,92 @@ export default function VehicleDetail() {
                   {vehicle.brand} {vehicle.model} - {vehicle.year}
                 </h1>
                 {vehicle.version && (
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: 16 }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: 8 }}>
                     {vehicle.version}
                   </p>
                 )}
+                
+                {/* Indicateur de fraîcheur GEO */}
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+                  Mise à jour {vehicle.updated_at ? formatDistanceToNow(new Date(vehicle.updated_at), { addSuffix: true, locale: dateFnsFr }) : 'récemment'}
+                </p>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: 4 }}>
                   <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-gold)' }}>
                     {vehicle.price.toLocaleString('fr-FR')} {fr.vehicle.mad}
                   </div>
-                  {marketPrice && (
-                    <PriceBadge price={vehicle.price} predictedPrice={marketPrice.predicted_price} />
-                  )}
                 </div>
 
-                {vehicle.predicted_price != null && !marketPrice && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: '0.85rem' }}>
-                    <span style={{
-                      padding: '2px 8px', borderRadius: 'var(--radius-pill)', fontSize: '0.65rem',
-                      fontWeight: 600, background: 'rgba(91,192,222,0.15)', color: 'var(--accent-cyan)',
-                    }}>
-                      IA
-                    </span>
-                    <span style={{ color: 'var(--text-secondary)' }}>
-                      {fr.vehicle.estimatedPrice} : {vehicle.predicted_price.toLocaleString('fr-FR')} {fr.vehicle.mad}
-                    </span>
-                    {vehicle.price_confidence != null && (
-                      <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-                        ({(vehicle.price_confidence * 100).toFixed(0)}%)
-                      </span>
-                    )}
-                  </div>
-                )}
-                {priceLoading ? (
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 20 }}>
-                    Estimation marché en cours...
-                  </div>
-                ) : marketPrice && (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 20, fontSize: '0.85rem',
-                    padding: '12px 16px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-card)',
-                  }}>
-                    <span style={{
-                      padding: '4px 10px', borderRadius: 'var(--radius-pill)', fontSize: '0.65rem',
-                      fontWeight: 700, background: 'rgba(16,185,129,0.15)', color: 'var(--accent-green)', textTransform: 'uppercase', letterSpacing: '0.02em',
-                      flexShrink: 0
-                    }}>
-                      Marché
-                    </span>
-                    <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
-                      Prix marché estimé : {marketPrice.predicted_price.toLocaleString('fr-FR')} {fr.vehicle.mad}
-                    </span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', flexShrink: 0 }}>
-                      ({marketPrice.confidence_interval.low.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} – {marketPrice.confidence_interval.high.toLocaleString('fr-FR', { maximumFractionDigits: 0 })})
-                    </span>
-                  </div>
-                )}
+
+
+                <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+                  <button
+                    id="cta-contact-seller"
+                    style={{
+                      flex: 1, padding: '14px 24px', background: 'var(--accent-gold)',
+                      color: '#0f1a2b', border: 'none', borderRadius: 'var(--radius-pill)',
+                      fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer',
+                    }}
+                    onClick={() => {
+                      if (!isAuthenticated) window.location.href = '/login';
+                      else setIsChatOpen(true);
+                    }}
+                  >
+                    {isAuthenticated ? fr.vehicle.contact : fr.auth.loginTitle}
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      if (!isAuthenticated) window.location.href = '/login';
+                      else {
+                        setOfferAmount(vehicle.price.toString());
+                        setShowOfferModal(true);
+                      }
+                    }}
+                    style={{
+                      flex: 1, padding: '14px 24px', background: 'transparent',
+                      color: 'var(--text-primary)', border: '2px solid var(--accent-gold)', 
+                      borderRadius: 'var(--radius-pill)',
+                      fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer',
+                    }}
+                  >
+                    Faire une offre
+                  </button>
+                </div>
+
 
                 <button
-                  id="cta-contact-seller"
-                  style={{
-                    width: '100%', padding: '14px 24px', background: 'var(--accent-gold)',
-                    color: '#0f1a2b', border: 'none', borderRadius: 'var(--radius-pill)',
-                    fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer',
-                    marginBottom: 12,
+                  onClick={async () => {
+                    if (!isAuthenticated) {
+                      window.location.href = `/login?returnUrl=/vehicle/${vehicle.id}`;
+                      return;
+                    }
+                    try {
+                      setFavoriteLoading(true);
+                      if (isFavorite) {
+                        await favoriteService.removeFavorite(vehicle.id);
+                        setIsFavorite(false);
+                      } else {
+                        await favoriteService.addFavorite(vehicle.id);
+                        setIsFavorite(true);
+                      }
+                    } catch (error) {
+                      console.error("Failed to toggle favorite:", error);
+                    } finally {
+                      setFavoriteLoading(false);
+                    }
                   }}
-                  onClick={() => {
-                    if (!isAuthenticated) window.location.href = '/login';
-                    else setIsChatOpen(true);
-                  }}
-                >
-                  {isAuthenticated ? fr.vehicle.contact : fr.auth.loginTitle}
-                </button>
-
-                <button
-                  onClick={() => alert('Véhicule sauvegardé !')}
+                  disabled={favoriteLoading}
                   style={{
                     width: '100%', padding: '12px 24px', background: 'transparent',
-                    color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)',
+                    color: isFavorite ? 'var(--accent-red)' : 'var(--text-secondary)', border: '1px solid var(--border-subtle)',
                     borderRadius: 'var(--radius-pill)', fontWeight: 600, fontSize: '0.9rem',
-                    cursor: 'pointer',
+                    cursor: favoriteLoading ? 'wait' : 'pointer',
                   }}>
-                  ♡ {fr.general.save}
+                  {isFavorite ? '♥' : '♡'} {fr.general.save}
                 </button>
 
-                {vehicle.seller && (
-                  <div style={{
-                    marginTop: 20, padding: 16,
-                    background: 'var(--bg-elevated)',
-                    borderRadius: 'var(--radius-card)',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{
-                        width: 40, height: 40, borderRadius: '50%',
-                        background: 'var(--accent-gold)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontWeight: 700, fontSize: '1rem', color: '#0f1a2b',
-                      }}>
-                        {(vehicle.seller.name || vehicle.seller.full_name || 'V').charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          {vehicle.seller.name || vehicle.seller.full_name}
-                          {vehicle.seller.is_verified && (
-                            <span style={{
-                              padding: '2px 6px', borderRadius: 'var(--radius-pill)', fontSize: '0.6rem',
-                              fontWeight: 600, background: 'rgba(16,185,129,0.15)', color: 'var(--accent-green)',
-                            }}>
-                              ✓ {fr.trust.verifiedSeller}
-                            </span>
-                          )}
-                        </div>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'capitalize' }}>
-                          {vehicle.seller.role === 'seller' ? 'Vendeur professionnel' : vehicle.seller.role}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+
 
                 <SpecsGrid vehicle={vehicle} />
               </motion.div>
@@ -442,6 +533,67 @@ export default function VehicleDetail() {
           </div>
         </div>
       </div>
+
+      {/* Offer Modal */}
+      {showOfferModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
+          <div style={{ background: 'var(--bg-surface)', padding: 32, borderRadius: 'var(--radius-card)', width: 400, border: '1px solid var(--border-subtle)' }}>
+            <h3 style={{ margin: '0 0 16px 0' }}>Faire une offre</h3>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 24, fontSize: '0.9rem' }}>Proposez un prix au vendeur. Si l'offre est acceptée, vous pourrez finaliser la transaction.</p>
+            
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, fontSize: '0.9rem' }}>Votre prix (DH)</label>
+              <input 
+                type="number" 
+                value={offerAmount} 
+                onChange={e => setOfferAmount(e.target.value)}
+                style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-input)', border: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)', color: 'white', fontSize: '1.1rem', fontWeight: 600 }}
+              />
+            </div>
+            
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, fontSize: '0.9rem' }}>Message (optionnel)</label>
+              <textarea 
+                value={offerMessage} 
+                onChange={e => setOfferMessage(e.target.value)}
+                rows={3}
+                placeholder="Ex: Je suis très intéressé, paiement comptant."
+                style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-input)', border: '1px solid var(--border-subtle)', background: 'var(--bg-elevated)', color: 'white' }}
+              />
+            </div>
+            
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button 
+                onClick={() => setShowOfferModal(false)}
+                style={{ flex: 1, padding: '12px', background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-pill)', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                Annuler
+              </button>
+              <button 
+                onClick={async () => {
+                  try {
+                    setOfferLoading(true);
+                    const { offerService } = await import('../services/offerService');
+                    await offerService.createOffer({
+                      vehicle_id: vehicle.id,
+                      amount: Number(offerAmount),
+                      message: offerMessage
+                    });
+                    setShowOfferModal(false);
+                    alert("Offre envoyée avec succès ! Vous pouvez la suivre dans votre tableau de bord.");
+                  } catch (e: any) {
+                    alert(e.response?.data?.detail || "Erreur lors de l'envoi de l'offre.");
+                  } finally {
+                    setOfferLoading(false);
+                  }
+                }}
+                disabled={offerLoading || !offerAmount}
+                style={{ flex: 1, padding: '12px', background: 'var(--accent-gold)', border: 'none', borderRadius: 'var(--radius-pill)', color: '#111827', fontWeight: 600, cursor: offerLoading ? 'wait' : 'pointer' }}>
+                {offerLoading ? 'Envoi...' : 'Envoyer l\'offre'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <AnimatePresence>
         {isChatOpen && vehicle?.seller && (

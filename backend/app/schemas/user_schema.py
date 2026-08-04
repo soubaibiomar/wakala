@@ -82,6 +82,7 @@ class UserReadBrief(BaseModel):
 class UserUpdate(BaseModel):
     """Schéma de mise à jour — tous les champs optionnels."""
     full_name: Optional[str] = Field(None, min_length=2, max_length=255)
+    email: Optional[EmailStr] = None
     phone: Optional[str] = Field(None, max_length=30)
     preferences: Optional[dict] = None
     avatar_url: Optional[str] = None

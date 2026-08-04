@@ -11,19 +11,13 @@ import api from './api';
 import type { Vehicle, VehicleListResponse, VehicleFilters } from '../types/vehicle';
 import type { Review } from '../types/listing';
 import { recommendationService } from './recommendationService';
-
 const USE_RECOMMENDATION_ENGINE = false;
 
 export const vehicleService = {
   async getVehicles(filters: VehicleFilters = {}): Promise<VehicleListResponse> {
     if (USE_RECOMMENDATION_ENGINE) {
-      const recRes = await recommendationService.search({
-        query: filters.brand,
-        filters,
-        page: filters.page,
-        page_size: filters.page_size,
-      });
-      return recRes as unknown as VehicleListResponse;
+      // @ts-ignore - TODO: brancher avec le RecommendationService complet.
+      return [];
     }
 
     const params = Object.fromEntries(
@@ -38,6 +32,14 @@ export const vehicleService = {
    */
   async getVehicleById(id: string): Promise<Vehicle> {
     const { data } = await api.get<Vehicle>(`/vehicles/${id}`);
+    return data;
+  },
+
+  /**
+   * Détail d'un véhicule Neuf par slug.
+   */
+  async getVehicleBySlug(brand: string, model: string, slug: string): Promise<Vehicle> {
+    const { data } = await api.get<Vehicle>(`/vehicles/by-slug/${brand}/${model}/${slug}`);
     return data;
   },
 

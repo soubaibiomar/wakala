@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useChatSession } from './useChatSession';
@@ -19,6 +19,12 @@ export default function ChatbotWidget() {
       }
       return !prev;
     });
+  }, []);
+
+  useEffect(() => {
+    const handleOpenChat = () => setIsOpen(true);
+    window.addEventListener('wakala:open-chat', handleOpenChat);
+    return () => window.removeEventListener('wakala:open-chat', handleOpenChat);
   }, []);
 
   const handleSend = useCallback(

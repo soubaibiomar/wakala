@@ -99,6 +99,10 @@ class Vehicle(Base):
     listings: Mapped[list["Listing"]] = relationship(  # noqa: F821
         "Listing", back_populates="vehicle", lazy="selectin"
     )
+
+    saved_by_users: Mapped[list["User"]] = relationship(  # noqa: F821
+        "User", secondary="saved_vehicles", back_populates="saved_vehicles", lazy="selectin"
+    )
     reviews: Mapped[list["Review"]] = relationship(  # noqa: F821
         "Review", back_populates="vehicle", lazy="selectin"
     )

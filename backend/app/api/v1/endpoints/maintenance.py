@@ -39,6 +39,9 @@ async def add_service(
 
     receipt_url = None
     if receipt:
+        if receipt.size and receipt.size > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="La facture est trop volumineuse (maximum 5MB).")
+            
         # Save file locally
         file_ext = os.path.splitext(receipt.filename)[1]
         file_name = f"{uuid.uuid4()}{file_ext}"

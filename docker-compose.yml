@@ -189,8 +189,8 @@ services:
       NEO4J_PASSWORD: neo4j_secret_password
       QDRANT_HOST: qdrant
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      MAIL_SERVER: mailhog
-      MAIL_PORT: 1025
+      # MAIL_SERVER: mailhog
+      # MAIL_PORT: 1025
       OLLAMA_BASE_URL: http://ollama:11434/v1
       OLLAMA_MODEL_TEXT: qwen3:8b
       OLLAMA_MODEL_CODE: qwen2.5-coder:7b

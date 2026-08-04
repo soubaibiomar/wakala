@@ -234,6 +234,7 @@
 
 .search-input {
   flex: 1;
+  min-width: 0;
   border: none;
   outline: none;
   background: none;
@@ -334,7 +335,9 @@
   white-space: nowrap;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  background: rgba(15, 23, 42, 0.75); /* Dark background for better contrast */
   border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   animation: nlp-badge-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
@@ -369,33 +372,30 @@
   opacity: 0.7;
 }
 
+
 .nlp-badge__value {
   font-weight: 600;
 }
 
 /* ── Badge variants ── */
 .nlp-badge--budget {
-  background: rgba(174, 140, 78, 0.15);
-  border-color: rgba(174, 140, 78, 0.3);
-  color: #c9a24b;
+  border-color: rgba(251, 191, 36, 0.3);
+  color: #fbbf24;
 }
 
 .nlp-badge--usage {
-  background: rgba(59, 122, 158, 0.15);
-  border-color: rgba(59, 122, 158, 0.3);
-  color: #5ba3c9;
+  border-color: rgba(56, 189, 248, 0.3);
+  color: #38bdf8;
 }
 
 .nlp-badge--priorite {
-  background: rgba(45, 134, 89, 0.15);
-  border-color: rgba(45, 134, 89, 0.3);
-  color: #4db87a;
+  border-color: rgba(74, 222, 128, 0.3);
+  color: #4ade80;
 }
 
 .nlp-badge--profil {
-  background: rgba(107, 76, 138, 0.15);
-  border-color: rgba(107, 76, 138, 0.3);
-  color: #a080c4;
+  border-color: rgba(192, 132, 252, 0.3);
+  color: #c084fc;
 }
 
 /* ── Skeleton loading ── */

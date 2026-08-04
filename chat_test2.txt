@@ -1,0 +1,30 @@
+```json
+{
+  "type": "CAR_RECOMMENDATION",
+  "id": "51249a73-64ac-4c04-b7bc-1ad5efa3eed7",
+  "brand": "JEEP",
+  "model": "Grand Cherokee",
+  "year": 2022,
+  "price": 274870
+}
+```
+```json
+{
+  "type": "CAR_RECOMMENDATION",
+  "id": "fd281167-7db3-4baf-94ba-a2249fc21212",
+  "brand": "Jeep",
+  "model": "Grand Cherokee",
+  "year": 2019,
+  "price": 175000
+}
+```
+```json
+{
+  "type": "CAR_RECOMMENDATION",
+  "id": "86107a64-95b9-41b5-be32-419d79162c59",
+  "brand": "Jeep",
+  "model": "Grand Cherokee",
+  "year": 2017,
+  "price": 175000
+}
+```

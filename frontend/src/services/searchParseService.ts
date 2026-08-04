@@ -6,7 +6,7 @@ import api from './api';
 
 export interface NlpExtractionResult {
   budget: number | null;
-  usage: string | null;
+  usage_prevu: string | null;
   priorites: string[];
   profil_passagers: string | null;
   erreur: boolean;
@@ -39,7 +39,7 @@ export async function parseSearchQuery(
   } catch {
     return {
       budget: null,
-      usage: null,
+      usage_prevu: null,
       priorites: [],
       profil_passagers: null,
       erreur: true,
@@ -69,7 +69,7 @@ export async function parseVoiceQuery(
       transcription_editable: true,
       resultat_nlp: {
         budget: null,
-        usage: null,
+        usage_prevu: null,
         priorites: [],
         profil_passagers: null,
         erreur: true,

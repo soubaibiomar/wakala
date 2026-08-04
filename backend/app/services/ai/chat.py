@@ -65,24 +65,48 @@ def redact_pii(text: str) -> str:
 async def analyze_intent(user_message: str) -> Dict[str, Any]:
     """
     Analyse l'intention de l'utilisateur pour savoir s'il cherche un véhicule et son budget.
+    Utilise Ollama avec une configuration optimisée pour la vitesse.
     """
+    system_prompt = "Tu es un analyseur d'intention. Retourne UNIQUEMENT un objet JSON valide avec les clés : 'intent' (valeurs possibles: 'car_search', 'maintenance_check', 'general_advice', 'customs') et 'max_price' (entier ou null si aucun budget max n'est mentionné). N'ajoute pas de texte autour du JSON."
+    
     analysis_prompt = ChatPromptTemplate.from_messages([
-        ("system", "Tu es un analyseur d'intention. Retourne UNIQUEMENT un objet JSON valide avec les clés : 'intent' (valeurs possibles: 'car_search', 'maintenance_check', 'general_advice', 'customs') et 'max_price' (entier ou null si aucun budget max n'est mentionné). N'ajoute pas de texte autour du JSON."),
+        ("system", system_prompt),
         ("human", "{message}")
     ])
     
-    # We use a secondary LLM call with JSON mode to reliably get the intent
-    analyzer_llm = ChatOpenAI(base_url=settings.OLLAMA_BASE_URL, model=settings.OLLAMA_MODEL_TEXT, openai_api_key=api_key, temperature=0).bind(
+    analyzer_llm = ChatOpenAI(
+        base_url=settings.OLLAMA_BASE_URL, 
+        model=settings.OLLAMA_MODEL_TEXT, 
+        openai_api_key=api_key, 
+        temperature=0,
+        max_tokens=150, # Augmenté pour éviter les coupures JSON
+    ).bind(
         response_format={"type": "json_object"}
     )
     
-    chain = analysis_prompt | analyzer_llm
-    response = await chain.ainvoke({"message": user_message})
-    
     try:
-        return json.loads(response.content)
-    except json.JSONDecodeError:
-        return {"intent": "general_advice", "max_price": None}
+        chain = analysis_prompt | analyzer_llm
+        response = await chain.ainvoke({"message": user_message})
+        content = response.content.strip()
+        
+        # Try to extract JSON from markdown if present
+        import re
+        json_match = re.search(r'```(?:json)?\s*(.*?)\s*```', content, re.DOTALL)
+        if json_match:
+            content = json_match.group(1).strip()
+            
+        # Fallback to finding the first { and last }
+        if not content.startswith('{') and '{' in content and '}' in content:
+            start = content.find('{')
+            end = content.rfind('}') + 1
+            content = content[start:end]
+            
+        print(f"[INTENT ANALYZER] Parsed content: {content}")
+        return json.loads(content)
+    except Exception as e:
+        print(f"[INTENT ANALYZER ERROR] {e} - Raw output: {response.content if 'response' in locals() else 'None'}")
+        # Fallback en cas d'erreur de parsing ou de limite de tokens (ex: length limit reached)
+        return {"intent": "car_search", "max_price": None} # Default to car_search for better UX when looking for cars
 
 async def retrieve_vehicles(query: str, max_price: Optional[float] = None, top_k: int = 5) -> str:
     """
@@ -91,12 +115,7 @@ async def retrieve_vehicles(query: str, max_price: Optional[float] = None, top_k
     qdrant = get_qdrant_client()
     query_vector = await embeddings_model.aembed_query(query)
     
-    filter_conditions = [
-        qmodels.FieldCondition(
-            key="status",
-            match=qmodels.MatchValue(value="available")
-        )
-    ]
+    filter_conditions = []
     if max_price is not None:
         filter_conditions.append(
             qmodels.FieldCondition(
@@ -121,9 +140,15 @@ async def retrieve_vehicles(query: str, max_price: Optional[float] = None, top_k
     if not search_result:
         return "Aucun véhicule correspondant dans la base de données actuelle."
 
+    seen_signatures = set()
     context_str = ""
     for hit in search_result:
         payload = hit.payload
+        sig = (payload.get('brand'), payload.get('model'), payload.get('year'), payload.get('price'))
+        if sig in seen_signatures:
+            continue
+        seen_signatures.add(sig)
+        
         context_str += f"- ID_DU_VEHICULE: {hit.id} | {payload.get('brand')} {payload.get('model')} ({payload.get('year')}) | Prix: {payload.get('price')} MAD | Détails: {payload.get('text_content')}\n"
     
     return context_str

@@ -30,6 +30,7 @@ interface AuthState {
   googleLogin: (token: string, rememberMe?: boolean) => Promise<User>;
   register: (payload: RegisterPayload) => Promise<User>;
   logout: () => void;
+  updateUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -121,12 +122,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       googleLogin,
       register,
       logout,
+      updateUser: setUser,
     }),
     [user, token, loading]
   );
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated: !!token, loading, login, googleLogin, register, logout }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

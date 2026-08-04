@@ -28,7 +28,9 @@ SYSTEM_PROMPT_OCCASION = """Tu es le normalisateur IA de Wakala, marketplace aut
 Tu analyses une annonce de voiture d'OCCASION publiée par un particulier ou un professionnel.
 
 CONSIGNE :
-1. Extrais : marque, modele, annee (entier), carburant, boite_vitesse, kilometrage (entier ou null).
+1. Extrais : marque, modele, annee (entier), carburant, boite_vitesse, kilometrage (entier ou null), et type_carrosserie.
+   Pour "type_carrosserie", tu DOIS choisir parmi cette liste fermée de caractéristiques physiques objectives :
+   ["citadine", "berline", "suv", "break", "monospace", "pickup", "utilitaire", "coupe", "cabriolet"].
 2. Identifie les "signaux_suspects" : un tableau de chaînes décrivant des indices potentiels
    de problème (ex: "prix très bas par rapport au marché", "description vague",
    "mot urgent détecté", "photo générique/stock"). Tableau vide si rien de suspect.
@@ -40,8 +42,10 @@ SYSTEM_PROMPT_NEUF = """Tu es le normalisateur IA de Wakala, marketplace automob
 Tu analyses une fiche de voiture NEUVE issue d'un catalogue concessionnaire/constructeur.
 
 CONSIGNE :
-1. Extrais : marque, modele, annee (entier), carburant, boite_vitesse.
+1. Extrais : marque, modele, annee (entier), carburant, boite_vitesse, et type_carrosserie.
    Le kilometrage est toujours 0 pour du neuf (ne pas le mettre).
+   Pour "type_carrosserie", tu DOIS choisir parmi cette liste fermée de caractéristiques physiques objectives :
+   ["citadine", "berline", "suv", "break", "monospace", "pickup", "utilitaire", "coupe", "cabriolet"].
 2. Identifie les "promotions_detectees" : un tableau de chaînes décrivant les offres
    commerciales (ex: "remise de 10 000 DH", "crédit 0%", "offre de reprise",
    "pack options offert"). Tableau vide si aucune promotion.

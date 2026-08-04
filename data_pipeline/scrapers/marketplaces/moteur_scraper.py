@@ -154,7 +154,7 @@ class MoteurScraper(BaseScraper):
         ville = city_el.text.strip() if city_el else ""
 
         # Description
-        desc_el = soup.select_one(self.selectors.get("description", ".desc"))
+        desc_el = soup.select_one(self.selectors.get("description", ".text-description, .ad-desc, p.desc, .desc"))
         description = desc_el.text.strip() if desc_el else title
 
         # Images
@@ -280,7 +280,7 @@ class MoteurScraper(BaseScraper):
         ville = city_el.text.strip() if city_el else ""
 
         # Description
-        desc_el = soup.select_one(self.selectors.get("description", ".desc"))
+        desc_el = soup.select_one(self.selectors.get("description", ".text-description, .ad-desc, p.desc, .desc"))
         description = desc_el.text.strip() if desc_el else title
 
         # Images

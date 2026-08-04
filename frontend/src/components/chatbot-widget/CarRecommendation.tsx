@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './chatbot.module.css';
 import { PriceGauge } from '../pricing/PriceGauge';
+import api from '../../services/api';
 
 interface CarRecommendationProps {
   id: string;
@@ -14,29 +15,24 @@ interface CarRecommendationProps {
 
 export default function CarRecommendation({ id, brand, model, year, price, image }: CarRecommendationProps) {
   const navigate = useNavigate();
+  const [actualImage, setActualImage] = useState<string | undefined>(image);
   const [argusData, setArgusData] = useState<{ price: number, trend: string } | null>(null);
+  const [vehicleExists, setVehicleExists] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchArgus = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/vehicles/estimate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            brand,
-            model,
-            year,
-            mileage: 60000, // Valeur par défaut pour l'instant
-            fuel_type: "diesel",
-            body_type: "berline",
-            transmission: "manuelle",
-            city: "Casablanca"
-          })
+        const { data } = await api.post('/vehicles/predict-price', {
+          brand,
+          model,
+          year,
+          mileage: 60000, // Valeur par défaut pour l'instant
+          fuel_type: "diesel",
+          body_type: "berline",
+          transmission: "manuelle",
+          city: "Casablanca"
         });
-        if (response.ok) {
-          const data = await response.json();
-          setArgusData({ price: data.predicted_price, trend: data.market_trend });
-        }
+        setArgusData({ price: data.predicted_price, trend: data.market_trend });
       } catch (err) {
         console.error("Error fetching argus:", err);
       }
@@ -44,10 +40,34 @@ export default function CarRecommendation({ id, brand, model, year, price, image
     fetchArgus();
   }, [brand, model, year]);
 
+  useEffect(() => {
+    if (id) {
+      const fetchVehicle = async () => {
+        try {
+          const { data } = await api.get(`/vehicles/${id}`);
+          if (!actualImage && data && data.images && data.images.length > 0) {
+            setActualImage(data.images[0].file_path || data.images[0]);
+          }
+          setVehicleExists(true);
+        } catch (err: any) {
+          console.error("Error fetching vehicle:", err);
+          if (err.response && err.response.status === 404) {
+            setVehicleExists(false);
+          }
+        }
+      };
+      fetchVehicle();
+    }
+  }, [id, actualImage]);
+
   return (
-    <div className={styles.sourceCard} onClick={() => navigate(`/vehicule/${id}`)}>
-      {image ? (
-        <img src={image} alt={`${brand} ${model}`} className={styles.sourceCardImage} />
+    <div 
+      className={styles.sourceCard} 
+      onClick={() => { if (vehicleExists) navigate(`/vehicule/${id}`); }}
+      style={{ opacity: vehicleExists ? 1 : 0.6, cursor: vehicleExists ? 'pointer' : 'not-allowed' }}
+    >
+      {actualImage ? (
+        <img src={actualImage} alt={`${brand} ${model}`} className={styles.sourceCardImage} />
       ) : (
         <div className={styles.sourceCardIcon}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -65,16 +85,21 @@ export default function CarRecommendation({ id, brand, model, year, price, image
       </div>
       
       <div style={{ padding: '0 12px 0 0', display: 'flex', alignItems: 'center' }}>
-        <button style={{ 
-          background: 'var(--color-accent-gold)', color: '#fff', border: 'none', 
-          padding: '4px 12px', borderRadius: '4px', fontSize: '0.7rem', cursor: 'pointer',
-          fontWeight: 600
-        }}>
-          Voir l'annonce
+        <button 
+          disabled={!vehicleExists}
+          style={{ 
+            background: vehicleExists ? 'var(--color-accent-gold)' : 'var(--bg-surface)', 
+            color: vehicleExists ? '#fff' : 'var(--text-muted)', 
+            border: vehicleExists ? 'none' : '1px solid var(--border-subtle)', 
+            padding: '4px 12px', borderRadius: '4px', fontSize: '0.7rem', 
+            cursor: vehicleExists ? 'pointer' : 'not-allowed',
+            fontWeight: 600
+          }}>
+          {vehicleExists ? "Voir l'annonce" : "Annonce expirée"}
         </button>
       </div>
 
-      {argusData && (
+      {argusData && vehicleExists && (
         <div style={{ gridColumn: '1 / -1', padding: '0 12px 12px 12px' }}>
           <PriceGauge 
             currentPrice={price} 

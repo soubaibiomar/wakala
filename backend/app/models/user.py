@@ -6,11 +6,20 @@ Correspond à la migration 001_create_users.sql.
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Enum, String, Text
+from sqlalchemy import Boolean, DateTime, Enum, String, Text, Table, ForeignKey, Column
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+saved_vehicles_table = Table(
+    "saved_vehicles",
+    Base.metadata,
+    Column("user_id", UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("vehicle_id", UUID(as_uuid=True), ForeignKey("vehicles.id", ondelete="CASCADE"), primary_key=True),
+    Column("created_at", DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False),
+)
+
 
 
 class User(Base):
@@ -52,6 +61,12 @@ class User(Base):
     )
     services: Mapped[list["VehicleService"]] = relationship(  # noqa: F821
         "VehicleService", back_populates="user", lazy="selectin"
+    )
+    saved_vehicles: Mapped[list["Vehicle"]] = relationship(  # noqa: F821
+        "Vehicle", secondary="saved_vehicles", back_populates="saved_by_users", lazy="selectin"
+    )
+    chat_sessions: Mapped[list["ChatSession"]] = relationship(  # noqa: F821
+        "ChatSession", back_populates="user", lazy="selectin"
     )
 
     def __repr__(self) -> str:

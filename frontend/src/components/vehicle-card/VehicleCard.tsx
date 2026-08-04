@@ -16,6 +16,7 @@ interface VehicleCardProps {
   animationDelay?: number;
   matchScore?: number;
   badges?: string[];
+  isGrouped?: boolean;
 }
 
 function getFallbackImage(brand: string): string {
@@ -40,8 +41,18 @@ function getSourceName(url?: string): string | null {
   }
 }
 
+function stripMarkdown(text?: string | null): string {
+  if (!text) return '';
+  return text
+    .replace(/[#*_~`>=\|]/g, '')
+    .replace(/-{2,}/g, '') // Remove table hyphens like ---
+    .replace(/\n+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
-export default function VehicleCard({ vehicle, matchScore, badges }: VehicleCardProps) {
+
+export default function VehicleCard({ vehicle, matchScore, badges, isGrouped = false }: VehicleCardProps) {
   const { addVehicle, compareList } = useCompare();
   const isCompared = compareList.some((v) => v.id === vehicle.id);
 
@@ -52,8 +63,28 @@ export default function VehicleCard({ vehicle, matchScore, badges }: VehicleCard
     maximumFractionDigits: 0,
   }).format(vehicle.price);
 
+  const finalPrice = isGrouped ? `À partir de ${formattedPrice}` : formattedPrice;
+  const shortId = vehicle.id.split('-')[0];
+  const occSlug = `${vehicle.brand.toLowerCase()}-${vehicle.model.toLowerCase()}-${vehicle.year || '0'}-${shortId}`.replace(/[^a-z0-9\-]+/g, '-').replace(/-+/g, '-').replace(/^-+|-+$/g, '');
+  
+  const linkTo = isGrouped 
+    ? `/marque/${encodeURIComponent(vehicle.brand.toLowerCase())}/${encodeURIComponent(vehicle.model.toLowerCase())}` 
+    : `/vehicule/${occSlug}`;
+
+  let displayDescription = vehicle.description || '';
+  let versionsCount: string | null = null;
+  
+  if (displayDescription) {
+    const regex = /À partir de.*?(\d+)\s*Versions/i;
+    const match = displayDescription.match(regex);
+    if (match) {
+      versionsCount = match[1];
+      displayDescription = displayDescription.replace(regex, '').trim();
+    }
+  }
+
   return (
-    <Link to={`/vehicule/${vehicle.id}`} className="vehicle-card">
+    <Link to={linkTo} className="vehicle-card">
       
       {/* ─── Image Header ──────────────────────────────────────── */}
       <div className="vehicle-card__image">
@@ -122,18 +153,18 @@ export default function VehicleCard({ vehicle, matchScore, badges }: VehicleCard
           disabled={isCompared || compareList.length >= 4}
           style={{
             position: 'absolute', top: 12, right: 12,
-            background: isCompared ? 'var(--accent-gold)' : 'rgba(0,0,0,0.5)',
-            color: isCompared ? 'var(--bg-card)' : 'white',
+            background: isCompared ? '#bba14f' : '#6b7280',
+            color: 'white',
             border: 'none', borderRadius: '50%',
-            width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: (isCompared || compareList.length >= 4) ? 'not-allowed' : 'pointer',
-            backdropFilter: 'blur(4px)',
             transition: 'all 0.2s ease',
-            zIndex: 2
+            zIndex: 2,
+            opacity: 0.9
           }}
           title={isCompared ? "Déjà dans le comparateur" : "Comparer"}
         >
-          <Scale size={16} />
+          <Scale size={14} />
         </button>
       </div>
 
@@ -142,58 +173,51 @@ export default function VehicleCard({ vehicle, matchScore, badges }: VehicleCard
         
         {/* Header: Title + Meta */}
         <div className="vehicle-card__header">
-          <div style={{ flex: 1 }}>
-            <h3 className="vehicle-card__title">
-              {vehicle.brand} {vehicle.model}
-            </h3>
-            <span className="vehicle-card__subtitle">
-              Modèle {vehicle.year}
-            </span>
+          <h3 className="vehicle-card__title">
+            {vehicle.brand} {vehicle.model}
+          </h3>
+          <div className="vehicle-card__subtitle">
+            Modèle {vehicle.year}
           </div>
         </div>
 
-        {/* Fiche Technique */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: '8px',
-          marginTop: '12px',
-          padding: '12px',
-          background: 'rgba(255, 255, 255, 0.03)',
-          borderRadius: '8px',
-          border: '1px solid rgba(255, 255, 255, 0.05)',
-          fontSize: '0.75rem',
-          color: 'var(--text-secondary)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ color: 'var(--accent-gold)' }}>⛽</span> 
+        {/* Fiche Technique Grid */}
+        <div className="vehicle-card__specs">
+          <div className="vehicle-card__specs-item">
+            <span style={{ color: '#e11d48' }}>⛽</span> 
             <span style={{ textTransform: 'capitalize' }}>{vehicle.fuel_type}</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ color: 'var(--accent-gold)' }}>⚙️</span> 
+          <div className="vehicle-card__specs-item">
+            <span style={{ color: '#8b5cf6' }}>⚙️</span> 
             <span style={{ textTransform: 'capitalize' }}>{vehicle.transmission}</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ color: 'var(--accent-gold)' }}>🚗</span> 
+          <div className="vehicle-card__specs-item">
+            <span style={{ color: '#e11d48' }}>🚗</span> 
             <span style={{ textTransform: 'capitalize' }}>{vehicle.body_type || 'Berline'}</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ color: 'var(--accent-gold)' }}><Gauge size={16} /></span> 
+          <div className="vehicle-card__specs-item">
+            <span style={{ color: '#bba14f' }}><Gauge size={14} /></span> 
             <span>
-              {vehicle.description?.toLowerCase().includes('véhicule neuf officiel')
+              {displayDescription.toLowerCase().includes('véhicule neuf officiel')
                 ? 'Neuf' 
                 : vehicle.mileage === 0 || vehicle.mileage === -1 
                   ? 'N/C' 
                   : `${vehicle.mileage.toLocaleString('fr-FR')} km`}
             </span>
           </div>
+          {versionsCount && (
+            <div className="vehicle-card__specs-item">
+              <span style={{ color: '#0ea5e9' }}>📑</span> 
+              <span>{versionsCount} Versions</span>
+            </div>
+          )}
         </div>
 
         {/* Description Snippet */}
-        {vehicle.description && (
+        {displayDescription && (
           <p style={{
-            fontSize: '0.8rem',
-            color: 'var(--text-secondary)',
+            fontSize: '0.7rem',
+            color: '#64748b',
             margin: '8px 0 0 0',
             display: '-webkit-box',
             WebkitLineClamp: 2,
@@ -202,22 +226,13 @@ export default function VehicleCard({ vehicle, matchScore, badges }: VehicleCard
             textOverflow: 'ellipsis',
             lineHeight: '1.4'
           }}>
-            {vehicle.description}
+            {stripMarkdown(displayDescription)}
           </p>
         )}
 
-        {/* Footer: Price & AI Estimate */}
+        {/* Footer: Price */}
         <div className="vehicle-card__footer">
-          <span className="vehicle-card__price">{formattedPrice}</span>
-          
-          {vehicle.predicted_price != null && (
-            <div className="vehicle-card__estimate">
-              <span>{fr.vehicle.estimatedPrice} (IA)</span>
-              <strong>
-                {new Intl.NumberFormat('fr-MA').format(vehicle.predicted_price)} MAD
-              </strong>
-            </div>
-          )}
+          <span className="vehicle-card__price">{finalPrice}</span>
         </div>
 
       </div>

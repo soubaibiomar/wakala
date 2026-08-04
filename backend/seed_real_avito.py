@@ -5,7 +5,7 @@ import uuid
 import random
 import re
 import json
-import urllib.request
+import httpx
 from datetime import datetime, timezone
 from bs4 import BeautifulSoup
 from pathlib import Path
@@ -23,105 +23,135 @@ def parse_int(val):
     digits = re.sub(r'[^\d]', '', str(val))
     return int(digits) if digits else None
 
+async def fetch_html(client: httpx.AsyncClient, url: str) -> str:
+    try:
+        response = await client.get(url, timeout=15.0)
+        return response.text
+    except Exception as e:
+        print(f"Failed to fetch {url}: {e}")
+        return ""
+
 async def seed():
     cars = []
     
-    MAX_PAGES = 50
+    page = 1
+    has_more = True
     urls = []
     
-    for page in range(1, MAX_PAGES + 1):
-        print(f"Fetching page {page}...")
-        search_url = f"https://www.avito.ma/fr/maroc/voitures_d_occasion?o={page}"
-        req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0'})
-        try:
-            html = urllib.request.urlopen(req).read().decode('utf-8', 'ignore')
-            soup = BeautifulSoup(html, 'html.parser')
-            links = [a['href'] for a in soup.select('a') if 'href' in a.attrs and '/vi/' in a['href'] or '/voitures_d_occasion/' in a['href']]
-            for href in links:
-                if not href.startswith("http"):
-                    href = "https://www.avito.ma" + href
-                if "voitures_d_occasion" in href and ".htm" in href:
-                    urls.append(href)
-        except Exception as e:
-            print(f"Failed to fetch search page {page}: {e}")
-            
-    urls = list(set(urls))
-    print(f"Found {len(urls)} unique listing URLs to scrape across {MAX_PAGES} pages.")
-    
-    for i, url in enumerate(urls):
-        print(f"Scraping {i+1}/20: {url}")
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        try:
-            detail_html = urllib.request.urlopen(req).read().decode('utf-8', 'ignore')
-        except Exception as e:
-            print(f"Failed to fetch detail page {url}: {e}")
-            continue
-            
-        detail_soup = BeautifulSoup(detail_html, 'html.parser')
-        
-        next_data = detail_soup.find("script", id="__NEXT_DATA__")
-        if not next_data:
-            print("No __NEXT_DATA__ found")
-            continue
-            
-        try:
-            data = json.loads(next_data.text)
-            ad = (
-                data.get("props", {})
-                .get("pageProps", {})
-                .get("initialReduxState", {})
-                .get("ad", {})
-                .get("view", {})
-                .get("adInfo", {})
-            )
-
-            if not ad:
-                print("No adInfo found")
-                continue
-
-            title = ad.get("subject", "")
-            price = ad.get("price", {}).get("value", 0)
-            
-            params = {p.get("name"): p.get("value") for p in ad.get("params", [])}
-            brand = params.get("Marque", "")
-            model = params.get("Modèle", "")
-            year = params.get("Année-Modèle", "")
-            mileage = params.get("Kilométrage", "100000")
-            fuel = params.get("Type de carburant", "diesel")
-            trans = params.get("Boite de vitesses", "manuelle")
-            
-            if not brand and title:
-                parts = title.split()
-                brand = parts[0] if parts else "Inconnu"
-                model = " ".join(parts[1:]) if len(parts) > 1 else title
-            
-            images = []
-            for img in ad.get("images", []):
-                images.append(img.get("url"))
-            
-            # Fetch description safely
-            desc = ad.get("description", "")
-            if isinstance(desc, list):
-                desc = "\n".join(desc)
+    print("Fetching search pages dynamically...")
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+    }
+    async with httpx.AsyncClient(headers=headers) as client:
+        while has_more and page <= 100:
+            html = await fetch_html(client, f"https://www.avito.ma/fr/maroc/voitures_d_occasion?o={page}")
+            if not html:
+                print(f"Empty HTML returned for page {page}.")
+                break
                 
-            cars.append({
-                "brand": brand,
-                "model": model,
-                "year": parse_int(year) or 2015,
-                "price": float(parse_int(price) or random.randint(50000, 300000)),
-                "mileage": parse_int(mileage) or 100000,
-                "fuel_type": "essence" if "essence" in fuel.lower() else ("hybride" if "hybride" in fuel.lower() else "diesel"),
-                "body_type": "suv" if "suv" in title.lower() else "berline",
-                "transmission": "automatique" if "auto" in trans.lower() else "manuelle",
-                "description": desc,
-                "images_urls": images,
-                "source": "Avito",
-                "source_url": url,
-                "is_new": False
-            })
-        except Exception as e:
-            print(f"Error parsing JSON: {e}")
-            pass
+            soup = BeautifulSoup(html, 'html.parser')
+            links = soup.select("a[href*='/vi/']")
+            
+            new_urls_count = 0
+            for link in links:
+                href = link.get('href')
+                if href:
+                    if href not in urls:
+                        urls.append(href)
+                        new_urls_count += 1
+                        
+            print(f"Scanned page {page}, found {new_urls_count} new URLs.")
+            if new_urls_count == 0:
+                print(f"DEBUG HTML start: {html[:200]}")
+                has_more = False
+                break
+                
+            page += 1
+            await asyncio.sleep(0.5)
+
+            
+        print(f"Found {len(urls)} unique listing URLs to scrape across {page-1} pages.")
+        
+        semaphore = asyncio.Semaphore(15)
+        
+        async def process_url(url):
+            async with semaphore:
+                detail_html = await fetch_html(client, url)
+                if not detail_html:
+                    return None
+                    
+                detail_soup = BeautifulSoup(detail_html, 'html.parser')
+                
+                next_data = detail_soup.find("script", id="__NEXT_DATA__")
+                if not next_data:
+                    print("No __NEXT_DATA__ found")
+                    return None
+                    
+                try:
+                    data = json.loads(next_data.text)
+                    ad = (
+                        data.get("props", {})
+                        .get("pageProps", {})
+                        .get("initialReduxState", {})
+                        .get("ad", {})
+                        .get("view", {})
+                        .get("adInfo", {})
+                    )
+
+                    if not ad:
+                        print("No adInfo found")
+                        return None
+
+                    title = ad.get("subject", "")
+                    price = ad.get("price", {}).get("value", 0)
+                    
+                    params = {p.get("name"): p.get("value") for p in ad.get("params", [])}
+                    brand = params.get("Marque", "")
+                    model = params.get("Modèle", "")
+                    year = params.get("Année-Modèle", "")
+                    mileage = params.get("Kilométrage", "100000")
+                    fuel = params.get("Type de carburant", "diesel")
+                    trans = params.get("Boite de vitesses", "manuelle")
+                    
+                    if not brand and title:
+                        parts = title.split()
+                        brand = parts[0] if parts else "Inconnu"
+                        model = " ".join(parts[1:]) if len(parts) > 1 else title
+                    
+                    images = []
+                    for img in ad.get("images", []):
+                        images.append(img.get("url"))
+                    
+                    # Fetch description safely
+                    desc = ad.get("description", "")
+                    if isinstance(desc, list):
+                        desc = "\n".join(desc)
+                        
+                    return {
+                        "brand": brand,
+                        "model": model,
+                        "year": parse_int(year) or 2015,
+                        "price": float(parse_int(price) or random.randint(50000, 300000)),
+                        "mileage": parse_int(mileage) or 100000,
+                        "fuel_type": "essence" if "essence" in fuel.lower() else ("hybride" if "hybride" in fuel.lower() else "diesel"),
+                        "body_type": "suv" if "suv" in title.lower() else "berline",
+                        "transmission": "automatique" if "auto" in trans.lower() else "manuelle",
+                        "description": desc,
+                        "images_urls": images,
+                        "source": "Avito",
+                        "source_url": url,
+                        "is_new": False
+                    }
+                except Exception as e:
+                    print(f"Error parsing JSON: {e}")
+                    return None
+                    
+        print(f"Processing detail pages...")
+        tasks = [process_url(u) for u in urls]
+        processed_cars = await asyncio.gather(*tasks)
+        cars = [c for c in processed_cars if c is not None]
         
     if not cars:
         print("No cars extracted from Avito!")
@@ -170,7 +200,6 @@ async def seed():
                     published_at=datetime.now(timezone.utc), created_at=datetime.now(timezone.utc),
                     updated_at=datetime.now(timezone.utc)
                 )
-                db.add(l)
                 db.add(l)
                 added_count += 1
             

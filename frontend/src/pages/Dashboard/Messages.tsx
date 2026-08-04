@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from "../../context/AuthContext";
 import { messageService } from '../../services/messageService';
 import type { ConversationContact, Message } from '../../types/message';
 import { Send, User as UserIcon, MessageSquare } from 'lucide-react';

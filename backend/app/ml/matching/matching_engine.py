@@ -9,6 +9,14 @@ from app.ml.nlp_pipeline.llm_extractor import extract_search_criteria
 from app.ml.matching.schemas import SearchRequest, RankedResult
 from app.models.vehicle import Vehicle
 
+USAGE_TO_BODY_TYPE = {
+    "familial": ["suv", "monospace", "break"],
+    "urbain": ["citadine", "berline"],
+    "longue_distance": ["berline", "suv", "break"],
+    "professionnel": ["utilitaire", "pick_up", "berline"],
+    "loisir": ["coupe", "cabriolet", "suv", "pick_up"]
+}
+
 class MatchingEngine:
     def __init__(self):
         self.hybrid_engine = HybridEngine(alpha=0.6)
@@ -23,18 +31,16 @@ class MatchingEngine:
         if request.quiz_answers:
             if request.quiz_answers.get("budget"):
                 extracted.budget = request.quiz_answers["budget"]
-            if request.quiz_answers.get("usage"):
-                extracted.usage = request.quiz_answers["usage"]
+            if request.quiz_answers.get("usage_prevu"):
+                extracted.usage_prevu = request.quiz_answers["usage_prevu"]
             if request.quiz_answers.get("priorites"):
                 extracted.priorites = request.quiz_answers["priorites"]
                 
         if extracted.budget:
             filters["price_max"] = extracted.budget
         
-        if extracted.usage == "familial":
-            filters["body_type"] = "monospace"
-        elif extracted.usage == "urbain":
-            filters["body_type"] = "citadine"
+        if extracted.usage_prevu and extracted.usage_prevu in USAGE_TO_BODY_TYPE:
+            filters["body_type_in"] = USAGE_TO_BODY_TYPE[extracted.usage_prevu]
                 
         # 2. Semantic Search in Qdrant
         semantic_ids = semantic_search(request.query, limit=50)
@@ -89,7 +95,7 @@ class MatchingEngine:
         results = []
         for item in response.items:
             badges = []
-            if extracted.usage == "familial":
+            if extracted.usage_prevu == "familial":
                 badges.append("Idéal Famille")
             if "économique" in extracted.priorites:
                 badges.append("Économique")

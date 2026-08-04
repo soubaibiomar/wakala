@@ -25,6 +25,7 @@ export interface PricePredictionResult {
   predicted_price: number;
   confidence_interval: ConfidenceInterval;
   method: string;
+  market_trend?: string;
   features_importance: Record<string, number>;
 }
 

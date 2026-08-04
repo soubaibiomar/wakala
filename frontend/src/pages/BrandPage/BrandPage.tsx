@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { POPULAR_BRANDS } from '../../constants/brands';
 import { vehicleService } from '../../services/vehicleService';
@@ -40,6 +41,11 @@ export default function BrandPage() {
     if (activeTab === 'neuf' || activeTab === 'occasion') {
       filters.condition = activeTab;
     }
+    
+    // Pour les véhicules neufs, grouper par modèle (pour n'afficher qu'une carte par modèle)
+    if (activeTab === 'neuf') {
+      filters.group_by_model = true;
+    }
 
     try {
       const res = await vehicleService.getVehicles(filters);
@@ -74,8 +80,45 @@ export default function BrandPage() {
     );
   }
 
+  const schemaOrgJSONLD = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": `Véhicules ${brandName || ''} - Wakala`,
+    "description": `Découvrez tous les modèles ${brandName || ''} disponibles sur Wakala, la marketplace automobile intelligente.`,
+    "url": window.location.href,
+    "mainEntity": {
+      "@type": "ItemList",
+      "itemListElement": vehicles.map((v, index) => ({
+        "@type": "ListItem",
+        "position": index + 1,
+        "item": {
+          "@type": "Vehicle",
+          "name": `${v.brand} ${v.model}`,
+          "modelDate": v.year,
+          "mileageFromOdometer": {
+            "@type": "QuantitativeValue",
+            "value": v.mileage,
+            "unitCode": "KMT"
+          },
+          "offers": {
+            "@type": "Offer",
+            "price": v.price,
+            "priceCurrency": "MAD"
+          }
+        }
+      }))
+    }
+  };
+
   return (
     <div className="brand-page">
+      <Helmet>
+        <title>Voitures {brandName} au Maroc | Wakala</title>
+        <meta name="description" content={`Découvrez tous les modèles ${brandName} disponibles sur Wakala. Achetez votre ${brandName} neuve ou d'occasion au meilleur prix.`} />
+        <script type="application/ld+json">
+          {JSON.stringify(schemaOrgJSONLD)}
+        </script>
+      </Helmet>
       <div className="brand-hero">
         <div className="brand-hero__content">
           {brandInfo?.logo ? (
@@ -125,7 +168,7 @@ export default function BrandPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: (idx % PAGE_SIZE) * 0.05 }}
                 >
-                  <VehicleCard vehicle={vehicle} />
+                  <VehicleCard vehicle={vehicle} isGrouped={activeTab === 'neuf'} />
                 </motion.div>
               ))}
             </div>
