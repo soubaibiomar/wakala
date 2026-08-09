@@ -7,6 +7,7 @@
 #   → pip install torch --index-url https://download.pytorch.org/whl/cu121
 # ═══════════════════════════════════════════════════════════════
 
+--extra-index-url https://download.pytorch.org/whl/cpu
 
 # ─── Core API ──────────────────────────────────────────────────
 # Framework web async, validation, docs OpenAPI automatique
@@ -66,7 +67,7 @@ Pillow==10.4.0
 # transformers pour les modèles de sentiment pré-entraînés
 # torch CPU-only (voir commentaire en haut pour GPU)
 transformers==4.44.2
-torch==2.4.1                     # CPU-only par défaut
+torch==2.4.1+cpu                     # CPU-only par défaut
 
 # ─── Kafka — Streaming d'événements ──────────────────────────
 confluent-kafka==2.5.3
