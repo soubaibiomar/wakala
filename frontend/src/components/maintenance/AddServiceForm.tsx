@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Camera, Calendar, Gauge, Wrench, Loader2, UploadCloud } from 'lucide-react';
 import { useState } from 'react';
+import api from '../../services/api';
 
 type AddServiceFormData = {
   service_type: string;
@@ -19,15 +20,10 @@ export function AddServiceForm({ carId, onSuccess }: { carId: string, onSuccess:
 
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const response = await fetch('http://localhost:8000/api/v1/services/add', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: data,
+      const response = await api.post('/v1/services/add', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
-      if (!response.ok) throw new Error('Failed to add service');
-      return response.json();
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle_services', carId] });

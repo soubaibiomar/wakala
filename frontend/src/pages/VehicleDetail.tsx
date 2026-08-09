@@ -388,16 +388,6 @@ export default function VehicleDetail() {
                   )}
                 </div>
 
-                {vehicle.condition_score != null && (
-                  <span style={{
-                    position: 'absolute', top: 16, right: 16,
-                    padding: '8px 14px', borderRadius: 'var(--radius-pill)',
-                    fontSize: '0.8rem', fontWeight: 600,
-                    background: 'rgba(16,185,129,0.15)', color: 'var(--accent-green)',
-                  }}>
-                    État IA : {vehicle.condition_score}/100
-                  </span>
-                )}
               </motion.div>
 
               {vehicle.description && (

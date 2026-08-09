@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, StyleSheet, Text, TextInput, TouchableOpacity, 
   ScrollView, Image, Alert, ActivityIndicator, Modal 
@@ -98,7 +98,7 @@ export default function CreateListingScreen() {
       });
       
       Alert.alert('Succès', 'Votre annonce a été publiée avec succès !', [
-        { text: 'OK', onPress: () => navigation.navigate('Home') }
+        { text: 'OK', onPress: () => navigation.navigate('MainTabs', { screen: 'Home' }) }
       ]);
     } catch (e) {
       console.error(e);

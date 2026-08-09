@@ -10,6 +10,7 @@ interface ChatWindowProps {
   isTyping: boolean;
   error: string | null;
   onSend: (text: string) => void;
+  onCancel: () => void;
   onClear: () => void;
   onClose: () => void;
 }
@@ -19,6 +20,7 @@ export default function ChatWindow({
   isTyping,
   error,
   onSend,
+  onCancel,
   onClear,
   onClose,
 }: ChatWindowProps) {
@@ -179,15 +181,28 @@ export default function ChatWindow({
             </button>
           )}
 
-          <button
-            className={styles.inputBtn}
-            onClick={handleSubmit}
-            disabled={isTyping || !input.trim()}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
-          </button>
+          {/* ─── Send or Cancel button ──── */}
+          {isTyping ? (
+            <button
+              className={styles.cancelBtn}
+              onClick={onCancel}
+              title="Arrêter la génération"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <rect x="6" y="6" width="12" height="12" rx="2" />
+              </svg>
+            </button>
+          ) : (
+            <button
+              className={styles.inputBtn}
+              onClick={handleSubmit}
+              disabled={!input.trim()}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
         </div>
 
         {/* ─── Erreur vocale ──────────────────────────────── */}

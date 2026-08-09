@@ -127,7 +127,11 @@ export default function FormattedDescription({ text }: FormattedDescriptionProps
                 <ReactMarkdown 
                   remarkPlugins={[remarkGfm]}
                   components={{
-                    table: ({node, ...props}) => <table className="desc-table" {...props} />,
+                    table: ({node, ...props}) => (
+                      <div className="desc-table-wrapper" style={{ overflowX: 'auto', width: '100%' }}>
+                        <table className="desc-table" {...props} />
+                      </div>
+                    ),
                     th: ({node, ...props}) => <th className="desc-th" {...props} />,
                     td: ({node, ...props}) => {
                       const val = props.children?.toString() || '';

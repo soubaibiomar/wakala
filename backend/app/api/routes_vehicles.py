@@ -76,15 +76,43 @@ async def list_vehicles(
         # Also, if the normalized one has 'e', we also try 'ë' and 'é' to be safe since DB might have them.
         brand_e1 = brand_norm.replace('e', 'ë').replace('E', 'Ë')
         brand_e2 = brand_norm.replace('e', 'é').replace('E', 'É')
+        # Handle space vs hyphen mismatches (e.g. "Land Rover" vs "Land-rover")
+        brand_hyphen = brand.replace(' ', '-')
+        brand_space = brand.replace('-', ' ')
         
-        query = query.where(
-            or_(
-                Vehicle.brand.ilike(f"%{brand}%"),
-                Vehicle.brand.ilike(f"%{brand_norm}%"),
-                Vehicle.brand.ilike(f"%{brand_e1}%"),
-                Vehicle.brand.ilike(f"%{brand_e2}%")
-            )
-        )
+        # Brand alias mappings (e.g. Haval <-> GWM, Mercedes <-> Mercedes-Benz, BAIC, Seres, Maserati)
+        brand_lower = brand.lower().strip()
+        brand_aliases = [brand, brand_norm, brand_e1, brand_e2, brand_hyphen, brand_space]
+        
+        if "haval" in brand_lower or "gwm" in brand_lower:
+            brand_aliases.extend(["GWM", "Haval", "Great Wall", "gwm", "haval"])
+        elif "mercedes" in brand_lower:
+            brand_aliases.extend(["Mercedes-Benz", "Mercedes", "MERCEDES", "mercedes-benz", "mercedes"])
+        elif "alfa" in brand_lower:
+            brand_aliases.extend(["Alfa Romeo", "Alfa-romeo", "ALFA-ROMEO", "Alfa", "alfa"])
+        elif "land" in brand_lower and "rover" in brand_lower:
+            brand_aliases.extend(["Land Rover", "Land-rover", "LAND-ROVER", "Land-Rover"])
+        elif "baic" in brand_lower:
+            brand_aliases.extend(["BAIC", "Baic", "baic"])
+        elif "seres" in brand_lower:
+            brand_aliases.extend(["SERES", "Seres", "seres"])
+        elif "maserati" in brand_lower:
+            brand_aliases.extend(["Maserati", "MASERATI", "maserati"])
+        elif "citroen" in brand_lower or "citroën" in brand_lower:
+            brand_aliases.extend(["Citroën", "Citroen", "CITROEN", "citroen", "citroën"])
+        elif "bmw" in brand_lower:
+            brand_aliases.extend(["BMW", "Bmw", "bmw"])
+        elif "dfsk" in brand_lower:
+            brand_aliases.extend(["DFSK", "Dfsk", "dfsk"])
+        elif "byd" in brand_lower:
+            brand_aliases.extend(["BYD", "Byd", "byd"])
+        elif "mg" == brand_lower:
+            brand_aliases.extend(["MG", "Mg", "mg"])
+        elif "ds" == brand_lower:
+            brand_aliases.extend(["DS", "Ds", "ds"])
+            
+        brand_conditions = [Vehicle.brand.ilike(f"%{b}%") for b in set(brand_aliases)]
+        query = query.where(or_(*brand_conditions))
     if model:
         query = query.where(Vehicle.model.ilike(f"%{model}%"))
     if city:
@@ -130,7 +158,7 @@ async def list_vehicles(
     order_clause = sort_column.desc() if sort_order == "desc" else sort_column.asc()
     
     if group_by_model:
-        query = query.order_by(Vehicle.brand, Vehicle.model, order_clause)
+        query = query.order_by(Vehicle.brand, Vehicle.model, Vehicle.price.asc())
     else:
         query = query.order_by(order_clause)
 

@@ -1,13 +1,13 @@
 import React from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import Svg, { Path, Defs, LinearGradient, Stop, Ellipse, Rect } from 'react-native-svg';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 
-const { width } = Dimensions.get('window');
-const CAR_WIDTH = width * 0.85;
-const CAR_HEIGHT = CAR_WIDTH * 0.45;
-
 export default function HeroCar({ sequence }: { sequence: any }) {
+  const { width } = useWindowDimensions();
+  const CAR_WIDTH = Math.min(width * 0.85, 400); // Max width to avoid huge SVG on tablets
+  const CAR_HEIGHT = CAR_WIDTH * 0.45;
+
   const { carOpacity, carScale, headlightsOpacity, plateOpacity, plateScale } = sequence;
 
   const carAnimatedStyle = useAnimatedStyle(() => ({
@@ -25,7 +25,7 @@ export default function HeroCar({ sequence }: { sequence: any }) {
   }));
 
   return (
-    <Animated.View style={[styles.container, carAnimatedStyle]}>
+    <Animated.View style={[styles.container, { width: CAR_WIDTH, height: CAR_HEIGHT }, carAnimatedStyle]}>
       {/* SVG Silhouette Voiture minimaliste premium */}
       <Svg width={CAR_WIDTH} height={CAR_HEIGHT} viewBox="0 0 400 180" fill="none">
         <Defs>
@@ -75,8 +75,6 @@ export default function HeroCar({ sequence }: { sequence: any }) {
 
 const styles = StyleSheet.create({
   container: {
-    width: CAR_WIDTH,
-    height: CAR_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',

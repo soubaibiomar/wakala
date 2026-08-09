@@ -5,18 +5,19 @@ import { Vehicle } from '@vente-auto/shared-types';
 export const vehicleService = {
   async getVehicles(params?: any): Promise<Vehicle[]> {
     try {
-      const response = await api.get('/vehicles', { params });
+      const response = await api.get('/vehicles/', { params });
+      const data = response.data;
+      const list = Array.isArray(data) ? data : (data?.items || []);
       
       // Cache results for offline use
-      if (response.data && response.data.length > 0) {
-        await AsyncStorage.setItem('cached_vehicles', JSON.stringify(response.data));
+      if (list && list.length > 0) {
+        await AsyncStorage.setItem('cached_vehicles', JSON.stringify(list));
       }
-      return response.data;
+      return list;
     } catch (error) {
       console.warn('API error, falling back to cache:', error);
       const cached = await AsyncStorage.getItem('cached_vehicles');
       if (cached) {
-        // We might want to add a flag indicating this is offline data
         const parsed = JSON.parse(cached);
         return parsed.map((v: any) => ({ ...v, _isOffline: true }));
       }
@@ -28,10 +29,18 @@ export const vehicleService = {
     const response = await api.get(`/vehicles/${id}`);
     return response.data;
   },
+
+  async getMyVehicles(): Promise<Vehicle[]> {
+    const response = await api.get('/vehicles/me');
+    return response.data;
+  },
+
+  async getMyListings(): Promise<any[]> {
+    const response = await api.get('/listings/me');
+    return response.data;
+  },
   
   async analyzeImage(id: string, formData: FormData): Promise<any> {
-    // Si pas d'ID, on utilise le nouveau endpoint global /v1/vision/analyze 
-    // ou on garde le /vehicles/${id}/analyze-images selon le backend actuel
     const url = id && id !== 'temp' ? `/vehicles/${id}/analyze-images` : '/v1/vision/analyze';
     const response = await api.post(url, formData, {
       headers: {
@@ -41,19 +50,86 @@ export const vehicleService = {
     return response.data;
   },
 
-  async predictPrice(data: any): Promise<any> {
-    // routes_pricing.py est monté sur /api dans main.py, avec le path /predict-price
-    const response = await api.post('/predict-price', data);
+  async predictPrice(data: {
+    brand: string;
+    model: string;
+    year: number;
+    mileage?: number;
+    fuel_type?: string;
+    transmission?: string;
+    city?: string;
+  }): Promise<any> {
+    const response = await api.post('/predict-price', {
+      brand: data.brand,
+      model: data.model,
+      year: data.year,
+      mileage: data.mileage ?? 50000,
+      fuel_type: data.fuel_type || 'Diesel',
+      transmission: data.transmission || 'Manuelle',
+      city: data.city || 'Casablanca'
+    });
     return response.data;
   },
 
-  async createListing(data: any): Promise<any> {
-    const response = await api.post('/listings', data);
-    return response.data;
-  },
-
-  async generateDescription(data: any): Promise<any> {
+  async generateDescription(data: {
+    brand: string;
+    model: string;
+    year: number;
+    mileage?: number;
+    city?: string;
+    fuel_type?: string;
+    transmission?: string;
+  }): Promise<any> {
     const response = await api.post('/listings/generate', data);
     return response.data;
+  },
+
+  async createVehicle(data: any): Promise<Vehicle> {
+    const response = await api.post('/vehicles', data);
+    return response.data;
+  },
+
+  async createListing(data: {
+    brand: string;
+    model: string;
+    year: number;
+    price: number;
+    city: string;
+    mileage?: number;
+    fuel_type?: string;
+    transmission?: string;
+    description?: string;
+    images?: string[];
+  }): Promise<any> {
+    // 1. Créer le véhicule en base
+    const vehiclePayload = {
+      brand: data.brand,
+      model: data.model,
+      year: data.year,
+      price: data.price,
+      city: data.city,
+      mileage: data.mileage ?? 0,
+      fuel_type: data.fuel_type || 'Diesel',
+      transmission: data.transmission || 'Manuelle',
+      description: data.description || '',
+    };
+    
+    const vehicleRes = await api.post('/vehicles', vehiclePayload);
+    const createdVehicle = vehicleRes.data;
+
+    // 2. Créer l'annonce attachée au véhicule
+    const listingPayload = {
+      vehicle_id: createdVehicle.id,
+      title: `${data.brand} ${data.model} (${data.year})`,
+      price: data.price,
+      description: data.description || '',
+      status: 'active',
+    };
+
+    const listingRes = await api.post('/listings', listingPayload);
+    return {
+      vehicle: createdVehicle,
+      listing: listingRes.data,
+    };
   }
 };

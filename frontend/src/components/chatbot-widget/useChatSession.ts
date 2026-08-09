@@ -51,6 +51,7 @@ export function useChatSession() {
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sessionIdRef = useRef<string>(getOrCreateSessionId());
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Load history from DB on mount
   useEffect(() => {
@@ -83,9 +84,20 @@ export function useChatSession() {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(messages));
   }, [messages]);
 
+  const cancelGeneration = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setIsTyping(false);
+    }
+  }, []);
+
   const sendMessage = useCallback(async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
+
+    // Cancel any in-flight request
+    cancelGeneration();
 
     const userMsg: Message = {
       id: generateId(),
@@ -109,6 +121,10 @@ export function useChatSession() {
     
     setMessages((prev) => [...prev, assistantMsg]);
 
+    // Create abort controller for this request
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
       // Build history for backend (excluding the current user message just added)
       // Actually, we can just pass the previous messages
@@ -127,7 +143,8 @@ export function useChatSession() {
             });
           });
         },
-        sessionIdRef.current
+        sessionIdRef.current,
+        controller.signal
       );
       
     } catch {
@@ -141,24 +158,27 @@ export function useChatSession() {
       });
       setError('Erreur de communication avec le serveur.');
     } finally {
+      abortControllerRef.current = null;
       setIsTyping(false);
     }
-  }, [messages]);
+  }, [messages, cancelGeneration]);
 
   const clearHistory = useCallback(() => {
+    cancelGeneration();
     setMessages([]);
     setError(null);
     localStorage.removeItem(HISTORY_KEY);
     const newSid = 'chat-' + generateId();
     sessionIdRef.current = newSid;
     localStorage.setItem('wakala_chat_session', newSid);
-  }, []);
+  }, [cancelGeneration]);
 
   return {
     messages,
     isTyping,
     error,
     sendMessage,
+    cancelGeneration,
     clearHistory,
     sessionId: sessionIdRef.current,
   };

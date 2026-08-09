@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react';
-import { Mic, Square } from 'lucide-react';
+import { useCallback, useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Mic, Square, X, Search, Sparkles } from 'lucide-react';
 import type { RecommendationResponse } from '../../services/recommendationService';
 import { parseSearchQuery, type NlpExtractionResult } from '../../services/searchParseService';
 import { useMatchmaker } from '../recommendation-form/useMatchmaker';
@@ -7,13 +8,14 @@ import { useVoiceInput } from '../../hooks/useVoiceInput';
 
 interface SearchBarProps {
   userId?: string | null;
-  onResults: (query: string, result: RecommendationResponse) => void;
+  onResults?: (query: string, result?: RecommendationResponse | null) => void;
 }
 
 /** Formatte un budget en MAD avec séparateurs de milliers */
 function formatBudget(budget: number): string {
   return budget.toLocaleString('fr-MA') + ' MAD';
 }
+
 
 /** Labels lisibles pour les champs NLP */
 const LABEL_MAP: Record<string, string> = {
@@ -54,16 +56,10 @@ const BADGE_ICONS: Record<string, string> = {
   profil: '👤',
 };
 
-const LANG_LABELS: Record<string, string> = {
-  'fr-FR': 'FR',
-  'ar-MA': 'AR',
-  'en-US': 'EN',
-};
-const LANG_KEYS = Object.keys(LANG_LABELS);
-
 export default function SearchBar({ userId, onResults }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const [clarificationAnswer, setClarificationAnswer] = useState('');
+  const navigate = useNavigate();
   
   const { isLoading, recommend } = useMatchmaker();
   const [nlpResult, setNlpResult] = useState<NlpExtractionResult | null>(null);
@@ -73,7 +69,6 @@ export default function SearchBar({ userId, onResults }: SearchBarProps) {
   const voice = useVoiceInput({
     defaultLang: 'fr-FR',
     onTranscript: (text) => {
-      // Injecte le texte transcrit dans le même state que le clavier
       setQuery((prev) => {
         const separator = prev.trim() ? ' ' : '';
         return prev + separator + text;
@@ -83,40 +78,43 @@ export default function SearchBar({ userId, onResults }: SearchBarProps) {
 
   const submitSearch = useCallback(async (textToSearch: string) => {
     const trimmed = textToSearch.trim();
-    if (!trimmed || isLoading) return;
-
-    setNlpLoading(true);
-    setNlpResult(null);
+    if (!trimmed) return;
 
     // Si on a déjà une question de clarification et une réponse, on les concatène
     let finalQuery = trimmed;
     if (nlpResult?.statut === 'clarification_requise' && clarificationAnswer.trim()) {
-      finalQuery = `${query} ${clarificationAnswer.trim()}`;
+      finalQuery = `${trimmed} ${clarificationAnswer.trim()}`;
       setQuery(finalQuery);
       setClarificationAnswer('');
     }
 
-    const nlpData = await parseSearchQuery(finalQuery);
+    setNlpLoading(true);
 
-    if (nlpData && !nlpData.erreur) {
-      setNlpResult(nlpData);
-      
-      // Si la confiance est toujours basse et qu'une clarification est requise, 
-      // on s'arrête ici pour poser la question sans lancer la recommandation
-      if (nlpData.statut === 'clarification_requise') {
-        setNlpLoading(false);
-        return;
+    try {
+      // Si on est sur la page d'accueil ou ailleurs, on redirige directement vers le catalogue
+      if (onResults) {
+        onResults(finalQuery, null);
+      } else {
+        navigate(`/catalogue?q=${encodeURIComponent(finalQuery)}`);
       }
-    } else {
-      setNlpResult(null);
+    } catch (err) {
+      console.error('Erreur navigation catalogue:', err);
+      navigate(`/catalogue?q=${encodeURIComponent(finalQuery)}`);
+    } finally {
+      setNlpLoading(false);
     }
-    
-    // Seulement si pas de clarification requise, on lance la recherche complète
-    const recResult = await recommend({ query: finalQuery, user_id: userId });
-    setNlpLoading(false);
+  }, [onResults, navigate, nlpResult, clarificationAnswer]);
 
-    if (recResult) onResults(finalQuery, recResult);
-  }, [isLoading, onResults, recommend, userId, nlpResult, clarificationAnswer, query]);
+  const handleSubmitForm = (e: FormEvent) => {
+    e.preventDefault();
+    void submitSearch(query);
+  };
+
+  const handleClear = () => {
+    setQuery('');
+    setNlpResult(null);
+    setClarificationAnswer('');
+  };
 
   const hasBadges = nlpResult && (
     nlpResult.budget !== null ||
@@ -195,16 +193,11 @@ export default function SearchBar({ userId, onResults }: SearchBarProps) {
         </div>
       )}
 
-      {/* ─── Voice error message ─────────────────────────── */}
-      {voice.errorMessage && (
-        <div className="voice-error" role="alert">
-          ⚠️ {voice.errorMessage}
-        </div>
-      )}
-
       {/* ─── Search Input ────────────────────────────────── */}
-      <div className="search-bar">
-        <div className="search-icon" aria-hidden="true">⌕</div>
+      <form className="search-bar" onSubmit={handleSubmitForm}>
+        <div className="search-icon" aria-hidden="true">
+          <Search size={20} />
+        </div>
         <input
           type="text"
           className="search-input"
@@ -212,7 +205,7 @@ export default function SearchBar({ userId, onResults }: SearchBarProps) {
           placeholder={
             voice.status === 'listening'
               ? 'Parlez maintenant...'
-              : 'Décrivez le véhicule que vous cherchez — budget, usage, carburant...'
+              : 'Décrivez vos besoins (ex: Bébé en route, 260 000 DH max, sécurité prioritaire...)'
           }
           autoComplete="off"
           value={voice.interimTranscript ? query + (query ? ' ' : '') + voice.interimTranscript : query}
@@ -221,7 +214,6 @@ export default function SearchBar({ userId, onResults }: SearchBarProps) {
             setQuery(val);
             if (needsClarification) setNlpResult(null);
             
-            // Détection automatique de la langue
             const hasArabic = /[\u0600-\u06FF]/.test(val);
             if (hasArabic && voice.lang !== 'ar-MA') {
               voice.setLang('ar-MA');
@@ -229,14 +221,25 @@ export default function SearchBar({ userId, onResults }: SearchBarProps) {
               voice.setLang('fr-FR');
             }
           }}
-          onKeyDown={(event) => { if (event.key === 'Enter') void submitSearch(query); }}
           readOnly={voice.status === 'listening'}
         />
         
+        {/* ─── Bouton Clear (X) ───────────────────────── */}
+        {query.length > 0 && (
+          <button
+            type="button"
+            className="search-clear-btn"
+            onClick={handleClear}
+            title="Effacer la recherche"
+            aria-label="Effacer la recherche"
+          >
+            <X size={16} />
+          </button>
+        )}
+
         {/* ─── Bouton micro (masqué si non supporté) ──── */}
         {voice.isSupported && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-
             <button
               className={`mic-btn ${voice.status === 'listening' ? 'mic-btn--listening' : ''}`}
               onClick={voice.toggleListening}
@@ -244,22 +247,23 @@ export default function SearchBar({ userId, onResults }: SearchBarProps) {
               type="button"
               aria-label={voice.status === 'listening' ? 'Arrêter la reconnaissance vocale' : 'Activer la reconnaissance vocale'}
             >
-              {voice.status === 'listening' ? <Square size={16} fill="currentColor" /> : <Mic size={20} />}
+              {voice.status === 'listening' ? <Square size={16} fill="currentColor" /> : <Mic size={19} />}
             </button>
           </div>
         )}
 
         <button
+          type="submit"
           className="search-btn"
           id="nlp-search-submit"
-          onClick={() => void submitSearch(query)}
-          disabled={isLoading || nlpLoading || !query.trim()}
+          disabled={!query.trim()}
         >
+          <Sparkles size={16} />
           <span>
-            {isLoading || nlpLoading ? 'Analyse...' : 'Rechercher'}
+            {nlpLoading ? 'Analyse...' : 'Rechercher'}
           </span>
         </button>
-      </div>
+      </form>
     </div>
   );
 }

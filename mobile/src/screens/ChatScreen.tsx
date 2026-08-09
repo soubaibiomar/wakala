@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, StyleSheet, Text, TextInput, TouchableOpacity, 
   FlatList, KeyboardAvoidingView, Platform, Keyboard, ScrollView
@@ -67,9 +67,12 @@ export default function ChatScreen() {
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sourcesScroll}>
                 {item.suggested_vehicles.map((v, i) => (
                   <SourceVehicleCard 
-                    key={v.id || i} 
+                    key={v.id || v.vehicle_id || i} 
                     vehicle={v} 
-                    onPress={() => navigateToVehicle(v.id)} 
+                    onPress={() => {
+                      const targetId = v.id || v.vehicle_id;
+                      if (targetId) navigateToVehicle(targetId);
+                    }} 
                   />
                 ))}
               </ScrollView>

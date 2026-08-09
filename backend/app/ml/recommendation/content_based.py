@@ -52,12 +52,12 @@ def _encode_fuel(fuel_type: str) -> float:
 
 def vehicle_to_feature_vector(vehicle: Vehicle) -> np.ndarray:
     raw = np.array([
-        float(vehicle.price),
-        float(vehicle.year),
-        float(vehicle.mileage),
-        _encode_body_type(vehicle.body_type),
-        TRANSMISSION_MAP.get(vehicle.transmission, 0),
-        _encode_fuel(vehicle.fuel_type),
+        float(vehicle.price or 0),
+        float(vehicle.year or 2020),
+        float(vehicle.mileage or 0),
+        _encode_body_type(vehicle.body_type or ""),
+        TRANSMISSION_MAP.get(vehicle.transmission or "", 0),
+        _encode_fuel(vehicle.fuel_type or ""),
         float(vehicle.engine_power_hp or 0),
     ]).reshape(1, -1)
     return raw
@@ -69,9 +69,9 @@ def candidate_vehicles_from_filters(
 ) -> list[Vehicle]:
     candidates = []
     for v in vehicles:
-        if "brand" in filters and v.brand.lower() != filters["brand"].lower():
+        if "brand" in filters and (not v.brand or v.brand.lower() != filters["brand"].lower()):
             continue
-        if "city" in filters and v.city.lower() != filters["city"].lower():
+        if "city" in filters and (not v.city or v.city.lower() != filters["city"].lower()):
             continue
         if "fuel_type" in filters and v.fuel_type != filters["fuel_type"]:
             continue
@@ -79,15 +79,15 @@ def candidate_vehicles_from_filters(
             continue
         if "body_type_in" in filters and v.body_type not in filters["body_type_in"]:
             continue
-        if "price_min" in filters and v.price < filters["price_min"]:
+        if "price_min" in filters and (v.price is None or v.price < filters["price_min"]):
             continue
-        if "price_max" in filters and v.price > filters["price_max"]:
+        if "price_max" in filters and (v.price is None or v.price > filters["price_max"]):
             continue
-        if "year_min" in filters and v.year < filters["year_min"]:
+        if "year_min" in filters and (v.year is None or v.year < filters["year_min"]):
             continue
-        if "year_max" in filters and v.year > filters["year_max"]:
+        if "year_max" in filters and (v.year is None or v.year > filters["year_max"]):
             continue
-        if "mileage_max" in filters and v.mileage > filters["mileage_max"]:
+        if "mileage_max" in filters and (v.mileage is None or v.mileage > filters["mileage_max"]):
             continue
         candidates.append(v)
     return candidates
@@ -100,12 +100,12 @@ def build_feature_matrix(vehicles: list[Vehicle]) -> np.ndarray:
 
     matrix = np.zeros((n, len(FEATURE_COLUMNS)))
     for i, v in enumerate(vehicles):
-        matrix[i, 0] = float(v.price)
-        matrix[i, 1] = float(v.year)
-        matrix[i, 2] = float(v.mileage)
-        matrix[i, 3] = _encode_body_type(v.body_type)
-        matrix[i, 4] = TRANSMISSION_MAP.get(v.transmission, 0)
-        matrix[i, 5] = _encode_fuel(v.fuel_type)
+        matrix[i, 0] = float(v.price or 0)
+        matrix[i, 1] = float(v.year or 2020)
+        matrix[i, 2] = float(v.mileage or 0)
+        matrix[i, 3] = _encode_body_type(v.body_type or "")
+        matrix[i, 4] = TRANSMISSION_MAP.get(v.transmission or "", 0)
+        matrix[i, 5] = _encode_fuel(v.fuel_type or "")
         matrix[i, 6] = float(v.engine_power_hp or 0)
 
     price_col = matrix[:, 0:1]
@@ -129,26 +129,31 @@ def build_query_vector(filters: dict, reference_vehicles: list[Vehicle]) -> np.n
     query[0, 4] = TRANSMISSION_MAP.get(filters.get("transmission", ""), 0)
     query[0, 5] = _encode_fuel(filters.get("fuel_type", ""))
 
+    prices = [v.price for v in reference_vehicles if v.price is not None]
+    years = [v.year for v in reference_vehicles if v.year is not None]
+    mileages = [v.mileage for v in reference_vehicles if v.mileage is not None]
+    powers = [(v.engine_power_hp or 0) for v in reference_vehicles]
+
     if filters.get("price_min") is not None and filters.get("price_max") is not None:
         ref_price = (filters["price_min"] + filters["price_max"]) / 2
     elif filters.get("price_max") is not None:
         ref_price = filters["price_max"] * 0.85
     else:
-        ref_price = float(np.mean([v.price for v in reference_vehicles])) if reference_vehicles else 30000
+        ref_price = float(np.mean(prices)) if prices else 30000.0
 
     if filters.get("year_min") is not None:
         ref_year = float(filters["year_min"])
     elif filters.get("year_max") is not None:
         ref_year = float(filters["year_max"])
     else:
-        ref_year = float(np.mean([v.year for v in reference_vehicles])) if reference_vehicles else 2020
+        ref_year = float(np.mean(years)) if years else 2020.0
 
     if filters.get("mileage_max") is not None:
         ref_mileage = float(filters["mileage_max"]) * 0.5
     else:
-        ref_mileage = float(np.mean([v.mileage for v in reference_vehicles])) if reference_vehicles else 50000
+        ref_mileage = float(np.mean(mileages)) if mileages else 50000.0
 
-    ref_engine = float(np.mean([(v.engine_power_hp or 0) for v in reference_vehicles])) if reference_vehicles else 100
+    ref_engine = float(np.mean(powers)) if powers else 100.0
 
     query[0, 0] = ref_price
     query[0, 1] = ref_year

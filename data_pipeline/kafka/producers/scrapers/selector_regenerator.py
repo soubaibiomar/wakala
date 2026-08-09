@@ -24,7 +24,7 @@ class SelectorRegenerator:
         # We use the Ollama code model for reasoning capabilities
         self.llm = ChatOpenAI(
             base_url="http://localhost:11434/v1",
-            api_key="ollama", # placeholder
+            api_key=os.getenv("OLLAMA_API_KEY", "ollama"),
             model="qwen2.5-coder:7b",
             temperature=0.1
         )

@@ -423,3 +423,77 @@
     grid-template-columns: repeat(4, 1fr);
   }
 }
+
+/* ─── AI Recommendation Banner ────────────────────────────── */
+.catalogue__ai-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: linear-gradient(135deg, rgba(18, 33, 53, 0.95), rgba(30, 58, 95, 0.95));
+  color: #ffffff;
+  padding: 14px 20px;
+  border-radius: var(--radius-md, 12px);
+  margin-bottom: var(--space-lg, 20px);
+  box-shadow: 0 8px 24px rgba(18, 33, 53, 0.12);
+  border: 1px solid rgba(174, 140, 78, 0.3);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.catalogue__ai-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.catalogue__ai-banner-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: rgba(174, 140, 78, 0.25);
+  border: 1px solid rgba(174, 140, 78, 0.6);
+  color: #f1c40f;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.catalogue__ai-banner-text {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #e2e8f0;
+}
+
+.catalogue__ai-banner-text strong {
+  color: #ffffff;
+}
+
+.catalogue__ai-banner-reset {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #f1f5f9;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.catalogue__ai-banner-reset:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fca5a5;
+}
+
+@media (max-width: 768px) {
+  .catalogue__ai-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}

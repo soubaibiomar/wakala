@@ -29,7 +29,8 @@ export const chatbotService = {
     message: string, 
     history: Array<{ role: string; content: string }>,
     onChunk: (chunk: string) => void,
-    sessionId?: string
+    sessionId?: string,
+    signal?: AbortSignal
   ) => {
     // Determine the base URL from the Axios instance or env
     const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
@@ -51,7 +52,8 @@ export const chatbotService = {
           message,
           history,
           session_id: sessionId
-        })
+        }),
+        signal
       });
 
       if (!response.ok) {
@@ -73,6 +75,10 @@ export const chatbotService = {
         }
       }
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        // User cancelled — not a real error
+        return;
+      }
       console.error("Streaming error:", error);
       throw error;
     }

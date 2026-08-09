@@ -198,7 +198,7 @@ export default function NewListing() {
             <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <h2 style={{ fontSize: '1.4rem', marginBottom: '24px', fontWeight: 600 }}>2. Caractéristiques</h2>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div className="grid grid--2" style={{ gap: '20px' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Marque</label>
                   <select

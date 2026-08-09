@@ -14,3 +14,9 @@ class RankedResult(BaseModel):
     badges: list[str]
     content_score: float
     collaborative_score: float
+    score_breakdown: Optional[dict] = None
+    key_facts: list[str] = Field(default_factory=list)
+    budget_margin: Optional[float] = None
+    best_version_name: Optional[str] = None
+    relaxed_filter: Optional[str] = None
+

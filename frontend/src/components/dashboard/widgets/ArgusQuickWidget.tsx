@@ -3,26 +3,22 @@ import { useMutation } from '@tanstack/react-query';
 import { BentoWidget } from '../BentoGrid';
 import { Calculator } from 'lucide-react';
 import { PriceGauge } from '../../pricing/PriceGauge';
+import api from '../../../services/api';
 
 export function ArgusQuickWidget() {
   const [formData, setFormData] = useState({ brand: '', model: '', year: 2020 });
   
   const estimateMutation = useMutation({
     mutationFn: async (data: any) => {
-      const res = await fetch('http://localhost:8000/api/vehicles/estimate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...data,
-          mileage: 50000,
-          fuel_type: "diesel",
-          body_type: "berline",
-          transmission: "manuelle",
-          city: "Casablanca"
-        })
+      const res = await api.post('/vehicles/estimate', {
+        ...data,
+        mileage: 50000,
+        fuel_type: "diesel",
+        body_type: "berline",
+        transmission: "manuelle",
+        city: "Casablanca"
       });
-      if (!res.ok) throw new Error('Erreur estimation');
-      return res.json();
+      return res.data;
     }
   });
 

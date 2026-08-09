@@ -76,6 +76,7 @@ from app.api.v1.endpoints.maintenance import router as maintenance_router
 from app.api.routes_seo import router as seo_router
 from app.api.routes_favorites import router as favorites_router
 from app.api.routes_offers import router as offers_router
+from app.api.routes_voice import router as voice_router
 
 # ─── Application FastAPI ───────────────────────────────────────
 
@@ -136,13 +137,14 @@ app.include_router(vision_router, prefix="/api/v1", tags=["Computer Vision"])
 app.include_router(admin_router, prefix="/api/v1", tags=["Admin & Modération"])
 app.include_router(customs_router, prefix="/api/v1", tags=["Dédouanement"])
 app.include_router(transactions_router, prefix="/api/transactions")
-app.include_router(search_router, prefix="/api/search")
+
 app.include_router(messages_router, prefix="/api/messages")
 app.include_router(ai_router, prefix="/api/v1/ai", tags=["AI Integration"])
 app.include_router(maintenance_router, prefix="/api/maintenance", tags=["Maintenance"])
 app.include_router(seo_router)
 app.include_router(favorites_router, prefix="/api", tags=["Favorites"])
 app.include_router(offers_router, prefix="/api/offers", tags=["Offres et Négociations"])
+app.include_router(voice_router, prefix="/api/voice", tags=["Voice Transcription"])
 
 # ─── Gestionnaire d'exceptions Global ─────────────────────────────────────────────
 from fastapi.exceptions import RequestValidationError

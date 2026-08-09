@@ -84,6 +84,7 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = Field(None, min_length=2, max_length=255)
     email: Optional[EmailStr] = None
     phone: Optional[str] = Field(None, max_length=30)
+    role: Optional[str] = Field(None, pattern="^(buyer|seller)$")
     preferences: Optional[dict] = None
     avatar_url: Optional[str] = None
 

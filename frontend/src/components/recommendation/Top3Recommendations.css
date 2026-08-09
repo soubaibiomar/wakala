@@ -1,0 +1,379 @@
+/* Top3Recommendations.css — Styles modernes et haut de gamme pour le Top 3 Wakala */
+
+.top3-container {
+  margin: 32px 0;
+  padding: 24px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  color: #f8fafc;
+}
+
+.top3-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.top3-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  margin-bottom: 12px;
+}
+
+.top3-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.02em;
+}
+
+.top3-subtitle {
+  font-size: 0.95rem;
+  color: #94a3b8;
+  max-width: 650px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+.top3-alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #bfdbfe;
+  padding: 12px 18px;
+  border-radius: 10px;
+  margin-bottom: 24px;
+  font-size: 0.88rem;
+}
+
+.top3-alert-icon {
+  color: #60a5fa;
+  flex-shrink: 0;
+}
+
+.top3-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+/* Card Styling */
+.top3-card {
+  background: rgba(30, 41, 59, 0.8);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  position: relative;
+}
+
+.top3-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+}
+
+/* Rank borders */
+.top3-card.rank-gold {
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+}
+
+.top3-card.rank-silver {
+  border-color: rgba(148, 163, 184, 0.4);
+}
+
+.top3-card.rank-bronze {
+  border-color: rgba(217, 119, 6, 0.4);
+}
+
+.top3-rank-tag {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.rank-gold .top3-rank-tag {
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.6);
+}
+
+.rank-silver .top3-rank-tag {
+  color: #e2e8f0;
+}
+
+.rank-bronze .top3-rank-tag {
+  color: #f59e0b;
+}
+
+/* Image */
+.top3-image-wrap {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+  background: #0f172a;
+}
+
+.top3-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.top3-card:hover .top3-image {
+  transform: scale(1.05);
+}
+
+.top3-score-bubble {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.score-val {
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.score-lbl {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  opacity: 0.9;
+  letter-spacing: 0.05em;
+}
+
+/* Body */
+.top3-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.top3-titles {
+  margin-bottom: 10px;
+}
+
+.top3-model-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.top3-version-name {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+/* Pricing */
+.top3-pricing {
+  margin-bottom: 12px;
+}
+
+.top3-price {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #38bdf8;
+}
+
+.top3-margin {
+  font-size: 0.76rem;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.margin-positive {
+  color: #34d399;
+}
+
+.margin-negative {
+  color: #fbbf24;
+}
+
+/* Facts */
+.top3-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.5);
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+  border-left: 3px solid #38bdf8;
+}
+
+.top3-fact-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #e2e8f0;
+  font-weight: 500;
+}
+
+.fact-icon {
+  color: #38bdf8;
+  flex-shrink: 0;
+}
+
+/* Details & breakdown */
+.top3-expand-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  margin-top: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  transition: color 0.2s ease;
+}
+
+.top3-expand-btn:hover {
+  color: #f8fafc;
+}
+
+.top3-details {
+  background: rgba(15, 23, 42, 0.7);
+  padding: 12px;
+  border-radius: 8px;
+  margin: 10px 0;
+  font-size: 0.75rem;
+}
+
+.top3-ingredients {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ingredient-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.ing-name {
+  color: #94a3b8;
+  font-size: 0.68rem;
+}
+
+.ing-val {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.criteria-header {
+  color: #94a3b8;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.criteria-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.crit-label {
+  width: 100px;
+  color: #cbd5e1;
+}
+
+.crit-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  margin: 0 8px;
+  overflow: hidden;
+}
+
+.crit-bar-fill {
+  height: 100%;
+  background: #38bdf8;
+  border-radius: 3px;
+}
+
+.crit-val {
+  color: #f8fafc;
+  font-weight: 600;
+  width: 40px;
+  text-align: right;
+}
+
+.criteria-na {
+  opacity: 0.7;
+}
+
+.crit-val-na {
+  color: #94a3b8;
+  font-style: italic;
+  font-size: 0.68rem;
+}
+
+/* Actions */
+.top3-actions {
+  margin-top: 14px;
+}
+
+.top3-view-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  padding: 9px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.top3-view-btn:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  transform: translateY(-1px);
+}

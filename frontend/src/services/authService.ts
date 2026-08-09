@@ -45,4 +45,12 @@ export const authService = {
     const { data } = await api.put<User>('/users/me', payload);
     return data;
   },
+
+  /**
+   * Passer au statut vendeur.
+   */
+  async becomeSeller(): Promise<User> {
+    const { data } = await api.post<User>('/users/me/become-seller');
+    return data;
+  },
 };

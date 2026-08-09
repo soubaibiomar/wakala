@@ -6,12 +6,14 @@ export type UserRole = 'buyer' | 'seller' | 'admin';
 
 export interface User {
   id: string;
-  name: string;
+  name?: string;
+  full_name?: string;
   email: string;
   phone?: string;
   role: UserRole;
   is_verified: boolean;
-  preferences: Record<string, unknown>;
+  is_active?: boolean;
+  preferences?: Record<string, unknown>;
   avatar_url?: string;
   created_at: string;
 }
@@ -19,7 +21,8 @@ export interface User {
 /** Version allégée pour l'imbrication dans véhicules/reviews */
 export interface UserBrief {
   id: string;
-  name: string;
+  name?: string;
+  full_name?: string;
   role: UserRole;
   is_verified: boolean;
 }
@@ -30,15 +33,16 @@ export interface LoginPayload {
 }
 
 export interface RegisterPayload {
-  name: string;
+  name?: string;
+  full_name?: string;
   email: string;
   password: string;
-  role: UserRole;
+  role?: UserRole;
   phone?: string;
 }
 
 export interface TokenResponse {
   access_token: string;
   token_type: string;
-  user: User;
+  user?: User;
 }

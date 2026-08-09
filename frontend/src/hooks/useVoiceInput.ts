@@ -1,56 +1,25 @@
-/**
- * hooks/useVoiceInput.ts — Hook réutilisable pour la saisie vocale
- * via la Web Speech API native du navigateur.
- *
- * Comportement :
- * - Vérifie la disponibilité au montage (`isSupported`)
- * - Expose un état clair : idle | listening | error
- * - Langue par défaut : fr-FR (meilleur support natif)
- * - Coupure automatique après silence (comportement natif)
- * - onresult injecte le texte via callback `onTranscript`
- * - onerror / onend remet l'état proprement
- *
- * Limitation connue :
- * - Firefox ne supporte pas la Web Speech API → isSupported = false
- * - Le darija / arabe marocain n'est pas supporté nativement →
- *   rester en fr-FR et documenter comme limitation
- */
-
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export type VoiceStatus = 'idle' | 'listening' | 'error';
+export type VoiceStatus = 'idle' | 'listening' | 'error' | 'processing';
 
 interface UseVoiceInputOptions {
-  /** Langue par défaut (ex: 'fr-FR'). */
   defaultLang?: string;
-  /** Callback appelé avec le texte transcrit final. */
   onTranscript: (text: string) => void;
-  /** Reconnaissance continue (true) ou one-shot (false, défaut). */
   continuous?: boolean;
 }
 
 interface UseVoiceInputReturn {
-  /** false si le navigateur ne supporte pas la Web Speech API */
   isSupported: boolean;
-  /** État courant de la reconnaissance vocale */
   status: VoiceStatus;
-  /** Texte en cours de transcription (résultats intermédiaires) */
   interimTranscript: string;
-  /** Message d'erreur lisible si status === 'error' */
   errorMessage: string | null;
-  /** Langue actuellement sélectionnée */
   lang: string;
-  /** Change la langue d'écoute */
   setLang: (lang: string) => void;
-  /** Démarre l'écoute */
   startListening: () => void;
-  /** Arrête l'écoute manuellement */
   stopListening: () => void;
-  /** Bascule écoute on/off */
   toggleListening: () => void;
 }
 
-// Détection de la Web Speech API (Chrome, Edge, Safari 14.1+)
 const SpeechRecognitionAPI =
   typeof window !== 'undefined'
     ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
@@ -61,33 +30,31 @@ export function useVoiceInput({
   onTranscript,
   continuous = false,
 }: UseVoiceInputOptions): UseVoiceInputReturn {
-  const [isSupported] = useState(() => !!SpeechRecognitionAPI);
   const [status, setStatus] = useState<VoiceStatus>('idle');
   const [interimTranscript, setInterimTranscript] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [lang, setLangState] = useState(defaultLang);
+  const [useFallback, setUseFallback] = useState(!SpeechRecognitionAPI);
 
   const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const onTranscriptRef = useRef(onTranscript);
 
-  // Garder la ref du callback à jour sans recréer l'instance
   useEffect(() => {
     onTranscriptRef.current = onTranscript;
   }, [onTranscript]);
 
-  // Si on change la langue pendant l'écoute, on relance
   const setLang = useCallback((newLang: string) => {
     setLangState(newLang);
-    if (recognitionRef.current && status === 'listening') {
+    if (recognitionRef.current && status === 'listening' && !useFallback) {
       recognitionRef.current.stop();
-      // Le redémarrage sera géré manuellement par l'utilisateur ou on pourrait l'automatiser
     }
-  }, [status]);
+  }, [status, useFallback]);
 
-  // Créer l'instance SpeechRecognition une seule fois, ou la recréer si la langue change ?
-  // La plupart des navigateurs acceptent le changement de .lang sur une instance existante
+  // --- NATIVE SPEECH API LOGIC ---
   useEffect(() => {
-    if (!SpeechRecognitionAPI) return;
+    if (!SpeechRecognitionAPI || useFallback) return;
 
     const recognition = new SpeechRecognitionAPI();
     recognition.continuous = continuous;
@@ -97,18 +64,14 @@ export function useVoiceInput({
     recognition.onresult = (event: any) => {
       let interim = '';
       let finalText = '';
-
       for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal) {
-          finalText += result[0].transcript;
+        if (event.results[i].isFinal) {
+          finalText += event.results[i][0].transcript;
         } else {
-          interim += result[0].transcript;
+          interim += event.results[i][0].transcript;
         }
       }
-
       setInterimTranscript(interim);
-
       if (finalText) {
         setInterimTranscript('');
         onTranscriptRef.current(finalText.trim());
@@ -116,37 +79,23 @@ export function useVoiceInput({
     };
 
     recognition.onerror = (event: any) => {
-      const code: string = event.error;
-
+      const code = event.error;
       if (code === 'no-speech' || code === 'aborted') {
         setStatus('idle');
-        setErrorMessage(null);
         return;
       }
-      
-      if (code === 'language-not-supported') {
-        if (lang !== 'fr-FR') {
-            setLangState('fr-FR');
-            setErrorMessage("Langue non supportée, passage au Français par défaut.");
-            setStatus('idle');
-            return;
-        }
+      // If native fails with network error, switch to fallback seamlessly
+      if (code === 'network') {
+        console.warn("Native Speech API network error. Switching to Whisper fallback.");
+        setUseFallback(true);
+        setStatus('idle');
+        return;
       }
-
-      const messages: Record<string, string> = {
-        'not-allowed': 'Accès au microphone refusé. Vérifiez les permissions.',
-        'audio-capture': 'Aucun microphone détecté.',
-        'network': 'Erreur réseau — connexion instable ou navigateur non supporté (privilégiez Chrome).',
-        'service-not-allowed': 'Service de reconnaissance vocale non disponible.',
-        'language-not-supported': 'La langue sélectionnée n\'est pas supportée par votre navigateur.'
-      };
-
       setStatus('error');
-      setErrorMessage(messages[code] || `Erreur de reconnaissance vocale (${code})`);
+      setErrorMessage(`Erreur micro: ${code}`);
     };
 
     recognition.onend = () => {
-      // Si on n'est pas en erreur, on remet idle
       setStatus((prev) => (prev === 'error' ? prev : 'idle'));
       setInterimTranscript('');
     };
@@ -154,43 +103,95 @@ export function useVoiceInput({
     recognitionRef.current = recognition;
 
     return () => {
-      try {
-        recognition.abort();
-      } catch {
-        // ignore
-      }
+      try { recognition.abort(); } catch {}
     };
-  }, [continuous]);
+  }, [continuous, useFallback]);
 
-  // Update language without recreating the entire recognition instance
   useEffect(() => {
-    if (recognitionRef.current) {
+    if (recognitionRef.current && !useFallback) {
       recognitionRef.current.lang = lang;
     }
-  }, [lang]);
+  }, [lang, useFallback]);
 
-  const startListening = useCallback(() => {
-    if (!recognitionRef.current) return;
+  // --- FALLBACK (WHISPER) LOGIC ---
+  const handleAudioUpload = async (audioBlob: Blob) => {
+    setStatus('processing');
+    setInterimTranscript('Analyse en cours...');
+    
+    try {
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.webm');
+      
+      const response = await fetch('http://localhost:8000/api/voice/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) throw new Error('Transcription failed');
+      const data = await response.json();
+      
+      if (data.text) {
+        onTranscriptRef.current(data.text);
+      }
+      setStatus('idle');
+      setInterimTranscript('');
+    } catch (err) {
+      console.error(err);
+      setStatus('error');
+      setErrorMessage('La transcription IA a échoué.');
+      setInterimTranscript('');
+    }
+  };
+
+  const startListening = useCallback(async () => {
     setErrorMessage(null);
     setInterimTranscript('');
-    try {
-      recognitionRef.current.start();
-      setStatus('listening');
-    } catch (err) {
-      console.warn('SpeechRecognition.start() error:', err);
+
+    if (useFallback) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        audioChunksRef.current = [];
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) audioChunksRef.current.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          stream.getTracks().forEach(track => track.stop());
+          handleAudioUpload(audioBlob);
+        };
+
+        mediaRecorderRef.current = mediaRecorder;
+        mediaRecorder.start();
+        setStatus('listening');
+      } catch (err) {
+        setStatus('error');
+        setErrorMessage('Accès au microphone refusé.');
+      }
+    } else {
+      if (!recognitionRef.current) return;
+      try {
+        recognitionRef.current.start();
+        setStatus('listening');
+      } catch (err) {
+        console.warn('SpeechRecognition.start() error:', err);
+      }
     }
-  }, []);
+  }, [useFallback]);
 
   const stopListening = useCallback(() => {
-    if (!recognitionRef.current) return;
-    try {
-      recognitionRef.current.stop();
-    } catch {
-      // ignore
+    if (useFallback) {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+    } else {
+      if (!recognitionRef.current) return;
+      try { recognitionRef.current.stop(); } catch {}
+      setStatus('idle');
     }
-    setStatus('idle');
-    setInterimTranscript('');
-  }, []);
+  }, [useFallback]);
 
   const toggleListening = useCallback(() => {
     if (status === 'listening') {
@@ -201,7 +202,7 @@ export function useVoiceInput({
   }, [status, startListening, stopListening]);
 
   return {
-    isSupported,
+    isSupported: true, // We now always support it via fallback!
     status,
     interimTranscript,
     errorMessage,

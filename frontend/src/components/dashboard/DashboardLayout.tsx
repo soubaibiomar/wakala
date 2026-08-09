@@ -3,13 +3,14 @@ import { Home, List, Heart, TrendingUp, Menu, LogOut, ChevronLeft, BookOpen, Mes
 import { useState } from 'react';
 import styles from './DashboardLayout.module.css';
 import { useAuth } from '../../context/AuthContext';
+import { authService } from '../../services/authService';
 import ChatbotWidget from '../chatbot-widget/ChatbotWidget';
 import Navbar from '../layout/Navbar';
 
 export default function DashboardLayout() {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
-  const { user, isAuthenticated, loading, logout } = useAuth();
+  const { user, isAuthenticated, loading, logout, updateUser } = useAuth();
 
   // ─── Route Guard ────────────────────────────────────────────
   // Pendant le chargement initial, ne rien montrer (évite le flash)
@@ -76,6 +77,48 @@ export default function DashboardLayout() {
               <span className={styles.navIcon}>👑</span>
               {isSidebarOpen && <span className={styles.navLabel}>Admin</span>}
             </Link>
+          )}
+
+          {user?.role === 'buyer' && isSidebarOpen && (
+            <div style={{
+              margin: '16px 12px 8px 12px',
+              padding: '12px',
+              background: 'linear-gradient(135deg, rgba(174, 140, 78, 0.15) 0%, rgba(26, 35, 50, 0.5) 100%)',
+              border: '1px solid rgba(174, 140, 78, 0.3)',
+              borderRadius: '10px',
+              textAlign: 'center',
+            }}>
+              <div style={{ fontSize: '0.84rem', fontWeight: 600, color: '#d4af37', marginBottom: '4px' }}>
+                Vendez votre voiture
+              </div>
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary, #8b949e)', margin: '0 0 10px 0', lineHeight: 1.3 }}>
+                Passez au statut vendeur en 1 clic
+              </p>
+              <button
+                onClick={async () => {
+                  try {
+                    const updatedUser = await authService.becomeSeller();
+                    updateUser(updatedUser);
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  background: 'linear-gradient(135deg, #ae8c4e 0%, #d4af37 100%)',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '7px 10px',
+                  borderRadius: '6px',
+                  fontSize: '0.78rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(174, 140, 78, 0.3)'
+                }}
+              >
+                ✨ Devenir Vendeur
+              </button>
+            </div>
           )}
         </nav>
 

@@ -2,6 +2,8 @@ import asyncio
 import json
 import uuid
 import sys
+import os
+import httpx
 from datetime import datetime, timezone
 from confluent_kafka import Consumer, KafkaError
 
@@ -12,6 +14,36 @@ from app.models.listing import Listing
 from app.core.config import settings
 
 KAFKA_BOOTSTRAP = settings.KAFKA_BOOTSTRAP_SERVERS
+
+UPLOAD_DIR = "uploads/scraped"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+async def download_image(url: str) -> str:
+    """Download an image and return its local relative URL. Return original if failed."""
+    if not url or not url.startswith("http"):
+        return url
+    
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(url)
+            if response.status_code == 200:
+                ext = url.split('.')[-1].split('?')[0][:4]
+                if ext not in ['jpg', 'jpeg', 'png', 'webp']:
+                    ext = 'jpg'
+                filename = f"{uuid.uuid4()}.{ext}"
+                filepath = os.path.join(UPLOAD_DIR, filename)
+                
+                def save_file():
+                    with open(filepath, 'wb') as f:
+                        f.write(response.content)
+                
+                await asyncio.to_thread(save_file)
+                
+                return f"http://localhost:8000/{UPLOAD_DIR}/{filename}"
+            return url
+    except Exception as e:
+        print(f"Failed to download image {url}: {e}")
+        return url
 
 async def consume_to_postgres():
     print(f"Connecting to Kafka at {KAFKA_BOOTSTRAP}...")
@@ -95,14 +127,17 @@ async def consume_to_postgres():
                 db.add(v)
                 
                 listing_id = uuid.uuid4()
-                images = data.get("images_urls") or ["https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=600"]
+                raw_images = data.get("images_urls") or ["https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=600"]
+                
+                # Download all images concurrently
+                local_images = await asyncio.gather(*[download_image(img_url) for img_url in raw_images])
                     
                 l = Listing(
                     id=listing_id,
                     vehicle_id=vehicle_id,
                     status="active",
                     published_at=datetime.now(timezone.utc),
-                    images_urls=images,
+                    images_urls=list(local_images),
                     created_at=datetime.now(timezone.utc),
                     updated_at=datetime.now(timezone.utc)
                 )

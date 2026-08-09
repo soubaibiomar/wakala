@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, StyleSheet, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { tokens } from '../styles/tokens';
 import { useAuth } from '../context/AuthContext';
 import { vehicleService } from '../services/vehicleService';
 
-// Types simulés basés sur ce qui serait renvoyé par les endpoints web
 interface DashboardMetrics {
   totalViews: number;
   averageTrustScore: number;
@@ -20,41 +19,59 @@ export default function SellerDashboardScreen() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchDashboardData = async () => {
+    try {
+      const data = await vehicleService.getMyListings();
+      const myListings = Array.isArray(data) ? data : [];
+      setListings(myListings);
+
+      // Compute metrics from actual data
+      let views = 0;
+      let active = 0;
+      let sold = 0;
+      let trustSum = 0;
+      let trustCount = 0;
+
+      myListings.forEach((item: any) => {
+        views += (item.views || 0);
+        if (item.status === 'active') active++;
+        if (item.status === 'sold') sold++;
+        
+        const fraud = item.fraud_score ?? 5;
+        const trust = Math.max(0, 100 - fraud);
+        trustSum += trust;
+        trustCount++;
+      });
+
+      setMetrics({
+        totalViews: views,
+        activeListingsCount: active,
+        soldListingsCount: sold,
+        averageTrustScore: trustCount > 0 ? Math.round(trustSum / trustCount) : 95,
+      });
+    } catch (error) {
+      console.warn("Could not fetch seller listings, using local summary:", error);
+      // Default fallback state if server has no listings yet
+      setMetrics({
+        totalViews: 0,
+        activeListingsCount: 0,
+        soldListingsCount: 0,
+        averageTrustScore: 95,
+      });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    // Simulation du fetch des endpoints utilisés par seller_dashboard.py
-    const fetchDashboardData = async () => {
-      try {
-        // En vrai : fetch('/api/users/me/metrics') ou similaire
-        // Ici on mock les métriques en l'absence de l'endpoint exact connu, 
-        // ou on assume que les endpoints existent et on les mock localement pour l'UI.
-        
-        // Mock data to represent what seller_dashboard.py gets
-        const mockMetrics = {
-          totalViews: 1432,
-          averageTrustScore: 94.5,
-          activeListingsCount: 3,
-          soldListingsCount: 12
-        };
-        
-        const mockListings = [
-          { id: '1', title: 'Renault Clio 4', price: 120000, status: 'active', views: 342, fraud_score: 5 },
-          { id: '2', title: 'Peugeot 3008', price: 250000, status: 'active', views: 89, fraud_score: 12 },
-          { id: '3', title: 'Dacia Duster', price: 150000, status: 'sold', views: 1001, fraud_score: 2 },
-        ];
+    fetchDashboardData();
+  }, []);
 
-        // Simulate network delay
-        await new Promise(r => setTimeout(r, 800));
-
-        setMetrics(mockMetrics);
-        setListings(mockListings);
-      } catch (error) {
-        console.error("Erreur chargement dashboard", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
     fetchDashboardData();
   }, []);
 
@@ -66,32 +83,37 @@ export default function SellerDashboardScreen() {
     );
   }
 
+  const displayName = user?.full_name || user?.name || 'Vendeur';
+
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={tokens.colors.accentGold} />}
+    >
       <View style={styles.header}>
-        <Text style={styles.title}>Tableau de bord</Text>
-        <Text style={styles.subtitle}>Bonjour, {user?.name}</Text>
+        <Text style={styles.title}>Tableau de bord Vendeur</Text>
+        <Text style={styles.subtitle}>Bonjour, {displayName}</Text>
       </View>
 
       {/* ─── METRIQUES ─── */}
       <View style={styles.metricsContainer}>
         <View style={styles.metricCard}>
-          <Text style={styles.metricValue}>{metrics?.activeListingsCount}</Text>
+          <Text style={styles.metricValue}>{metrics?.activeListingsCount ?? 0}</Text>
           <Text style={styles.metricLabel}>Annonces Actives</Text>
         </View>
         <View style={styles.metricCard}>
-          <Text style={styles.metricValue}>{metrics?.soldListingsCount}</Text>
+          <Text style={styles.metricValue}>{metrics?.soldListingsCount ?? 0}</Text>
           <Text style={styles.metricLabel}>Véhicules Vendus</Text>
         </View>
         <View style={styles.metricCard}>
-          <Text style={styles.metricValue}>{metrics?.totalViews}</Text>
+          <Text style={styles.metricValue}>{metrics?.totalViews ?? 0}</Text>
           <Text style={styles.metricLabel}>Vues Totales</Text>
         </View>
         <View style={styles.metricCard}>
           <Text style={[styles.metricValue, { color: tokens.colors.accentGold }]}>
-            {metrics?.averageTrustScore}%
+            {metrics?.averageTrustScore ?? 95}%
           </Text>
-          <Text style={styles.metricLabel}>Score de Confiance</Text>
+          <Text style={styles.metricLabel}>Score de Confiance IA</Text>
         </View>
       </View>
 
@@ -99,38 +121,58 @@ export default function SellerDashboardScreen() {
       <View style={styles.actionContainer}>
         <TouchableOpacity 
           style={styles.primaryButton}
-          onPress={() => navigation.navigate('Create')} // Navigue vers le tab CreateListingScreen
+          onPress={() => navigation.navigate('MainTabs', { screen: 'Create' })}
         >
-          <Text style={styles.primaryButtonText}>+ Créer une annonce</Text>
+          <Text style={styles.primaryButtonText}>✨ + Créer une annonce</Text>
         </TouchableOpacity>
       </View>
 
       {/* ─── LISTE DES ANNONCES ─── */}
       <View style={styles.listContainer}>
-        <Text style={styles.sectionTitle}>Mes Annonces Récentes</Text>
+        <Text style={styles.sectionTitle}>Mes Annonces ({listings.length})</Text>
         
-        {listings.map(listing => (
-          <View key={listing.id} style={styles.listingCard}>
-            <View style={styles.listingInfo}>
-              <Text style={styles.listingTitle}>{listing.title}</Text>
-              <Text style={styles.listingPrice}>{listing.price.toLocaleString('fr-FR')} MAD</Text>
-              <Text style={styles.listingViews}>👁 {listing.views} vues</Text>
-            </View>
-            <View style={styles.listingStatusContainer}>
-              <View style={[
-                styles.statusBadge, 
-                listing.status === 'active' ? styles.statusActive : styles.statusSold
-              ]}>
-                <Text style={styles.statusText}>
-                  {listing.status === 'active' ? 'En ligne' : 'Vendu'}
-                </Text>
-              </View>
-              {listing.fraud_score > 0 && (
-                <Text style={styles.fraudText}>Risque: {listing.fraud_score}%</Text>
-              )}
-            </View>
+        {listings.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>Vous n'avez pas encore d'annonce en ligne</Text>
+            <Text style={styles.emptySubtitle}>
+              Prenez 3 photos de votre véhicule pour obtenir une estimation IA et publier en quelques secondes.
+            </Text>
           </View>
-        ))}
+        ) : (
+          listings.map((listing: any) => (
+            <TouchableOpacity 
+              key={listing.id} 
+              style={styles.listingCard}
+              onPress={() => {
+                const vId = listing.vehicle_id || listing.vehicle?.id;
+                if (vId) navigation.navigate('VehicleDetail', { vehicleId: vId });
+              }}
+            >
+              <View style={styles.listingInfo}>
+                <Text style={styles.listingTitle}>
+                  {listing.title || `${listing.vehicle?.brand || ''} ${listing.vehicle?.model || ''}`}
+                </Text>
+                <Text style={styles.listingPrice}>
+                  {listing.price ? `${Number(listing.price).toLocaleString('fr-FR')} MAD` : 'Prix sur demande'}
+                </Text>
+                <Text style={styles.listingViews}>👁 {listing.views || 0} vues</Text>
+              </View>
+              <View style={styles.listingStatusContainer}>
+                <View style={[
+                  styles.statusBadge, 
+                  listing.status === 'active' ? styles.statusActive : styles.statusSold
+                ]}>
+                  <Text style={styles.statusText}>
+                    {listing.status === 'active' ? 'En ligne' : 'Vendu'}
+                  </Text>
+                </View>
+                {listing.fraud_score !== undefined && listing.fraud_score > 0 && (
+                  <Text style={styles.fraudText}>Risque: {Math.round(listing.fraud_score)}%</Text>
+                )}
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
       </View>
     </ScrollView>
   );
@@ -215,6 +257,28 @@ const styles = StyleSheet.create({
     color: tokens.colors.textPrimary,
     marginBottom: tokens.spacing.md,
   },
+  emptyCard: {
+    backgroundColor: tokens.colors.bgPrimary,
+    padding: tokens.spacing.xl,
+    borderRadius: tokens.radii.lg,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: tokens.borders.subtle,
+  },
+  emptyTitle: {
+    fontFamily: tokens.typography.sansBold,
+    fontSize: 15,
+    color: tokens.colors.textPrimary,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontFamily: tokens.typography.sans,
+    fontSize: 13,
+    color: tokens.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
   listingCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -255,7 +319,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   statusActive: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)', // Green
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
   },
   statusSold: {
     backgroundColor: tokens.colors.bgSecondary,

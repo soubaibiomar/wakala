@@ -3,15 +3,14 @@
  *
  * Sections :
  *   1. Hero (composant existant, connecté à la recherche réelle)
- *   2. Statistiques plateforme
- *   3. Véhicules populaires (vehicleService.getVehicles sort=recent)
- *   4. Points forts IA (6 modules)
+ *   2. Véhicules populaires (vehicleService.getVehicles sort=recent)
+ *   3. Points forts IA (6 modules)
  */
 
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, Cpu, ShieldCheck, MessageSquare, LineChart, Network, BarChart3, Target, Zap, Star } from 'lucide-react';
+import { Search, Cpu, ShieldCheck, MessageSquare, LineChart, Network } from 'lucide-react';
 import { vehicleService } from '../services/vehicleService';
 import type { Vehicle } from '../types/vehicle';
 import VehicleCard from '../components/vehicle-card/VehicleCard';
@@ -21,41 +20,7 @@ import HeroCar from '../components/hero/HeroCar';
 import HeroIntro from '../components/hero/HeroIntro';
 import './Home.css';
 
-// ═══════════════════════════════════════════════════════════════
-// Stats Section
-// ═══════════════════════════════════════════════════════════════
 
-function StatsSection() {
-  const stats = [
-    { value: '15 000+', label: 'Véhicules analysés', icon: <BarChart3 size={24} /> },
-    { value: '98.5%', label: 'Précision IA', icon: <Target size={24} /> },
-    { value: '< 2s', label: 'Temps de recommandation', icon: <Zap size={24} /> },
-    { value: '4.8/5', label: 'Satisfaction utilisateur', icon: <Star size={24} /> },
-  ];
-
-  return (
-    <section className="home-stats">
-      <div className="home-stats__inner">
-        {stats.map((s, i) => (
-          <motion.div
-            key={s.label}
-            className="home-stats__item"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: i * 0.1 }}
-          >
-            <span className="home-stats__icon">{s.icon}</span>
-            <div className="home-stats__data">
-              <span className="home-stats__value">{s.value}</span>
-              <span className="home-stats__label">{s.label}</span>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 // ═══════════════════════════════════════════════════════════════
 // Featured Vehicles — appels API réels
@@ -174,12 +139,42 @@ function CarSection({ id, tag, title, subtitle, fetchParams, emptyMessage }: Car
 
 function FeaturesSection() {
   const features = [
-    { icon: <Search size={24} />, title: 'Recherche intelligente', desc: 'Décrivez en langage naturel le véhicule de vos rêves. Notre NLP comprend votre besoin.' },
-    { icon: <Cpu size={24} />, title: 'Recommandation IA hybride', desc: 'Algorithmes content-based + collaborative filtering pour des suggestions ultra-pertinentes.' },
-    { icon: <ShieldCheck size={24} />, title: 'Score de confiance', desc: 'Chaque annonce est analysée par 5 modules IA : vision, fraude, prix, vendeur, qualité.' },
-    { icon: <MessageSquare size={24} />, title: 'Chatbot RAG', desc: 'Un assistant qui connaît tout le catalogue. Posez vos questions en français.' },
-    { icon: <LineChart size={24} />, title: 'Estimation de prix', desc: 'XGBoost prédit le juste prix avec intervalle de confiance. Plus de mauvaises surprises.' },
-    { icon: <Network size={24} />, title: 'Graphe de similarité', desc: 'Neo4j + PageRank identifient les véhicules similaires et les tendances marché.' },
+    {
+      icon: <Search size={22} />,
+      title: 'Trouvez en un mot',
+      desc: 'Dites simplement ce que vous cherchez — « SUV familial diesel » — et on s\'occupe du reste.',
+      accent: 'var(--color-accent-gold)',
+    },
+    {
+      icon: <Cpu size={22} />,
+      title: 'Des suggestions sur mesure',
+      desc: 'Plus vous cherchez, mieux on vous connaît. Nos recommandations s\'adaptent à vos goûts et votre budget.',
+      accent: '#6366f1',
+    },
+    {
+      icon: <ShieldCheck size={22} />,
+      title: 'Annonces vérifiées',
+      desc: 'Chaque annonce est passée au crible : photos, prix, historique du vendeur. Fini les mauvaises surprises.',
+      accent: '#10b981',
+    },
+    {
+      icon: <MessageSquare size={22} />,
+      title: 'Un expert à vos côtés',
+      desc: 'Notre assistant connaît tout le catalogue. Posez-lui vos questions, il vous guide comme un ami.',
+      accent: '#f59e0b',
+    },
+    {
+      icon: <LineChart size={22} />,
+      title: 'Le juste prix, garanti',
+      desc: 'Notre IA analyse le marché en temps réel pour vous dire si le prix affiché est bon — ou pas.',
+      accent: '#ec4899',
+    },
+    {
+      icon: <Network size={22} />,
+      title: 'Comparez facilement',
+      desc: 'On identifie automatiquement les voitures similaires pour que vous puissiez comparer en un coup d\'œil.',
+      accent: '#8b5cf6',
+    },
   ];
 
   return (
@@ -191,12 +186,12 @@ function FeaturesSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <span className="home-features__tag">Technologie</span>
+          <span className="home-features__tag">Pourquoi nous choisir</span>
           <h2 className="home-features__title">
-            Pourquoi <span className="text-gradient">Wakala</span> ?
+            Acheter une voiture, <span className="text-gradient">simplifié</span>.
           </h2>
           <p className="home-features__subtitle">
-            6 modules d'intelligence artificielle au service de votre recherche
+            Tout ce qu'il faut pour trouver la bonne voiture, au bon prix, en toute confiance.
           </p>
         </motion.div>
 
@@ -209,6 +204,7 @@ function FeaturesSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.08 }}
+              style={{ '--feature-accent': f.accent } as React.CSSProperties}
             >
               <div className="home-features__card-icon">{f.icon}</div>
               <h3 className="home-features__card-title">{f.title}</h3>
@@ -247,7 +243,7 @@ function BrandsSection() {
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.4, delay: i * 0.05 }}
             >
-              <Link to={`/marque/${encodeURIComponent(brandObj.name)}?tab=neuf`} className="home-brands__card">
+              <Link to={`/marque/${encodeURIComponent(brandObj.name)}`} className="home-brands__card">
                 <div className="home-brands__card-content">
                   <img src={brandObj.logo} alt={brandObj.name} className="home-brands__card-logo" />
                   <span className="home-brands__card-name">{brandObj.name}</span>
@@ -280,7 +276,7 @@ export default function Home() {
       {introDone && (
         <>
           <HeroCar />
-          <StatsSection />
+
           <BrandsSection />
           <CarSection
             id="used-vehicles"

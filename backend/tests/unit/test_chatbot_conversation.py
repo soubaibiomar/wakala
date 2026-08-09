@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.rag.chatbot_chain import ChatbotChain, NO_MATCH_REPLY
+from app.rag.chatbot_chain import ChatbotChain, _get_no_match_reply
 from app.rag.conversation_memory import conversation_memory
 
 
@@ -56,6 +56,6 @@ async def test_empty_retrieval_never_calls_the_llm_or_invents_a_vehicle():
          patch.object(chain, "_get_llm") as get_llm:
         response = await chain.answer("Montre-moi une voiture volante", "conversation-empty")
 
-    assert response.reply == NO_MATCH_REPLY
+    assert response.reply == _get_no_match_reply("fr")
     assert response.sources == []
     get_llm.assert_not_called()

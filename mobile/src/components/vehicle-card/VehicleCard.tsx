@@ -4,13 +4,19 @@ import { useNavigation } from '@react-navigation/native';
 import { Vehicle } from '@vente-auto/shared-types';
 import { tokens } from '../../styles/tokens';
 import { Skeleton } from '../common/Skeleton';
+import { MatchScoreBadge } from './MatchScoreBadge';
 
 interface VehicleCardProps {
   vehicle: Vehicle;
   style?: ViewStyle;
+  matchScore?: number;
+  keyFacts?: string[];
+  budgetMargin?: number | null;
+  bestVersionName?: string | null;
+  isGrouped?: boolean;
 }
 
-export function VehicleCard({ vehicle, style }: VehicleCardProps) {
+export function VehicleCard({ vehicle, style, matchScore, keyFacts, budgetMargin, bestVersionName, isGrouped }: VehicleCardProps) {
   const navigation = useNavigation<any>();
   const imageUri = vehicle.images?.[0]?.file_path || 'https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=600';
 
@@ -32,13 +38,28 @@ export function VehicleCard({ vehicle, style }: VehicleCardProps) {
             </Text>
           </View>
         </View>
+        
+        {/* Badge Match IA en bas de l'image */}
+        {matchScore !== undefined && (
+          <View style={styles.matchScoreWrapper}>
+            <MatchScoreBadge score={matchScore} />
+          </View>
+        )}
       </View>
       
       <View style={styles.cardContent}>
         <Text style={styles.cardTitle} numberOfLines={1}>{vehicle.brand} {vehicle.model}</Text>
+        {bestVersionName && (
+          <Text style={styles.versionName} numberOfLines={1}>{bestVersionName}</Text>
+        )}
         <Text style={styles.cardPrice}>
           {vehicle.price ? `${vehicle.price.toLocaleString('fr-FR')} MAD` : 'Prix sur demande'}
         </Text>
+        {budgetMargin !== undefined && budgetMargin !== null && (
+          <Text style={styles.budgetMargin}>
+            {budgetMargin > 0 ? `+${budgetMargin.toLocaleString('fr-FR')} MAD` : `${budgetMargin.toLocaleString('fr-FR')} MAD`}
+          </Text>
+        )}
         
         <View style={styles.cardSpecs}>
           <Text style={styles.specText}>{vehicle.year}</Text>
@@ -47,6 +68,18 @@ export function VehicleCard({ vehicle, style }: VehicleCardProps) {
           <Text style={styles.specDot}>•</Text>
           <Text style={styles.specText}>{vehicle.mileage ? `${vehicle.mileage} km` : 'N/A'}</Text>
         </View>
+
+        {keyFacts && keyFacts.length > 0 && (
+          <View style={styles.keyFactsContainer}>
+            {keyFacts.slice(0, 2).map((fact, index) => (
+              <View key={index} style={styles.keyFactRow}>
+                <Text style={styles.keyFactBullet}>•</Text>
+                <Text style={styles.keyFactText} numberOfLines={1}>{fact}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
         <Text style={styles.cardCity}>{vehicle.city}</Text>
       </View>
     </TouchableOpacity>
@@ -91,6 +124,11 @@ const styles = StyleSheet.create({
     left: 12,
     flexDirection: 'row',
   },
+  matchScoreWrapper: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+  },
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -124,16 +162,28 @@ const styles = StyleSheet.create({
     color: tokens.colors.textPrimary,
     marginBottom: 4,
   },
+  versionName: {
+    fontFamily: tokens.typography.sans,
+    fontSize: 14,
+    color: tokens.colors.textSecondary,
+    marginBottom: 4,
+  },
   cardPrice: {
     fontFamily: tokens.typography.sansBold,
     fontSize: 16,
     color: tokens.colors.accentGold,
+    marginBottom: 2,
+  },
+  budgetMargin: {
+    fontFamily: tokens.typography.sansMedium,
+    fontSize: 12,
+    color: tokens.colors.textMuted,
     marginBottom: 8,
   },
   cardSpecs: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   specText: {
     fontFamily: tokens.typography.sans,
@@ -143,6 +193,31 @@ const styles = StyleSheet.create({
   specDot: {
     marginHorizontal: 6,
     color: tokens.colors.textMuted,
+  },
+  keyFactsContainer: {
+    marginTop: 4,
+    marginBottom: 10,
+    backgroundColor: tokens.colors.bgSecondary,
+    padding: 8,
+    borderRadius: tokens.radii.md,
+  },
+  keyFactRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 2,
+  },
+  keyFactBullet: {
+    color: tokens.colors.accentGold,
+    marginRight: 6,
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  keyFactText: {
+    fontFamily: tokens.typography.sans,
+    fontSize: 12,
+    color: tokens.colors.textPrimary,
+    flex: 1,
+    lineHeight: 18,
   },
   cardCity: {
     fontFamily: tokens.typography.sansMedium,

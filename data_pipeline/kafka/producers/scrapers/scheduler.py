@@ -25,6 +25,7 @@ from .normalizer import ScraperNormalizer
 from .kafka_publisher import KafkaPublisher
 from .schema_validator import SchemaValidator
 from .health_monitor import HealthMonitor
+from .resilience_loop import ResilienceLoop
 
 logging.basicConfig(
     level=logging.INFO,
@@ -37,6 +38,13 @@ def run_single_scraper(scraper, dry_run: bool = True):
     Executes the scraping pipeline for a single isolated source.
     """
     logger.info(f"--- Starting isolated scraping job for {scraper.source_name} ---")
+    
+    # 1. DETECT
+    res_loop = ResilienceLoop()
+    normal_interval = get_interval_for_source(scraper.source_name)
+    if not res_loop.should_run(scraper.source_name, normal_interval):
+        return 0
+
     normalizer = ScraperNormalizer()
     publisher = KafkaPublisher() if not dry_run else None
     monitor = HealthMonitor(scraper.source_name)
@@ -85,7 +93,26 @@ def run_single_scraper(scraper, dry_run: bool = True):
     except Exception as e:
         logger.error(f"Isolated Error executing scraper {scraper.source_name}: {e}")
     finally:
+        # 3. EVALUATE
+        failed_fields = []
         if not dry_run:
+            # We determine failed fields if the success rate of a field is 0
+            if monitor.total_attempted > 0:
+                for field, count in monitor.field_successes.items():
+                    if count == 0:
+                        failed_fields.append(field)
+            
+            http_status = getattr(scraper, 'last_http_status', None)
+            html_snippet = getattr(scraper, 'last_html', None)
+            
+            res_loop.evaluate_scrape(
+                source_name=scraper.source_name,
+                raw_listings=valid_listings,
+                http_status=http_status,
+                html_snippet=html_snippet,
+                failed_fields=failed_fields
+            )
+            
             monitor.finalize_run()
             if publisher:
                 publisher.close()

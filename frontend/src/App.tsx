@@ -27,6 +27,12 @@ import MaintenanceBook from './pages/Dashboard/MaintenanceBook';
 import CustomsPage from './pages/CustomsPage';
 import TransactionPage from './pages/TransactionPage';
 import ChatbotPage from './pages/ChatbotPage';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
+import LegalPage from './pages/LegalPage';
+import HowItWorksPage from './pages/HowItWorksPage';
+import TechnologyPage from './pages/TechnologyPage';
+import TrustScorePage from './pages/TrustScorePage';
 import ChatbotWidget from './components/chatbot-widget/ChatbotWidget';
 import CompareDrawer from './components/compare/CompareDrawer';
 import DashboardLayout from './components/dashboard/DashboardLayout';
@@ -67,23 +73,23 @@ function Footer() {
             <li><Link to="/catalogue">Catalogue</Link></li>
             <li><Link to="/dedouanement">Calculateur Douane</Link></li>
             <li><Link to="/register">Vendre un véhicule</Link></li>
-            <li><a href="#">Comment ça marche</a></li>
+            <li><Link to="/comment-ca-marche">Comment ça marche</Link></li>
           </ul>
         </div>
         <div>
           <div className="footer__title">Technologie</div>
           <ul className="footer__list">
-            <li><a href="#">IA &amp; Big Data</a></li>
-            <li><a href="#">Score de confiance</a></li>
+            <li><Link to="/technologie">IA &amp; Big Data</Link></li>
+            <li><Link to="/score-de-confiance">Score de confiance</Link></li>
             <li><a href="http://localhost:8000/docs" target="_blank" rel="noreferrer">API Docs</a></li>
           </ul>
         </div>
         <div>
           <div className="footer__title">Entreprise</div>
           <ul className="footer__list">
-            <li><a href="#">À propos</a></li>
-            <li><a href="#">Contact</a></li>
-            <li><a href="#">Mentions légales</a></li>
+            <li><Link to="/a-propos">À propos</Link></li>
+            <li><Link to="/contact">Contact</Link></li>
+            <li><Link to="/mentions-legales">Mentions légales</Link></li>
           </ul>
         </div>
       </div>
@@ -129,6 +135,12 @@ function AppRoutes() {
         <Route path="/register" element={<AuthPage />} />
         <Route path="/dedouanement" element={<CustomsPage />} />
         <Route path="/transaction/:id" element={<TransactionPage />} />
+        <Route path="/a-propos" element={<AboutPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/mentions-legales" element={<LegalPage />} />
+        <Route path="/comment-ca-marche" element={<HowItWorksPage />} />
+        <Route path="/technologie" element={<TechnologyPage />} />
+        <Route path="/score-de-confiance" element={<TrustScorePage />} />
         {/* L'ancien admin, en attendant d'être supprimé ou refactoré */}
         <Route path="/admin" element={<AdminDashboard />} />
       </Route>

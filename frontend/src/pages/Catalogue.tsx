@@ -4,7 +4,7 @@ import { vehicleService } from '../services/vehicleService';
 import type { Vehicle, VehicleFilters, FuelType, BodyType } from '../types/vehicle';
 import { FUEL_LABELS, BODY_LABELS } from '../types/vehicle';
 import VehicleCard from '../components/vehicle-card/VehicleCard';
-import type { RecommendationResponse } from '../services/recommendationService';
+import { recommendationService, type RecommendationResponse } from '../services/recommendationService';
 import fr from '../i18n/fr';
 import './Catalogue.css';
 
@@ -18,13 +18,17 @@ export default function Catalogue() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
   const initialRecommendations = (location.state as { recommendations?: RecommendationResponse } | null)?.recommendations;
   
   // Keep local state for recommendations so we can clear them when filters change
   const [activeRecommendations, setActiveRecommendations] = useState<RecommendationResponse | null>(initialRecommendations || null);
   
+  const recMap = Object.fromEntries(
+    (activeRecommendations?.items ?? []).map((item) => [item.vehicle_id, item]),
+  );
+
   const matchScores = Object.fromEntries(
     (activeRecommendations?.items ?? []).map((item) => [item.vehicle_id, item.match_score]),
   );
@@ -41,8 +45,11 @@ export default function Catalogue() {
   const [savedSearch, setSavedSearch] = useState(false);
   const [activeModel, setActiveModel] = useState('');
 
+  const [lastQuery, setLastQuery] = useState<string | null>(null);
+
   // Initialize from URL params
   useEffect(() => {
+    const q = searchParams.get('q');
     const fuel = searchParams.get('fuel_type') as FuelType | '';
     const body = searchParams.get('body_type') as BodyType | '';
     const isNew = searchParams.get('is_new');
@@ -54,7 +61,33 @@ export default function Catalogue() {
     if (isNew === 'true') setActiveCondition('neuf');
     if (brand) setSearchTerm(brand);
     if (model) setActiveModel(model);
-  }, [searchParams]);
+
+    if (q && q !== lastQuery) {
+      setLastQuery(q);
+      setLoading(true);
+      recommendationService.search({ query: q })
+        .then((res) => {
+          if (res && res.items && res.items.length > 0) {
+            setActiveRecommendations(res);
+          } else {
+            setActiveRecommendations(null);
+            if (q.trim().split(/\s+/).length <= 2) {
+              setSearchTerm(q);
+            }
+          }
+        })
+        .catch((err) => {
+          console.error("Erreur récupération recommandations IA:", err);
+          setActiveRecommendations(null);
+          if (q.trim().split(/\s+/).length <= 2) {
+            setSearchTerm(q);
+          }
+        });
+    } else if (!q && lastQuery) {
+      setLastQuery(null);
+      setActiveRecommendations(null);
+    }
+  }, [searchParams, lastQuery]);
 
   const handleFilterChange = (setter: any, value: any) => {
     setter(value);
@@ -92,13 +125,16 @@ export default function Catalogue() {
 
       try {
         if (activeRecommendations) {
-          // If we have recommendations, just show them (no pagination implemented yet for NLP)
+          // If we have recommendations, load them safely
           const recommendedVehicles = await Promise.all(
-            activeRecommendations.items.map((item) => vehicleService.getVehicleById(item.vehicle_id)),
+            activeRecommendations.items.map((item) =>
+              vehicleService.getVehicleById(item.vehicle_id).catch(() => null)
+            ),
           );
-          setVehicles(recommendedVehicles.filter(v => v !== null) as Vehicle[]);
-          setTotal(activeRecommendations.total);
-          setPages(Math.max(1, Math.ceil(activeRecommendations.total / PAGE_SIZE)));
+          const validVehicles = recommendedVehicles.filter((v): v is Vehicle => v !== null);
+          setVehicles(validVehicles);
+          setTotal(activeRecommendations.total || validVehicles.length);
+          setPages(Math.max(1, Math.ceil((activeRecommendations.total || validVehicles.length) / PAGE_SIZE)));
           return;
         }
         
@@ -138,6 +174,8 @@ export default function Catalogue() {
     setActiveModel('');
     setPage(1);
     setActiveRecommendations(null);
+    setLastQuery(null);
+    setSearchParams({});
   };
 
   const getPaginationRange = (): (number | '...')[] => {
@@ -316,16 +354,36 @@ export default function Catalogue() {
           {/* Active filters summary */}
           <div className="catalogue__main-header">
             <h1 className="catalogue__main-title">
-              {activeModel && searchTerm 
-                ? `${searchTerm} ${activeModel}`
-                : activeCondition === 'neuf' 
-                  ? 'Voitures neuves au Maroc' 
-                  : activeCondition === 'occasion' 
-                    ? "Voitures d'occasion au Maroc" 
-                    : 'Voitures au Maroc'}
+              {activeRecommendations 
+                ? 'Véhicules Recommandés par l\'IA'
+                : activeModel && searchTerm 
+                  ? `${searchTerm} ${activeModel}`
+                  : activeCondition === 'neuf' 
+                    ? 'Voitures neuves au Maroc' 
+                    : activeCondition === 'occasion' 
+                      ? "Voitures d'occasion au Maroc" 
+                      : 'Voitures au Maroc'}
             </h1>
             <span className="catalogue__main-count">1 - {vehicles.length} sur {total} annonces</span>
           </div>
+
+          {activeRecommendations && (
+            <div className="catalogue__ai-banner">
+              <div className="catalogue__ai-banner-content">
+                <span className="catalogue__ai-banner-badge">✨ Match IA Wakala</span>
+                <p className="catalogue__ai-banner-text">
+                  Résultats optimisés et classés par pertinence pour : <strong>"{searchParams.get('q') || 'votre recherche'}"</strong>
+                </p>
+              </div>
+              <button 
+                className="catalogue__ai-banner-reset" 
+                onClick={handleClearFilters}
+                title="Revenir à la vue générale"
+              >
+                Réinitialiser la recherche IA ✕
+              </button>
+            </div>
+          )}
 
           {error ? (
             <div className="catalogue__error">
@@ -361,6 +419,9 @@ export default function Catalogue() {
                       animationDelay={0} 
                       matchScore={matchScores[v.id]} 
                       isGrouped={activeCondition === 'neuf' && !activeModel}
+                      keyFacts={recMap[v.id]?.key_facts}
+                      budgetMargin={recMap[v.id]?.budget_margin}
+                      bestVersionName={recMap[v.id]?.best_version_name}
                     />
                   </div>
                 ))}

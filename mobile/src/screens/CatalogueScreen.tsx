@@ -3,6 +3,7 @@ import { View, StyleSheet, Text, FlatList, TouchableOpacity, RefreshControl, Scr
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 import { vehicleService } from '../services/vehicleService';
+import { recommendationService, RecommendationResponse, RecommendationResult } from '../services/recommendationService';
 import { tokens } from '../styles/tokens';
 import { Vehicle } from '@vente-auto/shared-types';
 import { VehicleCard, VehicleCardSkeleton } from '../components/vehicle-card/VehicleCard';
@@ -29,24 +30,62 @@ export default function CatalogueScreen() {
 
   const [isOffline, setIsOffline] = useState(false);
 
+  const [activeRecommendations, setActiveRecommendations] = useState<RecommendationResponse | null>(null);
+  const [recMap, setRecMap] = useState<Record<string, RecommendationResult>>({});
+  const [matchScores, setMatchScores] = useState<Record<string, number>>({});
+
   const fetchVehicles = async (pageToFetch: number = 1, isRefresh: boolean = false) => {
     try {
-      const params: any = { page: pageToFetch, page_size: 10 };
-      if (initialQuery) {
-        params.q = initialQuery;
+      const isComplexQuery = initialQuery && initialQuery.split(' ').length > 2;
+      let newVehicles: Vehicle[] = [];
+
+      if (isComplexQuery && activeCategory === 'Tous') {
+        const recData = await recommendationService.search({ query: initialQuery, page: pageToFetch, page_size: 10 });
+        if (pageToFetch === 1) setActiveRecommendations(recData);
+
+        const newRecMap: Record<string, RecommendationResult> = {};
+        const newScores: Record<string, number> = {};
+        recData.items.forEach(it => {
+          newRecMap[it.vehicle_id] = it;
+          newScores[it.vehicle_id] = it.match_score;
+        });
+
+        if (pageToFetch === 1) {
+          setRecMap(newRecMap);
+          setMatchScores(newScores);
+        } else {
+          setRecMap(prev => ({ ...prev, ...newRecMap }));
+          setMatchScores(prev => ({ ...prev, ...newScores }));
+        }
+
+        const vPromises = recData.items.map(it => 
+          vehicleService.getVehicle(it.vehicle_id).catch(() => null)
+        );
+        const resolved = await Promise.all(vPromises);
+        newVehicles = resolved.filter(v => v !== null) as Vehicle[];
+        setHasMore(recData.items.length === 10);
+      } else {
+        const params: any = { page: pageToFetch, page_size: 10 };
+        if (initialQuery) {
+          params.q = initialQuery;
+        }
+      
+        if (activeCategory === 'Neuf') params.mileage_max = 0;
+        if (activeCategory === 'Hybride') params.fuel_type = 'hybride';
+        if (activeCategory === 'Électrique') params.fuel_type = 'electrique';
+        if (activeCategory === 'SUV') params.body_type = 'suv';
+
+        const data = await vehicleService.getVehicles(params);
+        newVehicles = Array.isArray(data) ? data : (data as any).items || [];
+        setHasMore(newVehicles.length === 10 && !isOffline);
+        
+        if (pageToFetch === 1) {
+          setActiveRecommendations(null);
+        }
       }
       
-      if (activeCategory === 'Neuf') params.mileage_max = 0;
-      if (activeCategory === 'Hybride') params.fuel_type = 'hybride';
-      if (activeCategory === 'Électrique') params.fuel_type = 'electrique';
-      if (activeCategory === 'SUV') params.body_type = 'suv';
-
-      const data = await vehicleService.getVehicles(params);
-      
-      const newVehicles = Array.isArray(data) ? data : (data as any).items || [];
-      
       // Si la première item a _isOffline, on sait qu'on est hors-ligne
-      if (newVehicles.length > 0 && newVehicles[0]._isOffline) {
+      if (newVehicles.length > 0 && (newVehicles[0] as any)._isOffline) {
         setIsOffline(true);
       } else {
         setIsOffline(false);
@@ -66,8 +105,6 @@ export default function CatalogueScreen() {
           return [...prev, ...uniqueNew];
         });
       }
-      
-      setHasMore(newVehicles.length === 10 && !isOffline); // Pas de load more si hors-ligne
     } catch (error: any) {
       console.error("Error fetching catalogue:", error);
       
@@ -166,6 +203,12 @@ export default function CatalogueScreen() {
         </View>
       </View>
       
+      {activeRecommendations && (
+        <View style={styles.aiBanner}>
+          <Text style={styles.aiBannerText}>✨ Recommandations IA ({activeRecommendations.items.length})</Text>
+        </View>
+      )}
+
       {renderFilterPills()}
 
       {loading ? (
@@ -178,7 +221,18 @@ export default function CatalogueScreen() {
         <FlatList
           data={vehicles}
           keyExtractor={(item, index) => `${item.id}-${index}`}
-          renderItem={({ item }) => <VehicleCard vehicle={item} />}
+          renderItem={({ item }) => {
+            const rec = recMap[item.id];
+            return (
+              <VehicleCard 
+                vehicle={item} 
+                matchScore={matchScores[item.id]}
+                keyFacts={rec?.key_facts}
+                budgetMargin={rec?.budget_margin}
+                bestVersionName={rec?.best_version_name}
+              />
+            );
+          }}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -247,6 +301,21 @@ const styles = StyleSheet.create({
     fontFamily: tokens.typography.sansMedium,
     fontSize: 12,
     color: tokens.colors.accentRed,
+  },
+  aiBanner: {
+    backgroundColor: '#d1fae5',
+    padding: tokens.spacing.sm,
+    marginHorizontal: tokens.spacing.md,
+    marginTop: tokens.spacing.md,
+    borderRadius: tokens.radii.md,
+    borderWidth: 1,
+    borderColor: '#34d399',
+  },
+  aiBannerText: {
+    fontFamily: tokens.typography.sansBold,
+    fontSize: 14,
+    color: '#065f46',
+    textAlign: 'center',
   },
   filtersWrapper: {
     backgroundColor: tokens.colors.bgPrimary,

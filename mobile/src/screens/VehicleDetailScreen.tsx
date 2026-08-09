@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, StyleSheet, Text, Image, ScrollView, TouchableOpacity, Dimensions, Alert } from 'react-native';
+import { View, StyleSheet, Text, Image, ScrollView, TouchableOpacity, Dimensions, Alert, Linking } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import PagerView from 'react-native-pager-view';
 
@@ -153,9 +153,31 @@ export default function VehicleDetailScreen() {
       <View style={styles.stickyFooter}>
         <TouchableOpacity 
           style={styles.contactButton}
-          onPress={() => Alert.alert('Contact', 'Contacter le vendeur (Simulation)')}
+          onPress={() => {
+            const phone = (vehicle as any).seller?.phone || '+212600000000';
+            Alert.alert(
+              'Contacter le Vendeur',
+              `Numéro de contact : ${phone}`,
+              [
+                { text: 'Annuler', style: 'cancel' },
+                { 
+                  text: 'WhatsApp', 
+                  onPress: () => {
+                    const cleanPhone = phone.replace(/[^0-9]/g, '');
+                    Linking.openURL(`https://wa.me/${cleanPhone}`);
+                  } 
+                },
+                { 
+                  text: 'Appeler', 
+                  onPress: () => {
+                    Linking.openURL(`tel:${phone}`);
+                  } 
+                }
+              ]
+            );
+          }}
         >
-          <Text style={styles.contactButtonText}>Contacter le Vendeur</Text>
+          <Text style={styles.contactButtonText}>📞 Contacter le Vendeur</Text>
         </TouchableOpacity>
       </View>
     </View>

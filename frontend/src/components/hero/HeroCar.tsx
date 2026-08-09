@@ -56,8 +56,8 @@ export default function HeroCar() {
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  const handleResults = useCallback((query: string, recommendations: RecommendationResponse) => {
-    navigate(`/catalogue?q=${encodeURIComponent(query)}`, { state: { recommendations } });
+  const handleResults = useCallback((query: string, recommendations?: RecommendationResponse | null) => {
+    navigate(`/catalogue?q=${encodeURIComponent(query)}`, { state: recommendations ? { recommendations } : undefined });
   }, [navigate]);
   
   const autoPlayDelay = 5000;

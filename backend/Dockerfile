@@ -4,11 +4,12 @@ WORKDIR /app
 
 # Dépendances système
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc libpq-dev curl libgl1 libglib2.0-0 && \
+    gcc libpq-dev curl libgl1 libglib2.0-0 ffmpeg && \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 

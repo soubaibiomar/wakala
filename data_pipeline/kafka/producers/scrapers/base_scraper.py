@@ -31,7 +31,10 @@ class BaseScraper(ABC):
         self.domain = urlparse(base_url).netloc
         self.rp = urllib.robotparser.RobotFileParser()
         self.rp_initialized = False
+        self.rp_initialized = False
         self.session = self._build_session()
+        self.last_http_status = None
+        self.last_html = None
 
     def _build_session(self) -> requests.Session:
         """Configures a requests Session with retries and specific User-Agent."""
@@ -97,7 +100,12 @@ class BaseScraper(ABC):
                 # Wait until network is mostly idle to ensure JS has loaded
                 response = page.goto(url, wait_until="domcontentloaded", timeout=30000)
                 
-                if response and response.status in [403, 429]:
+                if response:
+                    self.last_http_status = response.status
+                else:
+                    self.last_http_status = 500
+                    
+                if response and response.status in [403, 429, 503]:
                     logger.error(f"Received {response.status} for {url}. Respecting server limits.")
                     browser.close()
                     return None
@@ -106,6 +114,7 @@ class BaseScraper(ABC):
                 page.wait_for_timeout(3000)
                 
                 content = page.content()
+                self.last_html = content
                 browser.close()
                 return content
         except Exception as e:

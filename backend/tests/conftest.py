@@ -157,7 +157,7 @@ def fake_user_dict() -> dict:
 @pytest.fixture(autouse=True)
 def mock_external_services():
     with (
-        patch("app.rag.chatbot_chain.ChatGroq") as mock_groq,
+        patch("app.rag.chatbot_chain.ChatOpenAI") as mock_openai,
         patch("app.rag.vector_search.search_vehicles") as mock_search,
         patch("app.rag.vector_search.search_reviews") as mock_reviews,
         patch("app.rag.graph_context.enrich_with_graph") as mock_graph,
@@ -165,7 +165,7 @@ def mock_external_services():
     ):
         mock_llm = AsyncMock()
         mock_llm.ainvoke = AsyncMock(return_value=MagicMock(content="Reponse test du chatbot."))
-        mock_groq.return_value = mock_llm
+        mock_openai.return_value = mock_llm
 
         mock_search.return_value = []
         mock_reviews.return_value = []

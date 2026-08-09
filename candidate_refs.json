@@ -1,0 +1,142 @@
+[
+  {
+    "file": "avito.html",
+    "refs": 0
+  },
+  {
+    "file": "moteur.html",
+    "refs": 0
+  },
+  {
+    "file": "moteur_detail.html",
+    "refs": 0
+  },
+  {
+    "file": "moteur_neuf.html",
+    "refs": 0
+  },
+  {
+    "file": "wandaloo.html",
+    "refs": 0
+  },
+  {
+    "file": "wandaloo_fiche.html",
+    "refs": 0
+  },
+  {
+    "file": "wandaloo_neuf.html",
+    "refs": 0
+  },
+  {
+    "file": "wandaloo_occ_test.html",
+    "refs": 0
+  },
+  {
+    "file": "wandaloo_test.html",
+    "refs": 0
+  },
+  {
+    "file": "chat_test.txt",
+    "refs": 0
+  },
+  {
+    "file": "chat_test2.txt",
+    "refs": 0
+  },
+  {
+    "file": "check_db.py",
+    "refs": 0
+  },
+  {
+    "file": "test.py",
+    "refs": 0
+  },
+  {
+    "file": "test_frontend.js",
+    "refs": 0
+  },
+  {
+    "file": "test_frontend.py",
+    "refs": 0
+  },
+  {
+    "file": "test_scrape.py",
+    "refs": 0
+  },
+  {
+    "file": "test_scraping.py",
+    "refs": 0
+  },
+  {
+    "file": "test_uuid.py",
+    "refs": 0
+  },
+  {
+    "file": "backend.log",
+    "refs": 0
+  },
+  {
+    "file": "scraper_health.log",
+    "refs": 0
+  },
+  {
+    "file": "out.json",
+    "refs": 0
+  },
+  {
+    "file": "architecture.excalidraw",
+    "refs": 0
+  },
+  {
+    "file": "schema_interface_client.excalidraw",
+    "refs": 0
+  },
+  {
+    "file": "WAKALA_FEATURES.md",
+    "refs": 0
+  },
+  {
+    "file": "journal_de_bord.pdf",
+    "refs": 0
+  },
+  {
+    "file": "journal_de_bord.tex",
+    "refs": 0
+  },
+  {
+    "file": "gen_plugins.py",
+    "refs": 0
+  },
+  {
+    "file": "generate_full_architecture.py",
+    "refs": 0
+  },
+  {
+    "file": "modify_excalidraw.py",
+    "refs": 0
+  },
+  {
+    "file": "setup.ps1",
+    "refs": 0
+  },
+  {
+    "file": "setup.sh",
+    "refs": 0
+  },
+  {
+    "file": "run_tests.ps1",
+    "refs": 0
+  },
+  {
+    "file": "run_tests.sh",
+    "refs": 0
+  },
+  {
+    "file": "config.py",
+    "refs": 0
+  },
+  {
+    "file": "test_specs.md",
+    "refs": 0
+  }
+]

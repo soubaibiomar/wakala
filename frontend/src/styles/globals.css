@@ -678,6 +678,8 @@ textarea {
     color: var(--color-text-muted);
     text-decoration: none;
     font-size: 0.65rem;
+    min-height: 44px;
+    min-width: 44px;
     font-weight: 500;
     flex: 1;
     height: 100%;

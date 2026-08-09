@@ -59,6 +59,27 @@ async def update_me(
 
 
 # ──────────────────────────────────────────────────────────────
+# POST /me/become-seller — Passer au statut vendeur
+# ──────────────────────────────────────────────────────────────
+
+@router.post(
+    "/me/become-seller",
+    response_model=UserRead,
+    summary="Devenir vendeur",
+    description="Permet à un acheteur de passer au rôle vendeur.",
+)
+async def become_seller(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    current_user.role = "seller"
+    await db.flush()
+    await db.refresh(current_user)
+    return current_user
+
+
+
+# ──────────────────────────────────────────────────────────────
 # POST /me/avatar — Mettre à jour la photo de profil
 # ──────────────────────────────────────────────────────────────
 

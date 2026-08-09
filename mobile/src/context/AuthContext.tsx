@@ -6,8 +6,10 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (token: string) => Promise<void>;
+  login: (token: string, userData?: User) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (user: User) => void;
+  becomeSeller: () => Promise<User>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(userData);
       }
     } catch (error) {
-      console.error("Failed to load user session", error);
+      console.warn("Failed to load user session, clearing token:", error);
       await authService.logout();
       setUser(null);
     } finally {
@@ -36,15 +38,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (token: string) => {
-    // Le token est déjà stocké par authService.login() avant cet appel
-    const userData = await authService.getCurrentUser();
-    setUser(userData);
+  const login = async (token: string, userData?: User) => {
+    if (userData) {
+      setUser(userData);
+    } else {
+      const freshUser = await authService.getCurrentUser();
+      setUser(freshUser);
+    }
   };
 
   const logout = async () => {
     await authService.logout();
     setUser(null);
+  };
+
+  const updateUser = (updated: User) => {
+    setUser(updated);
+  };
+
+  const becomeSeller = async (): Promise<User> => {
+    const updatedUser = await authService.becomeSeller();
+    setUser(updatedUser);
+    return updatedUser;
   };
 
   return (
@@ -55,6 +70,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         login,
         logout,
+        updateUser,
+        becomeSeller,
       }}
     >
       {children}

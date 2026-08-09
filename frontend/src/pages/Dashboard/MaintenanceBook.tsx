@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BookOpen, Plus, Car } from 'lucide-react';
+import api from '../../services/api';
 import { AddServiceForm } from '../../components/maintenance/AddServiceForm';
 import { MaintenanceTimeline } from '../../components/maintenance/MaintenanceTimeline';
 
@@ -17,12 +18,8 @@ export default function MaintenanceBook() {
   const { data: myCars, isLoading } = useQuery<VehicleOption[]>({
     queryKey: ['my_vehicles'],
     queryFn: async () => {
-      const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:8000/api/vehicles/me', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Erreur de chargement');
-      return res.json();
+      const res = await api.get('/vehicles/me');
+      return res.data;
     }
   });
 

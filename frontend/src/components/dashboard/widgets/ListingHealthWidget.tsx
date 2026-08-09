@@ -20,7 +20,7 @@ export function ListingHealthWidget() {
 
   return (
     <BentoWidget title="Santé de vos Annonces" isLoading={isLoading} colSpan={2} rowSpan={1}>
-      <div style={{ display: 'flex', gap: '24px', alignItems: 'center', height: '100%' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', alignItems: 'center', height: '100%' }}>
         
         {/* Score gauge */}
         <div style={{ position: 'relative', width: '80px', height: '80px', flexShrink: 0 }}>

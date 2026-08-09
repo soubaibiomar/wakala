@@ -8,7 +8,7 @@ import styles from './chatbot.module.css';
 
 export default function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const { messages, isTyping, error, sendMessage, clearHistory } = useChatSession();
+  const { messages, isTyping, error, sendMessage, cancelGeneration, clearHistory } = useChatSession();
   const [notificationCount, setNotificationCount] = useState(0);
   const location = useLocation();
 
@@ -53,6 +53,7 @@ export default function ChatbotWidget() {
           isTyping={isTyping}
           error={error}
           onSend={handleSend}
+          onCancel={cancelGeneration}
           onClear={clearHistory}
           onClose={toggleOpen}
         />

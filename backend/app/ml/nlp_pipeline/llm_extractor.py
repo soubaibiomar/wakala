@@ -190,15 +190,25 @@ def _fallback_extraction(texte: str) -> ExtractedCriteria:
     usage_prevu = None
     priorites = []
     
-    if any(w in text_lower for w in ["famille", "familial", "3aila", "family", "kids", "wlad"]):
+    if any(w in text_lower for w in ["famille", "familial", "3aila", "family", "kids", "wlad", "bebe", "bébé", "enfant", "enfants", "poussette", "nourrisson", "grossesse"]):
         usage_prevu = "familial"
     elif any(w in text_lower for w in ["ville", "urbain", "mdina", "commute", "daily", "work", "khdma", "everyday"]):
         usage_prevu = "urbain"
+    elif any(w in text_lower for w in ["autoroute", "voyage", "longue distance", "route", "trips", "safari"]):
+        usage_prevu = "longue_distance"
         
-    if any(w in text_lower for w in ["eco", "économique", "rkhis", "rkhisa", "cheap", "ma3ndich", "flous", "flouss", "low budget"]):
+    if any(w in text_lower for w in ["eco", "économique", "rkhis", "rkhisa", "cheap", "ma3ndich", "flous", "flouss", "low budget", "consommation"]):
         priorites.append("économique")
     if any(w in text_lower for w in ["fiable", "fiabilité", "mzyan", "mzyana", "sah", "3amal", "reliable", "sturdy"]):
         priorites.append("fiabilité")
+    if any(w in text_lower for w in ["securite", "sécurité", "safe", "safety", "amana", "isofix", "airbag", "sûreté", "sécurisé"]):
+        priorites.append("sécurité")
+    if any(w in text_lower for w in ["coffre", "espace", "bagage", "spacieux", "grand", "kbir"]):
+        priorites.append("espace")
+    if any(w in text_lower for w in ["confort", "confortable", "mrih", "raha"]):
+        priorites.append("confort")
+    if any(w in text_lower for w in ["puissance", "sport", "rapide", "puissant", "performance"]):
+        priorites.append("performance")
         
     langue = "fr"
     langue = "fr"

@@ -94,6 +94,11 @@ class Settings(BaseSettings):
     LLM_MODEL: str = "qwen3:8b"
     EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
 
+    # ─── Hugging Face / Cohere ────────────────────────────────
+    HF_TOKEN: str = ""
+    HUGGINGFACE_API_KEY: str = ""
+    COHERE_API_KEY: str = ""
+
     class Config:
         env_file = ".env"
         case_sensitive = True

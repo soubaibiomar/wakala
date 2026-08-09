@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
@@ -16,6 +16,10 @@ from app.ml.recommendation.schemas import (
     RecommendationRequest,
     RecommendationResponse,
 )
+from app.ml.matching.schemas import SearchRequest
+from app.ml.matching.matching_engine import matching_engine
+from app.ml.scoring.criteria_ranker import criteria_ranker
+from app.ml.scoring.top3_aggregator import Top3Response
 from app.models.vehicle import Vehicle
 
 router = APIRouter()
@@ -39,26 +43,15 @@ async def get_recommendations(
     else:
         semantic_ids = []
 
-    from sqlalchemy.orm import load_only, noload
+    from sqlalchemy.orm import noload
     
     result = await db.execute(
         select(Vehicle).options(
             noload('*'),
-            load_only(
-                Vehicle.id,
-                Vehicle.price,
-                Vehicle.year,
-                Vehicle.mileage,
-                Vehicle.body_type,
-                Vehicle.transmission,
-                Vehicle.fuel_type,
-                Vehicle.engine_power_hp,
-                Vehicle.brand,
-                Vehicle.city,
-            )
         )
     )
     all_vehicles: list[Vehicle] = list(result.scalars().all())
+    vehicles_by_id = {str(v.id): v for v in all_vehicles}
 
     if semantic_ids:
         semantic_set = set(semantic_ids)
@@ -102,4 +95,26 @@ async def get_recommendations(
         user_id=payload.user_id,
     )
 
+    # Enrichir les items avec les faits clés et critères Wakala
+    budget_max = merged_filters.get("price_max")
+    for item in response.items:
+        v_obj = vehicles_by_id.get(item.vehicle_id)
+        if v_obj:
+            crit_scores = criteria_ranker.compute_criteria_scores(v_obj)
+            item.key_facts = criteria_ranker.extract_key_facts(v_obj, crit_scores)
+            item.best_version_name = getattr(v_obj, "version", None) or f"{v_obj.brand} {v_obj.model}"
+            if budget_max and v_obj.price:
+                item.budget_margin = float(budget_max) - float(v_obj.price)
+            item.wakala_score_breakdown = crit_scores
+
     return response
+
+
+@router.post("/top3", response_model=Top3Response)
+async def get_top3_recommendations(
+    payload: SearchRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Restitue le Top 3 Wakala avec meilleure version par modèle et diversité de marque."""
+    return await matching_engine.search_top3(payload, db)
+

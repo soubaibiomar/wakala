@@ -278,6 +278,76 @@ export default function Profile() {
             </div>
           </form>
         </BentoWidget>
+
+        {/* Widget Statut & Rôle du compte */}
+        <BentoWidget title="Statut du Compte" colSpan={3}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '16px',
+            padding: '16px 0 8px 0',
+          }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '0.95rem', fontWeight: 600 }}>Rôle actuel :</span>
+                <span style={{
+                  background: user?.role === 'seller' ? 'rgba(52, 211, 153, 0.15)' : 'rgba(174, 140, 78, 0.2)',
+                  color: user?.role === 'seller' ? '#34d399' : '#d4af37',
+                  padding: '4px 12px',
+                  borderRadius: '20px',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  border: user?.role === 'seller' ? '1px solid rgba(52, 211, 153, 0.3)' : '1px solid rgba(174, 140, 78, 0.4)'
+                }}>
+                  {user?.role === 'seller' ? 'Vendeur' : user?.role === 'admin' ? 'Administrateur' : 'Acheteur'}
+                </span>
+              </div>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', margin: 0, maxWidth: '650px' }}>
+                {user?.role === 'seller' 
+                  ? 'Vous disposez d\'un compte vendeur actif vous permettant de déposer des annonces et de gérer vos ventes.'
+                  : 'Votre compte est actuellement configuré en mode Acheteur. Vous pouvez passer au statut Vendeur pour publier des annonces automobiles sur Wakala.'}
+              </p>
+            </div>
+
+            {user?.role === 'buyer' && (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (window.confirm('Voulez-vous passer au statut Vendeur et débloquer la publication d\'annonces ?')) {
+                    try {
+                      setLoading(true);
+                      const response = await api.post('/users/me/become-seller');
+                      updateUser(response.data);
+                      alert('Félicitations ! Vous êtes désormais Vendeur sur Wakala.');
+                    } catch (error) {
+                      console.error('Erreur:', error);
+                      alert('Impossible de changer de statut pour le moment.');
+                    } finally {
+                      setLoading(false);
+                    }
+                  }
+                }}
+                disabled={loading}
+                style={{
+                  background: 'linear-gradient(135deg, #ae8c4e 0%, #d4af37 100%)',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  fontSize: '0.9rem',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 4px 12px rgba(174, 140, 78, 0.35)',
+                }}
+              >
+                ✨ Devenir Vendeur
+              </button>
+            )}
+          </div>
+        </BentoWidget>
       </BentoGrid>
     </div>
   );

@@ -61,8 +61,10 @@ def extract_body_type(text: str) -> Optional[str]:
 
 PRICE_PATTERNS = [
     re.compile(r'(?P<min>\d+(?:\s?\d+)*\s*[kK]?)\s*(?:a|à|–|-|jusqu\'?à?|et)\s*(?P<max>\d+(?:\s?\d+)*\s*[kK]?)\s*(?:€|eur|dh|mad|melyoun|mlyoun|alf)?', re.IGNORECASE),
-    re.compile(r'(?:moins de|max|maxi|maximum|jusqu\'?à?|under)\s*(?P<max>\d+(?:\s?\d+)*\s*[kK]?)\s*(?:€|eur|dh|mad|melyoun|mlyoun|alf)?', re.IGNORECASE),
-    re.compile(r'(?:plus de|min|mini|minimum|à partir de|dès|over)\s*(?P<min>\d+(?:\s?\d+)*\s*[kK]?)\s*(?:€|eur|dh|mad|melyoun|mlyoun|alf)?', re.IGNORECASE),
+    re.compile(r'(?P<max>\d+(?:\s?\d+)*\s*[kK]?)\s*(?:€|eur|dh|mad|melyoun|mlyoun|alf)?\s*(?:max|maxi|maximum|au plus|plafond)', re.IGNORECASE),
+    re.compile(r'(?P<min>\d+(?:\s?\d+)*\s*[kK]?)\s*(?:€|eur|dh|mad|melyoun|mlyoun|alf)?\s*(?:min|mini|minimum|au moins|plancher)', re.IGNORECASE),
+    re.compile(r'(?:moins de|max|maxi|maximum|jusqu\'?à?|under|au plus|plafond de)\s*(?P<max>\d+(?:\s?\d+)*\s*[kK]?)\s*(?:€|eur|dh|mad|melyoun|mlyoun|alf)?', re.IGNORECASE),
+    re.compile(r'(?:plus de|min|mini|minimum|à partir de|dès|over|au moins)\s*(?P<min>\d+(?:\s?\d+)*\s*[kK]?)\s*(?:€|eur|dh|mad|melyoun|mlyoun|alf)?', re.IGNORECASE),
     re.compile(r'(?P<exact>\d+(?:\s?\d+)*\s*[kK]?)\s*(?:€|eur|dh|mad|melyoun|mlyoun|alf)', re.IGNORECASE),
     re.compile(r'budget\s*(?:de|:)?\s*(?P<min>\d+(?:\s?\d+)*\s*[kK]?)\s*(?:a|à|–|-)\s*(?P<max>\d+(?:\s?\d+)*\s*[kK]?)', re.IGNORECASE),
 ]

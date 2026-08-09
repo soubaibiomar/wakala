@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Calendar, Wrench, Settings, AlertTriangle, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import api from '../../services/api';
 
 interface VehicleService {
   id: string;
@@ -24,14 +25,18 @@ export function MaintenanceTimeline({ carId }: { carId: string }) {
   const { data: services, isLoading, error } = useQuery<VehicleService[]>({
     queryKey: ['vehicle_services', carId],
     queryFn: async () => {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:8000/api/v1/services/history/${carId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to fetch timeline');
-      return res.json();
+      const res = await api.get(`/v1/services/history/${carId}`);
+      return res.data;
     }
   });
+
+  const getFullReceiptUrl = (url?: string) => {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    const baseApi = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const serverOrigin = baseApi.replace(/\/api\/?$/, '');
+    return `${serverOrigin}${url.startsWith('/') ? '' : '/'}${url}`;
+  };
 
   if (isLoading) return <div className="text-gray-400 p-8 text-center animate-pulse">Chargement de l'historique...</div>;
   if (error) return <div className="text-red-400 p-8 text-center">Erreur lors du chargement</div>;
@@ -92,7 +97,7 @@ export function MaintenanceTimeline({ carId }: { carId: string }) {
             {service.receipt_url && (
               <div className="mt-4 flex">
                 <a 
-                  href={`http://localhost:8000${service.receipt_url}`} 
+                  href={getFullReceiptUrl(service.receipt_url)} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="flex items-center space-x-2 text-sm text-blue-400 hover:text-blue-300 bg-blue-400/10 px-3 py-2 rounded-lg transition-colors"

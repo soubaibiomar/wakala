@@ -115,7 +115,7 @@ export default function LoginForm({ onSwitchToRegister, onRequireOTP }: LoginFor
 
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <GoogleLogin
-            onSuccess={async (credentialResponse) => {
+            onSuccess={async (credentialResponse: any) => {
               try {
                 if (credentialResponse.credential) {
                   await googleLogin(credentialResponse.credential, rememberMe);
