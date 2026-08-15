@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Send, Bot, User, CarFront } from 'lucide-react';
 import './ChatbotPage.css';
+import { useLocation } from 'react-router-dom';
 import { chatbotService } from '../services/chatbotService';
 
 interface Message {
@@ -17,11 +18,37 @@ const SUGGESTIONS = [
 ];
 
 export default function ChatbotPage() {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const query = searchParams.get('q');
+  const budget = searchParams.get('budget');
+  
+  // Extract dynamic priorities
+  const dynamicPriorities: {name: string, value: string}[] = [];
+  searchParams.forEach((value, key) => {
+    if (key.startsWith('prio_')) {
+      const name = key.replace('prio_', '');
+      dynamicPriorities.push({ name, value });
+    }
+  });
+
+  const hasPreferences = dynamicPriorities.length > 0;
+  
+  let initialContent = 'Salam ! Je suis Wakala Bot, votre expert automobile. Que recherchez-vous aujourd\'hui ?';
+  if (hasPreferences) {
+    const prioStr = dynamicPriorities.map(p => `- **${p.name.charAt(0).toUpperCase() + p.name.slice(1)}**: ${p.value}%`).join('\n');
+    initialContent = `Salam ! J'ai bien noté vos priorités :\n${prioStr}\n${budget ? `- **Budget**: ${budget} MAD\n` : ''}`;
+    if (query) {
+      initialContent += `\nVous recherchez également : "${query}"\n`;
+    }
+    initialContent += `\nLaissez-moi analyser notre catalogue pour vous trouver les meilleures recommandations...`;
+  }
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'assistant',
-      content: 'Salam ! Je suis Wakala Bot, votre expert automobile. Que recherchez-vous aujourd\'hui ?'
+      content: initialContent
     }
   ]);
   const [input, setInput] = useState('');
@@ -57,7 +84,7 @@ export default function ChatbotPage() {
 
     try {
       const history = messages
-        .filter(m => m.id !== '1') // Optional: skip welcome msg in history
+        .filter(m => hasPreferences ? true : m.id !== '1') // Keep welcome msg if it has priorities
         .map(m => ({ role: m.role, content: m.content }));
 
       await chatbotService.streamMessage(

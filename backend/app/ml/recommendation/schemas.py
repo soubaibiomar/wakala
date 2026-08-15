@@ -12,7 +12,7 @@ class RecommendationFilters(BaseModel):
     body_type: Optional[str] = None
     year_min: Optional[int] = Field(None, ge=1950)
     year_max: Optional[int] = Field(None, le=2030)
-    mileage_max: Optional[int] = Field(None, ge=0)
+    mileage_max: Optional[int] = Field(None, ge=0)  # PIVOT: kept but unused (new vehicles only)
 
 
 class RecommendationRequest(BaseModel):

@@ -19,11 +19,17 @@ async def _get_or_create_default_seller(session: AsyncSession) -> uuid.UUID:
     if user:
         return user.id
 
+    # Génère un mot de passe système aléatoire (ce compte ne doit
+    # jamais être utilisé pour une connexion humaine)
+    from app.core.security import hash_password
+    import secrets as _secrets
+    _system_pw = hash_password(_secrets.token_urlsafe(64))
+
     default_seller = User(
         full_name="Vendeur Wakala",
         email="contact@wakala.ma",
         phone="+212600000000",
-        hashed_password="$2b$12$placeholder",
+        hashed_password=_system_pw,
         role="seller",
         is_verified=True,
         preferences={},

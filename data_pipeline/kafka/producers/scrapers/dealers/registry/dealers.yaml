@@ -53,3 +53,95 @@ dealers:
     scan_interval_hours: 24
     active: false
     note: "Casablanca, Rabat, Tanger. Pas de catalogue détaillé e-commerce."
+
+  # ── PIVOT EXPANSION: New dealer entries (URLs to confirm) ──────
+
+  - name: "toyota_maroc"
+    brands: ["Toyota"]
+    base_url: "URL À CONFIRMER"
+    selectors_file: "toyota_maroc.yaml"
+    condition_default: "new"
+    scan_interval_hours: 24
+    active: false
+    note: "TDM (Toyota du Maroc). URL et robots.txt à vérifier."
+
+  - name: "hyundai_maroc"
+    brands: ["Hyundai"]
+    base_url: "URL À CONFIRMER"
+    selectors_file: "hyundai_maroc.yaml"
+    condition_default: "new"
+    scan_interval_hours: 24
+    active: false
+    note: "Hyundai Maroc. URL et robots.txt à vérifier."
+
+  - name: "kia_maroc"
+    brands: ["Kia"]
+    base_url: "URL À CONFIRMER"
+    selectors_file: "kia_maroc.yaml"
+    condition_default: "new"
+    scan_interval_hours: 24
+    active: false
+    note: "Distributeur Kia Maroc (séparé de M-Automotiv). URL à confirmer."
+
+  - name: "smeia"
+    brands: ["BMW", "MINI", "Land Rover", "Jaguar"]
+    base_url: "URL À CONFIRMER"
+    selectors_file: "smeia.yaml"
+    condition_default: "new"
+    scan_interval_hours: 24
+    active: false
+    note: "SMEIA est aussi distributeur Ford, mais Ford est déjà couvert via auto_hall. URL à confirmer."
+
+  - name: "sopriam"
+    brands: ["Peugeot", "Citroën", "DS"]
+    base_url: "URL À CONFIRMER"
+    selectors_file: "sopriam.yaml"
+    condition_default: "new"
+    scan_interval_hours: 24
+    active: false
+    note: "Sopriam — importateur exclusif groupe Stellantis (Peugeot, Citroën, DS). URL à confirmer."
+
+  - name: "byd_maroc"
+    brands: ["BYD"]
+    base_url: "URL À CONFIRMER"
+    selectors_file: "byd_maroc.yaml"
+    condition_default: "new"
+    scan_interval_hours: 24
+    active: false
+    note: "Marque chinoise EV en expansion au Maroc. URL à confirmer."
+
+  - name: "mg_maroc"
+    brands: ["MG Motor"]
+    base_url: "URL À CONFIRMER"
+    selectors_file: "mg_maroc.yaml"
+    condition_default: "new"
+    scan_interval_hours: 24
+    active: false
+    note: "MG Motor Maroc. URL à confirmer."
+
+  - name: "chery_maroc"
+    brands: ["Chery"]
+    base_url: "URL À CONFIRMER"
+    selectors_file: "chery_maroc.yaml"
+    condition_default: "new"
+    scan_interval_hours: 24
+    active: false
+    note: "Chery Maroc (possiblement via Auto Hall). URL à confirmer."
+
+  - name: "suzuki_maroc"
+    brands: ["Suzuki"]
+    base_url: "URL À CONFIRMER"
+    selectors_file: "suzuki_maroc.yaml"
+    condition_default: "new"
+    scan_interval_hours: 24
+    active: false
+    note: "Distributeur Suzuki Maroc. URL à confirmer."
+
+  - name: "honda_maroc"
+    brands: ["Honda"]
+    base_url: "URL À CONFIRMER"
+    selectors_file: "honda_maroc.yaml"
+    condition_default: "new"
+    scan_interval_hours: 24
+    active: false
+    note: "Distributeur Honda Maroc. URL à confirmer."

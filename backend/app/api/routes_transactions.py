@@ -77,9 +77,14 @@ async def webhook_payment_success(
     request: Request, 
     db: AsyncSession = Depends(get_db)
 ):
-    # SÉCURITÉ : Validation de la provenance du Webhook (mock)
+    # SÉCURITÉ : Validation de la provenance du Webhook
     webhook_secret = request.headers.get("X-Webhook-Secret")
-    expected_secret = os.environ.get("WEBHOOK_SECRET", "wakala_mock_secret")
+    expected_secret = os.environ.get("WEBHOOK_SECRET")
+    if not expected_secret:
+        raise HTTPException(
+            status_code=500,
+            detail="Configuration serveur incomplète : WEBHOOK_SECRET non défini."
+        )
     if not webhook_secret or webhook_secret != expected_secret:
         raise HTTPException(status_code=403, detail="Signature Webhook invalide.")
 

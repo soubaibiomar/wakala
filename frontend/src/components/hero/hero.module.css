@@ -125,7 +125,8 @@
 .content.isEntering .titleTop  { animation: revealUp 0.4s ease both; animation-delay: 0.1s; }
 .content.isEntering .titleBottom { animation: revealUp 0.4s ease both; animation-delay: 0.22s; }
 .content.isEntering .description { animation: revealUp 0.35s ease both; animation-delay: 0.38s; }
-.content.isEntering .actions   { animation: revealUp 0.3s ease both; animation-delay: 0.5s; }
+.content.isEntering .actions   { animation: revealUp 0.3s ease both; animation-delay: 0.5s; 
+  flex-wrap: wrap;}
 
 .titleLine {
   width: 2px;
@@ -206,7 +207,8 @@
   align-items: center;
   gap: 0.75rem;
   margin-top: auto;
-}
+
+  flex-wrap: wrap;}
 
 .ctaBtn {
   font-size: 15px;
@@ -290,8 +292,7 @@
 }
 
 .arrow {
-  width: 40px;
-  height: 40px;
+  width: 44px; height: 44px;
   border-radius: 999px;
   border: 1.5px solid rgba(255,255,255,0.26);
   background: rgba(255,255,255,0.08);
@@ -495,5 +496,24 @@
   }
   .content {
     padding-bottom: 6rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .contentWrap {
+    padding: 0 16px;
+    min-height: calc(100vh - 70px);
+  }
+  .title {
+    font-size: clamp(32px, 8vw, 44px);
+  }
+  .actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .ctaBtn, .ghostBtn {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
   }
 }

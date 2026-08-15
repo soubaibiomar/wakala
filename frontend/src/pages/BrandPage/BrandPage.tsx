@@ -20,9 +20,9 @@ export default function BrandPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = (searchParams.get('tab') as 'all' | 'neuf' | 'occasion') || 'neuf';
+  const initialTab = (searchParams.get('tab') as 'all' | 'neuf') || 'neuf';  // PIVOT: removed 'occasion'
 
-  const [activeTab, setActiveTab] = useState<'all' | 'neuf' | 'occasion'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'all' | 'neuf'>(initialTab);
 
   const normalize = (s?: string) => (s || '').toLowerCase().replace(/[\s-_]/g, '');
   const brandInfo = POPULAR_BRANDS.find(b => 
@@ -44,7 +44,7 @@ export default function BrandPage() {
       sort_order: 'desc'
     };
 
-    if (activeTab === 'neuf' || activeTab === 'occasion') {
+    if (activeTab === 'neuf') {
       filters.condition = activeTab;
     }
     
@@ -69,7 +69,7 @@ export default function BrandPage() {
     fetchVehicles(page);
   }, [fetchVehicles, page]);
 
-  const handleTabChange = (tab: 'all' | 'neuf' | 'occasion') => {
+  const handleTabChange = (tab: 'all' | 'neuf') => {  // PIVOT: removed 'occasion'
     setActiveTab(tab);
     setSearchParams({ tab });
     setPage(1);
@@ -81,7 +81,7 @@ export default function BrandPage() {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     "name": `Véhicules ${displayBrandName} - Wakala`,
-    "description": `Découvrez tous les modèles ${displayBrandName} neufs et d'occasion disponibles sur Wakala, la marketplace automobile au Maroc.`,
+    "description": `Découvrez tous les modèles ${displayBrandName} neufs disponibles sur Wakala, la marketplace automobile au Maroc.`,
     "url": window.location.href,
     "mainEntity": {
       "@type": "ItemList",
@@ -110,8 +110,8 @@ export default function BrandPage() {
   return (
     <div className="brand-page">
       <Helmet>
-        <title>{`Voitures ${displayBrandName} au Maroc (Neuf & Occasion) | Wakala`}</title>
-        <meta name="description" content={`Découvrez tous les modèles ${displayBrandName} disponibles sur Wakala. Achetez votre ${displayBrandName} neuve avec fiche technique ou d'occasion certifiée au meilleur prix au Maroc.`} />
+        <title>{`Voitures ${displayBrandName} Neuves au Maroc | Wakala`}</title>
+        <meta name="description" content={`Découvrez tous les modèles ${displayBrandName} disponibles sur Wakala. Achetez votre ${displayBrandName} neuve avec fiche technique au meilleur prix au Maroc.`} />
         <script type="application/ld+json">
           {JSON.stringify(schemaOrgJSONLD)}
         </script>
@@ -149,7 +149,7 @@ export default function BrandPage() {
 
             <h1 className="brand-hero__title">{displayBrandName}</h1>
             <p className="brand-hero__subtitle">
-              Découvrez la gamme complète {displayBrandName} au Maroc : modèles neufs avec fiches techniques détaillées et annonces d'occasion vérifiées.
+              Découvrez la gamme complète {displayBrandName} au Maroc : modèles neufs avec fiches techniques détaillées.
             </p>
           </div>
         </div>
@@ -176,13 +176,7 @@ export default function BrandPage() {
             <span className="badge-count">{activeTab === 'neuf' && !loading ? total : '•'}</span>
           </button>
           
-          <button 
-            className={`brand-filter-btn ${activeTab === 'occasion' ? 'active' : ''}`}
-            onClick={() => handleTabChange('occasion')}
-          >
-            <span>Occasion Certifiée</span>
-            <span className="badge-count">{activeTab === 'occasion' && !loading ? total : '•'}</span>
-          </button>
+          {/* PIVOT: Occasion Certifiée tab removed */}
         </div>
 
         {error && <div className="brand-error">{error}</div>}
@@ -213,15 +207,11 @@ export default function BrandPage() {
                 <h3 className="brand-empty__title">
                   {activeTab === 'neuf'
                     ? `Aucun modèle neuf ${displayBrandName} disponible`
-                    : activeTab === 'occasion'
-                    ? `Aucun véhicule d'occasion ${displayBrandName} pour l'instant`
                     : `Aucun véhicule ${displayBrandName} trouvé`}
                 </h3>
                 <p className="brand-empty__text">
                   {activeTab === 'neuf'
-                    ? `Consultez les annonces d'occasion pour ${displayBrandName} ou découvrez nos autres marques populaires au Maroc :`
-                    : activeTab === 'occasion'
-                    ? `Consultez les fiches techniques des modèles neufs ${displayBrandName} ou explorez nos marques phares :`
+                    ? `Nous mettons notre catalogue à jour régulièrement. Découvrez nos marques les plus demandées :`
                     : `Nous mettons notre catalogue à jour régulièrement. Découvrez nos marques les plus demandées :`}
                 </p>
                 
@@ -235,16 +225,7 @@ export default function BrandPage() {
                 </div>
 
                 <div className="brand-empty__actions">
-                  {activeTab === 'neuf' && (
-                    <button onClick={() => handleTabChange('occasion')} className="btn btn--outline">
-                      Voir les occasions {displayBrandName}
-                    </button>
-                  )}
-                  {activeTab === 'occasion' && (
-                    <button onClick={() => handleTabChange('neuf')} className="btn btn--outline">
-                      Voir les modèles neufs {displayBrandName}
-                    </button>
-                  )}
+                {/* PIVOT: removed occasion fallback buttons */}
                   <Link to="/catalogue" className="btn btn--primary">
                     Explorer tout le catalogue
                   </Link>

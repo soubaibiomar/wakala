@@ -19,7 +19,7 @@ class PricePredictionInput(BaseModel):
     brand: str = Field(..., example="Renault", description="Marque du véhicule")
     model: str = Field(..., example="Clio", description="Modèle")
     year: int = Field(..., ge=1990, le=2030, example=2020)
-    mileage: int = Field(..., ge=0, example=50000)
+    # PIVOT: mileage removed (new vehicles only)
     fuel_type: str = Field(..., example="diesel")
     body_type: str = Field(..., example="berline")
     transmission: str = Field("manuelle", example="manuelle")
@@ -27,7 +27,7 @@ class PricePredictionInput(BaseModel):
     doors: int = Field(5, ge=1, le=9)
     seats: int = Field(5, ge=1, le=9)
     city: str = Field(..., example="Casablanca")
-    condition_score: Optional[float] = Field(None, ge=1, le=5, description="Note d'état du véhicule (1 à 5)")
+    # PIVOT: condition_score removed (new vehicles only)
     month: Optional[int] = Field(None, ge=1, le=12, description="Mois de mise en vente (pour la saisonnalité)")
 
 
@@ -71,14 +71,14 @@ async def predict_price(input_data: PricePredictionInput):
     try:
         result = price_model.predict(input_data.model_dump())
         
-        # Simple market trend logic based on age and mileage for now
+        # PIVOT: Simplified trend logic for new cars (no mileage)
         trend = "Stable"
         current_year = 2026
         age = current_year - input_data.year
-        if age < 3 and input_data.mileage < 30000:
+        if age == 0:
             trend = "Très demandé"
-        elif age > 10 or input_data.mileage > 150000:
-            trend = "À la baisse"
+        elif age <= 1:
+            trend = "Demandé"
 
         return PricePredictionResponse(
             predicted_price=result["predicted_price"],

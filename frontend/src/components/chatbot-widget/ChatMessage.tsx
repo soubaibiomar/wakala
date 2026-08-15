@@ -66,8 +66,8 @@ export default function ChatMessage({ message }: ChatMessageProps) {
                     const rawStr = Array.isArray(children) ? children.join('') : String(children);
                     if (rawStr.includes('CAR_RECOMMENDATION')) {
                        return (
-                         <div style={{ padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.1)', textAlign: 'center', margin: '8px 0' }}>
-                           <p style={{ fontSize: '0.8rem', color: 'var(--accent-gold)', margin: 0, opacity: 0.8 }}>
+                         <div style={{ padding: '16px', background: 'rgba(18,33,53,0.03)', borderRadius: '12px', border: '1px dashed rgba(18,33,53,0.15)', textAlign: 'center', margin: '12px 0' }}>
+                           <p style={{ fontSize: '0.85rem', color: '#b89a44', margin: 0, fontWeight: 500 }}>
                              ⏳ Chargement de la fiche véhicule...
                            </p>
                          </div>

@@ -93,11 +93,21 @@ async def upload_avatar(
     db: Annotated[AsyncSession, Depends(get_db)],
     file: UploadFile = File(...),
 ):
-    if not file.content_type.startswith("image/"):
+    # Validation type MIME
+    if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Le fichier doit être une image.")
+    
+    # Validation taille (max 2MB pour les avatars)
+    if file.size and file.size > 2 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="L'image est trop volumineuse (maximum 2MB).")
+    
+    # Validation extension (ne pas se fier uniquement au content-type)
+    ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp", "gif"}
+    ext = (file.filename or "").rsplit(".", 1)[-1].lower() if file.filename and "." in file.filename else ""
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"Extension non autorisée. Extensions acceptées : {', '.join(ALLOWED_EXTENSIONS)}")
         
     os.makedirs("uploads/avatars", exist_ok=True)
-    ext = file.filename.split(".")[-1]
     filename = f"{current_user.id}_{uuid.uuid4().hex[:8]}.{ext}"
     filepath = os.path.join("uploads", "avatars", filename)
     

@@ -270,7 +270,12 @@
   color: var(--color-text-secondary);
   transition: all var(--transition-fast);
   font-family: var(--font-sans);
-}
+
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;}
 
 .catalogue__page-btn:hover:not(:disabled) {
   border-color: #AE8C4E;
@@ -495,5 +500,78 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+  }
+}
+
+.catalogue__ai-priorities {
+  margin-top: 30px;
+  padding: 40px;
+  background: linear-gradient(135deg, rgba(35, 40, 50, 0.7) 0%, rgba(15, 15, 20, 0.9) 100%);
+  backdrop-filter: blur(40px) saturate(150%);
+  -webkit-backdrop-filter: blur(40px) saturate(150%);
+  border-radius: 32px;
+  box-shadow: 
+    0 30px 80px rgba(0, 0, 0, 0.8),
+    inset 0 1px 1px rgba(255, 255, 255, 0.15),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.catalogue__ai-priorities h3 {
+  color: white;
+  margin-bottom: 30px;
+  text-align: center;
+  font-size: 1.8rem;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  background: linear-gradient(180deg, #ffffff 0%, #b3b3b3 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+.catalogue__ai-priorities-btn {
+  background: linear-gradient(135deg, var(--accent-gold, #f39c12), #d68910);
+  color: #121212;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 100px;
+  padding: 16px 40px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+  box-shadow: 0 10px 30px rgba(243, 156, 18, 0.3), inset 0 2px 0 rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.catalogue__ai-priorities-btn:hover:not(:disabled) {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 15px 40px rgba(243, 156, 18, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.3);
+  letter-spacing: 0.5px;
+}
+
+.catalogue__ai-priorities-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+
+@media (max-width: 640px) {
+  .catalogue__ai-priorities {
+    padding: 20px 16px;
+    border-radius: 20px;
+  }
+  .catalogue__ai-priorities h3 {
+    font-size: 1.3rem;
+    margin-bottom: 16px;
+  }
+  .catalogue__ai-priorities-btn {
+    padding: 14px 24px;
+    font-size: 1rem;
+    width: 100%;
   }
 }

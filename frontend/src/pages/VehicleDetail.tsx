@@ -102,7 +102,7 @@ function ReviewsList({ reviews }: { reviews: Review[] }) {
 function SpecsGrid({ vehicle }: { vehicle: Vehicle }) {
   const specs = [
     { label: fr.vehicle.year, value: String(vehicle.year) },
-    { label: fr.vehicle.mileage, value: vehicle.mileage === 0 && vehicle.year >= new Date().getFullYear() - 2 ? "Neuf" : vehicle.mileage === 0 || vehicle.mileage === -1 ? "N/C" : `${vehicle.mileage.toLocaleString('fr-FR')} km` },
+    { label: fr.vehicle.mileage, value: "Neuf" },  // PIVOT: all vehicles are new
     { label: fr.vehicle.fuel, value: FUEL_LABELS[vehicle.fuel_type] || vehicle.fuel_type },
     { label: fr.vehicle.bodyType, value: BODY_LABELS[vehicle.body_type] || vehicle.body_type },
     { label: fr.vehicle.transmission, value: TRANSMISSION_LABELS[vehicle.transmission] || vehicle.transmission },

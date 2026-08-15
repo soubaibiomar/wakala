@@ -11,7 +11,7 @@ import { locationService } from '../services/locationService';
 import { notificationService } from '../services/notificationService';
 import { offlineCache } from '../services/offlineCache';
 
-const CATEGORIES = ['Tous', 'Neuf', 'Occasion', 'Hybride', 'Électrique', 'SUV'];
+const CATEGORIES = ['Tous', 'Neuf', 'Hybride', 'Électrique', 'SUV'];  // PIVOT: removed 'Occasion'
 
 export default function CatalogueScreen() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);

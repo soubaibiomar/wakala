@@ -96,7 +96,6 @@ def _format_vehicle_context(vehicles: list[dict]) -> str:
         meta = v.get("metadata", {})
         title = f"{meta.get('brand', '')} {meta.get('model', '')} ({meta.get('year', '')})"
         price = meta.get("price", "N/A")
-        mileage = meta.get("mileage", "N/A")
         fuel = meta.get("fuel_type", "N/A")
         body = meta.get("body_type", "N/A")
         city = meta.get("city", "N/A")
@@ -104,7 +103,7 @@ def _format_vehicle_context(vehicles: list[dict]) -> str:
 
         line = (
             f"{i}. {title}\n"
-            f"   Prix: {price} MAD | Kilometrage: {mileage} km\n"
+            f"   Prix: {price} MAD\n"
             f"   Carburant: {fuel} | Carrosserie: {body}\n"
             f"   Ville: {city} | Score similarite: {v.get('score', 0):.2f}\n"
         )

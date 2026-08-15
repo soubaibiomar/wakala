@@ -51,9 +51,8 @@ def _format_vehicles_for_compare(vehicles: list[dict]) -> str:
     for i, v in enumerate(vehicles, 1):
         lines.append(f"Véhicule {i} ({v.get('brand')} {v.get('model')} - {v.get('year')}):")
         lines.append(f"  - Prix: {v.get('price')} MAD")
-        lines.append(f"  - Kilométrage: {v.get('mileage')} km")
         lines.append(f"  - Carburant: {v.get('fuel_type')}")
-        lines.append(f"  - Score IA État (0-100): {v.get('condition_score', 'Non évalué')}")
+        lines.append(f"  - Transmission: {v.get('transmission', 'N/A')}")
         lines.append(f"  - Description courte: {str(v.get('description', ''))[:100]}...")
         lines.append("")
     return "\n".join(lines)

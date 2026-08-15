@@ -45,11 +45,15 @@ async def analyze_image(file: UploadFile = File(...)):
         if img is None:
             raise HTTPException(status_code=400, detail="Image invalide ou corrompue.")
 
-        # 1. Floutage de la plaque
+        # 1. Floutage de la plaque (still required — loi 09-08)
         blurred_img = plate_blurrer.blur_plate(img)
 
-        # 2. Analyse YOLOv8 (Score d'état)
-        score, metadata = yolo_detector.analyze_image(blurred_img)
+        # PIVOT: Damage detection disabled for new vehicles only
+        # All new cars get a perfect condition score. YOLO inference skipped.
+        # To re-enable: uncomment the line below and remove the fixed score.
+        # score, metadata = yolo_detector.analyze_image(blurred_img)
+        score = 100.0
+        metadata = {"fraud_detected": False, "blur_variance": 100.0, "anomalies": []}
         
         # 3. Préparer l'image encodée pour le retour (Silver Layer simulation)
         _, buffer = cv2.imencode('.jpg', blurred_img)

@@ -35,7 +35,7 @@ interface CarSectionProps {
     page_size: number;
     sort_by: string;
     sort_order: 'asc' | 'desc';
-    condition?: 'neuf' | 'occasion';
+    condition?: 'neuf';  // PIVOT: occasion removed
   };
   emptyMessage: string;
 }
@@ -49,12 +49,7 @@ function CarSection({ id, tag, title, subtitle, fetchParams, emptyMessage }: Car
     vehicleService
       .getVehicles(fetchParams)
       .then((res) => {
-        // Strictly filter out "neuf" if condition is 'occasion'
-        let items = res.items;
-        if (fetchParams.condition === 'occasion') {
-           items = items.filter(v => !v.description?.toLowerCase().includes('véhicule neuf officiel'));
-        }
-        setVehicles(items.slice(0, 6)); // Ensure we only show 6
+        setVehicles(res.items.slice(0, 6)); // Show top 6
       })
       .catch((err) => {
         console.error('Erreur chargement véhicules:', err);
@@ -278,13 +273,14 @@ export default function Home() {
           <HeroCar />
 
           <BrandsSection />
+          {/* PIVOT: Replaced "Véhicules d'Occasion" with "Véhicules Neufs" */}
           <CarSection
-            id="used-vehicles"
-            tag="Occasions"
-            title="Véhicules d'Occasion"
-            subtitle="Dernières annonces d'occasion ajoutées, analysées par notre IA."
-            fetchParams={{ condition: 'occasion', page_size: 15, sort_by: 'created_at', sort_order: 'desc' }}
-            emptyMessage="Aucun véhicule d'occasion disponible."
+            id="new-vehicles"
+            tag="Neufs"
+            title="Véhicules Neufs"
+            subtitle="Derniers modèles neufs ajoutés, analysés par notre IA."
+            fetchParams={{ page_size: 15, sort_by: 'created_at', sort_order: 'desc' }}
+            emptyMessage="Aucun véhicule neuf disponible."
           />
           <FeaturesSection />
         </>

@@ -1,19 +1,27 @@
 import os
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Request
 import whisper
 import tempfile
 import asyncio
 
 router = APIRouter()
 
-# Load the whisper model once when the module loads
-# We use the 'base' or 'tiny' model for CPU to keep latency reasonable
-print("Loading Whisper model (this may take a few seconds on first run)...")
-model = whisper.load_model("base")
-print("Whisper model loaded.")
+from app.core.limiter import limiter
+
+# Lazy load the whisper model on first request to avoid slow startup
+_model = None
+
+def get_whisper_model():
+    global _model
+    if _model is None:
+        print("Loading Whisper model (lazy)...")
+        _model = whisper.load_model("base")
+        print("Whisper model loaded.")
+    return _model
 
 @router.post("/transcribe")
-async def transcribe_voice(audio: UploadFile = File(...)):
+@limiter.limit("5/minute")
+async def transcribe_voice(request: Request, audio: UploadFile = File(...)):
     """
     Receives an audio file (e.g. webm, wav, mp4) and transcribes it using Whisper.
     """
@@ -34,7 +42,8 @@ async def transcribe_voice(audio: UploadFile = File(...)):
         loop = asyncio.get_running_loop()
         # Using task="transcribe" to keep the original language, or translate to French?
         # For our search, transcribing in French/Darija is fine.
-        result = await loop.run_in_executor(None, lambda: model.transcribe(temp_path, language="fr"))
+        model_instance = get_whisper_model()
+        result = await loop.run_in_executor(None, lambda: model_instance.transcribe(temp_path, language="fr"))
         
         text = result.get("text", "").strip()
         return {"text": text}

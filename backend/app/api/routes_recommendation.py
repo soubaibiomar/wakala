@@ -1,6 +1,6 @@
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,13 +21,16 @@ from app.ml.matching.matching_engine import matching_engine
 from app.ml.scoring.criteria_ranker import criteria_ranker
 from app.ml.scoring.top3_aggregator import Top3Response
 from app.models.vehicle import Vehicle
+from app.core.limiter import limiter
 
 router = APIRouter()
 engine = HybridEngine(alpha=0.6)
 
 
 @router.post("/", response_model=RecommendationResponse)
+@limiter.limit("15/minute")
 async def get_recommendations(
+    request: Request,
     payload: RecommendationRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
@@ -111,7 +114,9 @@ async def get_recommendations(
 
 
 @router.post("/top3", response_model=Top3Response)
+@limiter.limit("15/minute")
 async def get_top3_recommendations(
+    request: Request,
     payload: SearchRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
 ):

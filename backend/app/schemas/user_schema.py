@@ -80,11 +80,16 @@ class UserReadBrief(BaseModel):
 # ─── Mise à jour ──────────────────────────────────────────────
 
 class UserUpdate(BaseModel):
-    """Schéma de mise à jour — tous les champs optionnels."""
+    """Schéma de mise à jour — tous les champs optionnels.
+    
+    NOTE SÉCURITÉ : Les champs `role`, `is_verified`, `is_pro`, et
+    `hashed_password` sont exclus volontairement pour empêcher
+    l'escalade de privilèges via le endpoint PUT /me.
+    Le changement de rôle se fait via POST /me/become-seller.
+    """
     full_name: Optional[str] = Field(None, min_length=2, max_length=255)
     email: Optional[EmailStr] = None
     phone: Optional[str] = Field(None, max_length=30)
-    role: Optional[str] = Field(None, pattern="^(buyer|seller)$")
     preferences: Optional[dict] = None
     avatar_url: Optional[str] = None
 

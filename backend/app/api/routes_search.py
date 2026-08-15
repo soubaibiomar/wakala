@@ -10,13 +10,14 @@ POST /api/search/voice
   Response : {"texte_transcrit": "...", "transcription_editable": true, "resultat_nlp": {...}}
 """
 
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Request
 from pydantic import BaseModel, Field
 from typing import Optional
 
 from app.ml.nlp_pipeline.llm_extractor import extract_search_criteria
 from app.ml.nlp_pipeline.schemas import ExtractedCriteria
 from app.services.voice_transcription import transcrire_audio
+from app.core.limiter import limiter
 
 router = APIRouter()
 
@@ -29,7 +30,8 @@ class VoiceSearchResponse(BaseModel):
     resultat_nlp: Optional[ExtractedCriteria]
 
 @router.post("/parse", response_model=ExtractedCriteria)
-async def parse_search_query(payload: ParseRequest):
+@limiter.limit("20/minute")
+async def parse_search_query(request: Request, payload: ParseRequest):
     """
     Analyse une phrase de recherche en texte libre, extrait
     les critères NLP, detecte la langue et gère la boucle de clarification.
@@ -38,7 +40,8 @@ async def parse_search_query(payload: ParseRequest):
     return result
 
 @router.post("/voice", response_model=VoiceSearchResponse)
-async def parse_voice_query(file: UploadFile = File(...)):
+@limiter.limit("5/minute")
+async def parse_voice_query(request: Request, file: UploadFile = File(...)):
     """
     Transcrit l'audio via le pipeline IA ASR Arabe/Darija :
     1. CohereLabs Arabic Transcribe (CohereLabs/cohere-transcribe-arabic-07-2026)

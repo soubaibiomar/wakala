@@ -17,9 +17,8 @@ async def generate_vehicle_description(v: Vehicle) -> str:
     Crée une description riche pour le véhicule, optimisée pour la recherche sémantique.
     """
     desc = (
-        f"Véhicule d'occasion {v.brand} {v.model}, année {v.year}. "
+        f"Véhicule neuf {v.brand} {v.model}, année {v.year}. "
         f"Couleur: {v.color or 'Non spécifiée'}. "
-        f"Kilométrage: {v.mileage} km. "
         f"Carburant: {v.fuel_type}. "
         f"Boîte de vitesses: {v.transmission}. "
         f"Carrosserie: {v.body_type}. "

@@ -22,6 +22,7 @@ export function VehicleCard({ vehicle, style, matchScore, keyFacts, budgetMargin
 
   const isNew = vehicle.mileage === 0;
 
+  // PIVOT: All vehicles are new — removed occasion logic
   return (
     <TouchableOpacity 
       style={[styles.card, style]}
@@ -30,11 +31,11 @@ export function VehicleCard({ vehicle, style, matchScore, keyFacts, budgetMargin
     >
       <View style={styles.imageContainer}>
         <Image source={{ uri: imageUri }} style={styles.cardImage} />
-        {/* Badges sur l'image */}
+        {/* Badge Neuf */}
         <View style={styles.badgeContainer}>
-          <View style={[styles.badge, isNew ? styles.badgeNew : styles.badgeUsed]}>
-            <Text style={[styles.badgeText, isNew ? styles.badgeTextNew : styles.badgeTextUsed]}>
-              {isNew ? 'Neuf' : 'Occasion'}
+          <View style={[styles.badge, styles.badgeNew]}>
+            <Text style={[styles.badgeText, styles.badgeTextNew]}>
+              Neuf
             </Text>
           </View>
         </View>

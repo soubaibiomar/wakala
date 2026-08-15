@@ -1,15 +1,17 @@
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from app.rag.chatbot_chain import chatbot_chain
 from app.rag.schemas import ChatRequest, ChatResponse
+from app.core.limiter import limiter
 
 router = APIRouter()
 
 
 @router.post("/", response_model=ChatResponse)
-async def chat(payload: ChatRequest):
+@limiter.limit("10/minute")
+async def chat(request: Request, payload: ChatRequest):
     try:
         response = await chatbot_chain.answer(
             message=payload.message,

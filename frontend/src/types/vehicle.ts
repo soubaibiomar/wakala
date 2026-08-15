@@ -19,7 +19,7 @@ export interface Vehicle {
   model: string;
   version?: string;
   year: number;
-  mileage: number;
+  mileage?: number;  // PIVOT: optional, always 0 for new vehicles
   fuel_type: FuelType;
   body_type: BodyType;
   transmission: TransmissionType;
@@ -36,7 +36,7 @@ export interface Vehicle {
   // Champs IA (nullable — remplis par les modules ML)
   predicted_price?: number;
   price_confidence?: number;
-  condition_score?: number;   // ← Module vision
+  condition_score?: number;   // ← PIVOT: dormant (vision module disabled for new cars)
   popularity_score?: number;  // ← Neo4j PageRank
   images?: Array<{ file_path: string }>;
 
@@ -67,8 +67,8 @@ export interface VehicleFilters {
   price_max?: number;
   year_min?: number;
   year_max?: number;
-  mileage_max?: number;
-  condition?: 'neuf' | 'occasion';
+  mileage_max?: number;  // PIVOT: unused for new vehicles
+  condition?: 'neuf';  // PIVOT: removed 'occasion'
   sort_by?: string;
   sort_order?: 'asc' | 'desc';
   group_by_model?: boolean;

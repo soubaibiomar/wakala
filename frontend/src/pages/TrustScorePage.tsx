@@ -56,8 +56,8 @@ const criteria = [
   },
   {
     icon: <BarChart3 size={24} />,
-    title: 'Kilométrage vs. Âge',
-    desc: "Le kilométrage annoncé est-il réaliste par rapport à l'année du véhicule ? Les incohérences font baisser le score.",
+    title: 'Prix vs. Segment',  // PIVOT: was 'Kilométrage vs. Âge'
+    desc: "Le prix annoncé est-il cohérent avec le segment et les équipements du véhicule ? Les écarts importants font baisser le score.",
     weight: 10,
   },
   {

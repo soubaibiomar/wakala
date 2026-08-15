@@ -1,0 +1,253 @@
+/* Tubes Container */
+.tubes-container {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-bottom: 50px;
+  flex-wrap: wrap;
+  perspective: 1000px;
+}
+
+.tube-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100px;
+  transition: transform 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.tube-wrapper:hover {
+  transform: translateY(-5px);
+}
+
+/* The Tube - 3D Glass Cylinder */
+.tube-outer {
+  width: 60px;
+  height: 240px;
+  border-radius: 30px; /* Pill shape */
+  background: rgba(255, 255, 255, 0.03);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 24px;
+  
+  /* Complex 3D Glass Effect */
+  box-shadow: 
+    inset 0 0 20px rgba(0, 0, 0, 0.8), /* inner darkness */
+    inset -5px 0 15px rgba(0, 0, 0, 0.5), /* side shadow */
+    inset 5px 0 10px rgba(255, 255, 255, 0.15), /* side highlight */
+    inset 0 2px 2px rgba(255, 255, 255, 0.2), /* top edge highlight */
+    inset 0 -2px 5px rgba(0, 0, 0, 0.6), /* bottom edge shadow */
+    0 15px 35px rgba(0, 0, 0, 0.5); /* drop shadow */
+    
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+}
+
+/* Add a specular highlight reflection on the glass */
+.tube-outer::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 8px;
+  width: 8px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.05) 100%);
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* Neon Liquid Fill */
+.tube-inner {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  border-radius: 30px;
+  transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy liquid effect */
+  z-index: 1;
+}
+
+/* Add a glowing meniscus (surface) to the liquid */
+.tube-inner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  filter: blur(2px);
+  transform: translateY(-50%);
+}
+
+/* Colors for each tube with intense neon glow */
+.performance-fill {
+  background: linear-gradient(to top, #8e0000, #ff1744, #ff5252);
+  box-shadow: 0 -10px 30px rgba(255, 23, 68, 0.6), inset 0 0 20px rgba(255, 23, 68, 0.8);
+}
+
+.confort-fill {
+  background: linear-gradient(to top, #001e54, #00b0ff, #40c4ff);
+  box-shadow: 0 -10px 30px rgba(0, 176, 255, 0.6), inset 0 0 20px rgba(0, 176, 255, 0.8);
+}
+
+.economie-fill {
+  background: linear-gradient(to top, #993b00, #ff9100, #ffd740);
+  box-shadow: 0 -10px 30px rgba(255, 145, 0, 0.6), inset 0 0 20px rgba(255, 145, 0, 0.8);
+}
+
+.securite-fill {
+  background: linear-gradient(to top, #004d00, #00e676, #69f0ae);
+  box-shadow: 0 -10px 30px rgba(0, 230, 118, 0.6), inset 0 0 20px rgba(0, 230, 118, 0.8);
+}
+
+.fiabilite-fill {
+  background: linear-gradient(to top, #2b0066, #b388ff, #d1c4e9);
+  box-shadow: 0 -10px 30px rgba(179, 136, 255, 0.6), inset 0 0 20px rgba(179, 136, 255, 0.8);
+}
+
+.espace-fill {
+  background: linear-gradient(to top, #004d40, #18ffff, #84ffff);
+  box-shadow: 0 -10px 30px rgba(24, 255, 255, 0.6), inset 0 0 20px rgba(24, 255, 255, 0.8);
+}
+
+/* Labels */
+.tube-label {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 6px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.tube-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin-bottom: 20px;
+  font-family: 'Outfit', sans-serif;
+  color: white;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+/* Range Sliders Styling */
+.tube-slider, .budget-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+  transition: all 0.3s ease;
+}
+
+.tube-slider::-webkit-slider-thumb, .budget-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid rgba(255,255,255,0.8);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+  box-shadow: 0 0 10px rgba(0,0,0,0.5), 0 0 0 4px rgba(255,255,255,0.1);
+}
+
+/* Hover & Active states for thumbs */
+.tube-slider::-webkit-slider-thumb:hover, .budget-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.3);
+  box-shadow: 0 0 15px rgba(255,255,255,0.8), 0 0 0 6px rgba(255,255,255,0.15);
+}
+
+.tube-slider:active::-webkit-slider-thumb, .budget-slider:active::-webkit-slider-thumb {
+  transform: scale(1.1);
+}
+
+/* Glowing Tracks dynamically based on parent wrapper */
+.tube-wrapper:has(.performance-fill) .tube-slider::-webkit-slider-thumb { background: #ff1744; border-color: #ff1744; box-shadow: 0 0 15px #ff1744; }
+.tube-wrapper:has(.confort-fill) .tube-slider::-webkit-slider-thumb { background: #00b0ff; border-color: #00b0ff; box-shadow: 0 0 15px #00b0ff; }
+.tube-wrapper:has(.economie-fill) .tube-slider::-webkit-slider-thumb { background: #ff9100; border-color: #ff9100; box-shadow: 0 0 15px #ff9100; }
+.tube-wrapper:has(.securite-fill) .tube-slider::-webkit-slider-thumb { background: #00e676; border-color: #00e676; box-shadow: 0 0 15px #00e676; }
+.tube-wrapper:has(.fiabilite-fill) .tube-slider::-webkit-slider-thumb { background: #b388ff; border-color: #b388ff; box-shadow: 0 0 15px #b388ff; }
+.tube-wrapper:has(.espace-fill) .tube-slider::-webkit-slider-thumb { background: #18ffff; border-color: #18ffff; box-shadow: 0 0 15px #18ffff; }
+
+.tube-wrapper:has(.performance-fill) .tube-slider:hover { background: rgba(255, 23, 68, 0.2); }
+.tube-wrapper:has(.confort-fill) .tube-slider:hover { background: rgba(0, 176, 255, 0.2); }
+.tube-wrapper:has(.economie-fill) .tube-slider:hover { background: rgba(255, 145, 0, 0.2); }
+.tube-wrapper:has(.securite-fill) .tube-slider:hover { background: rgba(0, 230, 118, 0.2); }
+.tube-wrapper:has(.fiabilite-fill) .tube-slider:hover { background: rgba(179, 136, 255, 0.2); }
+.tube-wrapper:has(.espace-fill) .tube-slider:hover { background: rgba(24, 255, 255, 0.2); }
+
+/* Global Budget Container */
+.budget-container {
+  margin: 0 auto 40px;
+  max-width: 450px;
+  text-align: center;
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.budget-label {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 8px;
+  font-family: 'Inter', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.budget-value {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 24px;
+  color: var(--accent-gold, #f39c12);
+  font-family: 'Outfit', sans-serif;
+  text-shadow: 0 0 20px rgba(243, 156, 18, 0.3);
+}
+
+.budget-slider {
+  width: 100%;
+}
+
+.budget-slider::-webkit-slider-thumb { 
+  background: var(--accent-gold, #f39c12);
+  border-color: var(--accent-gold, #f39c12);
+  box-shadow: 0 0 15px var(--accent-gold, #f39c12);
+}
+
+.budget-slider:hover {
+  background: rgba(243, 156, 18, 0.15);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .tubes-container {
+    gap: 15px;
+  }
+  
+  .tube-wrapper {
+    width: 80px;
+  }
+  
+  .tube-outer {
+    width: 45px;
+    height: 180px;
+  }
+  
+  .tube-value {
+    font-size: 1.3rem;
+  }
+  
+  .budget-value {
+    font-size: 2rem;
+  }
+}

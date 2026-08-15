@@ -139,16 +139,24 @@ def main():
     dry_run = not args.live
 
     # Base platform scrapers
+    # ── PIVOT: New vehicles only ──────────────────────────────────
+    # Used-only scrapers disabled (code kept for reversibility):
+    #   AvitoScraper()        — used-car marketplace
+    #   GlobalOccazScraper()  — used-car marketplace  
+    #   SpoticarScraper()     — certified used cars
+    #   CarzScraper()         — used-car marketplace
+    # To re-enable: uncomment and re-run scrapers to repopulate data.
+    # ──────────────────────────────────────────────────────────────
     scrapers = [
-        AvitoScraper(), 
+        # AvitoScraper(),          # DISABLED — used-only (pivot neuf)
         MoteurScraper(),
         WandalooScraper(),
         LeguideautoScraper(),
-        CarzScraper(),
+        # CarzScraper(),           # DISABLED — used-only (pivot neuf)
         KifalScraper(),
         OtoclicScraper(),
-        GlobalOccazScraper(),
-        SpoticarScraper()
+        # GlobalOccazScraper(),    # DISABLED — used-only (pivot neuf)
+        # SpoticarScraper()        # DISABLED — used-only (pivot neuf)
     ]
 
     # Dynamically add dealer scrapers

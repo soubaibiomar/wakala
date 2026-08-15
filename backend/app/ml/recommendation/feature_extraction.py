@@ -69,10 +69,11 @@ PRICE_PATTERNS = [
     re.compile(r'budget\s*(?:de|:)?\s*(?P<min>\d+(?:\s?\d+)*\s*[kK]?)\s*(?:a|à|–|-)\s*(?P<max>\d+(?:\s?\d+)*\s*[kK]?)', re.IGNORECASE),
 ]
 
-MILEAGE_PATTERNS = [
-    re.compile(r'(?P<max>\d+)\s*(?:km|kms|kilomètres?)\s*(?:max|maxi|maximum)?', re.IGNORECASE),
-    re.compile(r'(?:moins de|max|maxi|under)\s*(?P<max>\d+)\s*(?:km|kms|kilomètres?)', re.IGNORECASE),
-]
+# ── PIVOT: Mileage patterns disabled (new vehicles only) ──────
+# MILEAGE_PATTERNS = [
+#     re.compile(r'(?P<max>\d+)\s*(?:km|kms|kilomètres?)\s*(?:max|maxi|maximum)?', re.IGNORECASE),
+#     re.compile(r'(?:moins de|max|maxi|under)\s*(?P<max>\d+)\s*(?:km|kms|kilomètres?)', re.IGNORECASE),
+# ]
 
 YEAR_PATTERNS = [
     re.compile(r'(?P<min>\d{4})\s*(?:a|à|–|-)\s*(?P<max>\d{4})'),
@@ -141,10 +142,9 @@ def extract_price(text: str) -> tuple[Optional[float], Optional[float]]:
 
 
 def extract_mileage(text: str) -> Optional[int]:
-    for pattern in MILEAGE_PATTERNS:
-        m = pattern.search(text)
-        if m:
-            return int(m.group("max"))
+    # ── PIVOT: Disabled for new vehicles only ──
+    # Mileage extraction is meaningless when all vehicles are new (mileage=0).
+    # Kept for reversibility — re-enable by uncommenting MILEAGE_PATTERNS above.
     return None
 
 
@@ -200,9 +200,10 @@ def extract_filters_from_query(query: str) -> dict:
         filters["price_min"] = price_min
     if price_max is not None:
         filters["price_max"] = price_max
-    mileage_max = extract_mileage(query)
-    if mileage_max is not None:
-        filters["mileage_max"] = mileage_max
+    # ── PIVOT: Mileage filter disabled (new vehicles only) ──
+    # mileage_max = extract_mileage(query)
+    # if mileage_max is not None:
+    #     filters["mileage_max"] = mileage_max
     year_min, year_max = extract_year(query)
     if year_min is not None:
         filters["year_min"] = year_min

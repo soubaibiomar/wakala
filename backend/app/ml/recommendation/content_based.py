@@ -1,3 +1,11 @@
+"""
+content_based.py — Content-based recommendation engine.
+
+PIVOT: Removed mileage as a feature dimension. New-car recommendations
+are based on: price, year, body_type, transmission, fuel_type, engine_power.
+Mileage is meaningless for new vehicles (always 0).
+"""
+
 import math
 from functools import lru_cache
 from typing import Any, TYPE_CHECKING, Optional
@@ -13,8 +21,8 @@ else:
 
 
 @lru_cache(maxsize=1)
-def _cached_scalers() -> tuple[StandardScaler, MinMaxScaler, MinMaxScaler, MinMaxScaler, MinMaxScaler]:
-    return (StandardScaler(), MinMaxScaler(), MinMaxScaler(), MinMaxScaler(), MinMaxScaler())
+def _cached_scalers() -> tuple[StandardScaler, MinMaxScaler, MinMaxScaler]:
+    return (StandardScaler(), MinMaxScaler(), MinMaxScaler())
 
 
 BODY_TYPE_ORDER = [
@@ -29,8 +37,9 @@ FUEL_ORDER = [
     "electrique", "gpl", "hydrogene",
 ]
 
+# ── PIVOT: Removed mileage_norm ──────────────────────────────────
 FEATURE_COLUMNS = [
-    "price_norm", "year_norm", "mileage_norm",
+    "price_norm", "year_norm",
     "body_type_encoded", "transmission_encoded",
     "fuel_encoded", "engine_power_norm",
 ]
@@ -54,7 +63,6 @@ def vehicle_to_feature_vector(vehicle: Vehicle) -> np.ndarray:
     raw = np.array([
         float(vehicle.price or 0),
         float(vehicle.year or 2020),
-        float(vehicle.mileage or 0),
         _encode_body_type(vehicle.body_type or ""),
         TRANSMISSION_MAP.get(vehicle.transmission or "", 0),
         _encode_fuel(vehicle.fuel_type or ""),
@@ -87,8 +95,7 @@ def candidate_vehicles_from_filters(
             continue
         if "year_max" in filters and (v.year is None or v.year > filters["year_max"]):
             continue
-        if "mileage_max" in filters and (v.mileage is None or v.mileage > filters["mileage_max"]):
-            continue
+        # ── PIVOT: Removed mileage_max filter (irrelevant for new cars) ──
         candidates.append(v)
     return candidates
 
@@ -102,22 +109,19 @@ def build_feature_matrix(vehicles: list[Vehicle]) -> np.ndarray:
     for i, v in enumerate(vehicles):
         matrix[i, 0] = float(v.price or 0)
         matrix[i, 1] = float(v.year or 2020)
-        matrix[i, 2] = float(v.mileage or 0)
-        matrix[i, 3] = _encode_body_type(v.body_type or "")
-        matrix[i, 4] = TRANSMISSION_MAP.get(v.transmission or "", 0)
-        matrix[i, 5] = _encode_fuel(v.fuel_type or "")
-        matrix[i, 6] = float(v.engine_power_hp or 0)
+        matrix[i, 2] = _encode_body_type(v.body_type or "")
+        matrix[i, 3] = TRANSMISSION_MAP.get(v.transmission or "", 0)
+        matrix[i, 4] = _encode_fuel(v.fuel_type or "")
+        matrix[i, 5] = float(v.engine_power_hp or 0)
 
     price_col = matrix[:, 0:1]
     year_col = matrix[:, 1:2]
-    mileage_col = matrix[:, 2:3]
-    engine_col = matrix[:, 6:7]
+    engine_col = matrix[:, 5:6]
 
-    price_scaler, year_scaler, mileage_scaler, engine_scaler, _ = _cached_scalers()
+    price_scaler, year_scaler, engine_scaler = _cached_scalers()
     matrix[:, 0:1] = price_scaler.fit_transform(price_col)
     matrix[:, 1:2] = year_scaler.fit_transform(year_col)
-    matrix[:, 2:3] = mileage_scaler.fit_transform(mileage_col)
-    matrix[:, 6:7] = engine_scaler.fit_transform(engine_col)
+    matrix[:, 5:6] = engine_scaler.fit_transform(engine_col)
 
     return matrix
 
@@ -125,13 +129,12 @@ def build_feature_matrix(vehicles: list[Vehicle]) -> np.ndarray:
 def build_query_vector(filters: dict, reference_vehicles: list[Vehicle]) -> np.ndarray:
     n_features = len(FEATURE_COLUMNS)
     query = np.zeros((1, n_features))
-    query[0, 3] = _encode_body_type(filters.get("body_type", ""))
-    query[0, 4] = TRANSMISSION_MAP.get(filters.get("transmission", ""), 0)
-    query[0, 5] = _encode_fuel(filters.get("fuel_type", ""))
+    query[0, 2] = _encode_body_type(filters.get("body_type", ""))
+    query[0, 3] = TRANSMISSION_MAP.get(filters.get("transmission", ""), 0)
+    query[0, 4] = _encode_fuel(filters.get("fuel_type", ""))
 
     prices = [v.price for v in reference_vehicles if v.price is not None]
     years = [v.year for v in reference_vehicles if v.year is not None]
-    mileages = [v.mileage for v in reference_vehicles if v.mileage is not None]
     powers = [(v.engine_power_hp or 0) for v in reference_vehicles]
 
     if filters.get("price_min") is not None and filters.get("price_max") is not None:
@@ -148,23 +151,16 @@ def build_query_vector(filters: dict, reference_vehicles: list[Vehicle]) -> np.n
     else:
         ref_year = float(np.mean(years)) if years else 2020.0
 
-    if filters.get("mileage_max") is not None:
-        ref_mileage = float(filters["mileage_max"]) * 0.5
-    else:
-        ref_mileage = float(np.mean(mileages)) if mileages else 50000.0
-
     ref_engine = float(np.mean(powers)) if powers else 100.0
 
     query[0, 0] = ref_price
     query[0, 1] = ref_year
-    query[0, 2] = ref_mileage
-    query[0, 6] = ref_engine
+    query[0, 5] = ref_engine
 
-    price_scaler, year_scaler, mileage_scaler, engine_scaler, _ = _cached_scalers()
+    price_scaler, year_scaler, engine_scaler = _cached_scalers()
     query[:, 0:1] = price_scaler.transform(query[:, 0:1])
     query[:, 1:2] = year_scaler.transform(query[:, 1:2])
-    query[:, 2:3] = mileage_scaler.transform(query[:, 2:3])
-    query[:, 6:7] = engine_scaler.transform(query[:, 6:7])
+    query[:, 5:6] = engine_scaler.transform(query[:, 5:6])
 
     return query
 

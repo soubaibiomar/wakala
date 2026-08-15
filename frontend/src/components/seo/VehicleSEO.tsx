@@ -28,13 +28,13 @@ export default function VehicleSEO({ vehicle, currency = "MAD", image }: Vehicle
     "fuelType": vehicle.fuel_type,
     "vehicleTransmission": vehicle.transmission,
     "bodyType": vehicle.body_type,
-    "description": vehicle.description || `Achetez ce véhicule d'occasion ${vehicle.brand} ${vehicle.model} de l'année ${vehicle.year} au prix de ${vehicle.price} ${currency}.`,
+    "description": vehicle.description || `Achetez ce véhicule neuf ${vehicle.brand} ${vehicle.model} de l'année ${vehicle.year} au prix de ${vehicle.price} ${currency}.`,
     "image": image || `https://via.placeholder.com/800x600?text=${vehicle.brand}+${vehicle.model}`,
     "offers": {
       "@type": "Offer",
       "priceCurrency": currency,
       "price": vehicle.price,
-      "itemCondition": "https://schema.org/UsedCondition",
+      "itemCondition": "https://schema.org/NewCondition",
       "availability": "https://schema.org/InStock",
       "seller": {
         "@type": vehicle.seller?.role === 'seller' ? "Organization" : "Person",
@@ -44,13 +44,13 @@ export default function VehicleSEO({ vehicle, currency = "MAD", image }: Vehicle
   };
 
   const pageTitle = `${vehicle.brand} ${vehicle.model} ${vehicle.year} - ${vehicle.price.toLocaleString('fr-FR')} ${currency} | Wakala`;
-  const pageDescription = `Achetez ce véhicule d'occasion ${vehicle.brand} ${vehicle.model} de l'année ${vehicle.year} au prix de ${vehicle.price} ${currency}. ${vehicle.city ? 'À ' + vehicle.city + '.' : ''}`;
+  const pageDescription = `Achetez ce véhicule neuf ${vehicle.brand} ${vehicle.model} de l'année ${vehicle.year} au prix de ${vehicle.price} ${currency}. ${vehicle.city ? 'À ' + vehicle.city + '.' : ''}`;
 
   const citySlug = (vehicle.city || "maroc").toLowerCase().replace(/ /g, "-");
   const brandSlug = (vehicle.brand || "marque").toLowerCase().replace(/ /g, "-");
   const modelSlug = (vehicle.model || "modele").toLowerCase().replace(/ /g, "-");
   const slug = `${brandSlug}-${modelSlug}-${vehicle.year}-${vehicle.price}dh`;
-  const canonicalUrl = `https://wakala.ma/voitures-occasion/${citySlug}/${slug}`;
+  const canonicalUrl = `https://wakala.ma/voitures-neuves/${citySlug}/${slug}`;
 
   return (
     <Helmet>

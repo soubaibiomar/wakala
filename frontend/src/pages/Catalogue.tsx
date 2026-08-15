@@ -7,6 +7,8 @@ import VehicleCard from '../components/vehicle-card/VehicleCard';
 import { recommendationService, type RecommendationResponse } from '../services/recommendationService';
 import fr from '../i18n/fr';
 import './Catalogue.css';
+import PriorityTubes from '../components/priority-tubes/PriorityTubes';
+import { ALL_CRITERIA, getIntelligentCriteria } from '../utils/priorityUtils';
 
 const PAGE_SIZE = 12;
 
@@ -41,11 +43,16 @@ export default function Catalogue() {
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
   const [activeSort, setActiveSort] = useState('created_at-desc');
-  const [activeCondition, setActiveCondition] = useState('occasion');
+  const [activeCondition, setActiveCondition] = useState('');  // PIVOT: default to all (was 'occasion')
   const [savedSearch, setSavedSearch] = useState(false);
   const [activeModel, setActiveModel] = useState('');
 
   const [lastQuery, setLastQuery] = useState<string | null>(null);
+  
+  // Priority Tubes State
+  const [activeCriteria, setActiveCriteria] = useState<{id: string, label: string, colorClass: string, value: number}[]>([]);
+  const [budget, setBudget] = useState<number | null>(null);
+  const [isUpdatingAI, setIsUpdatingAI] = useState(false);
 
   // Initialize from URL params
   useEffect(() => {
@@ -65,7 +72,29 @@ export default function Catalogue() {
     if (q && q !== lastQuery) {
       setLastQuery(q);
       setLoading(true);
-      recommendationService.search({ query: q })
+      
+      // Setup intelligent tubes
+      let initialCriteria: {id: string, label: string, colorClass: string, value: number}[] = [];
+      let urlBudget = searchParams.get('budget');
+      setBudget(urlBudget ? Number(urlBudget) : 250000);
+      
+      searchParams.forEach((value, key) => {
+        if (key.startsWith('prio_')) {
+          const id = key.replace('prio_', '');
+          const cDef = ALL_CRITERIA.find(c => c.id === id);
+          if (cDef) {
+            initialCriteria.push({ ...cDef, value: Number(value) });
+          }
+        }
+      });
+      
+      if (initialCriteria.length > 0) {
+        setActiveCriteria(initialCriteria);
+      } else {
+        setActiveCriteria(getIntelligentCriteria(null));
+      }
+
+      recommendationService.search({ query: q, page_size: 3 })
         .then((res) => {
           if (res && res.items && res.items.length > 0) {
             setActiveRecommendations(res);
@@ -274,7 +303,7 @@ export default function Catalogue() {
               >
                 <option value="">Tous les véhicules</option>
                 <option value="neuf">Neuf</option>
-                <option value="occasion">Occasion</option>
+                {/* PIVOT: occasion option removed */}
               </select>
             </div>
           </div>
@@ -335,7 +364,7 @@ export default function Catalogue() {
                 <option value="created_at-desc">Plus récentes</option>
                 <option value="price-asc">Prix croissant</option>
                 <option value="price-desc">Prix décroissant</option>
-                <option value="mileage-asc">Kilométrage</option>
+                {/* PIVOT: mileage sort removed */}
                 <option value="year-desc">Année</option>
               </select>
             </div>
@@ -356,32 +385,62 @@ export default function Catalogue() {
             <h1 className="catalogue__main-title">
               {activeRecommendations 
                 ? 'Véhicules Recommandés par l\'IA'
-                : activeModel && searchTerm 
-                  ? `${searchTerm} ${activeModel}`
-                  : activeCondition === 'neuf' 
-                    ? 'Voitures neuves au Maroc' 
-                    : activeCondition === 'occasion' 
-                      ? "Voitures d'occasion au Maroc" 
-                      : 'Voitures au Maroc'}
+                  : activeModel && searchTerm 
+                    ? `${searchTerm} ${activeModel}`
+                    : 'Voitures neuves au Maroc'}
             </h1>
             <span className="catalogue__main-count">1 - {vehicles.length} sur {total} annonces</span>
           </div>
 
           {activeRecommendations && (
-            <div className="catalogue__ai-banner">
-              <div className="catalogue__ai-banner-content">
-                <span className="catalogue__ai-banner-badge">✨ Match IA Wakala</span>
-                <p className="catalogue__ai-banner-text">
-                  Résultats optimisés et classés par pertinence pour : <strong>"{searchParams.get('q') || 'votre recherche'}"</strong>
-                </p>
+            <div className="catalogue__ai-banner" style={{ display: 'block' }}>
+              <div className="catalogue__ai-banner-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <span className="catalogue__ai-banner-badge">✨ Match IA Wakala</span>
+                  <p className="catalogue__ai-banner-text">
+                    Résultats optimisés et classés par pertinence pour : <strong>"{searchParams.get('q') || 'votre recherche'}"</strong>
+                  </p>
+                </div>
+                <button 
+                  className="catalogue__ai-banner-reset" 
+                  onClick={handleClearFilters}
+                  title="Revenir à la vue générale"
+                >
+                  Fermer ✕
+                </button>
               </div>
-              <button 
-                className="catalogue__ai-banner-reset" 
-                onClick={handleClearFilters}
-                title="Revenir à la vue générale"
-              >
-                Réinitialiser la recherche IA ✕
-              </button>
+              
+              <div className="catalogue__ai-priorities">
+                <h3>Ajustez vos priorités</h3>
+                <PriorityTubes 
+                  criteria={activeCriteria}
+                  budget={budget}
+                  onCriteriaChange={(idx, val) => {
+                    const newC = [...activeCriteria];
+                    newC[idx].value = val;
+                    setActiveCriteria(newC);
+                  }}
+                  onBudgetChange={setBudget}
+                />
+                <div style={{ textAlign: 'center' }}>
+                  <button 
+                    className="catalogue__ai-priorities-btn"
+                    onClick={() => {
+                      setIsUpdatingAI(true);
+                      const prioText = activeCriteria.map(c => `${c.label}:${c.value}%`).join(', ');
+                      const fullQuery = `${searchParams.get('q')} Priorités strictes: ${prioText}. Budget max: ${budget} MAD`;
+                      recommendationService.search({ query: fullQuery, page_size: 3 })
+                        .then(res => {
+                          if (res?.items) setActiveRecommendations(res);
+                        })
+                        .finally(() => setIsUpdatingAI(false));
+                    }}
+                    disabled={isUpdatingAI}
+                  >
+                    {isUpdatingAI ? 'Mise à jour en cours...' : 'Mettre à jour les recommandations'}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 

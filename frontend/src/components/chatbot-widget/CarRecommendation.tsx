@@ -88,12 +88,14 @@ export default function CarRecommendation({ id, brand, model, year, price, image
         <button 
           disabled={!vehicleExists}
           style={{ 
-            background: vehicleExists ? 'var(--color-accent-gold)' : 'var(--bg-surface)', 
-            color: vehicleExists ? '#fff' : 'var(--text-muted)', 
-            border: vehicleExists ? 'none' : '1px solid var(--border-subtle)', 
-            padding: '4px 12px', borderRadius: '4px', fontSize: '0.7rem', 
+            background: vehicleExists ? 'linear-gradient(135deg, #122135, #1e3a5f)' : '#f1f5f9', 
+            color: vehicleExists ? '#fff' : '#94a3b8', 
+            border: 'none', 
+            padding: '6px 14px', borderRadius: '100px', fontSize: '0.75rem', 
             cursor: vehicleExists ? 'pointer' : 'not-allowed',
-            fontWeight: 600
+            fontWeight: 600,
+            boxShadow: vehicleExists ? '0 4px 12px rgba(18,33,53,0.15)' : 'none',
+            transition: 'all 0.2s ease'
           }}>
           {vehicleExists ? "Voir l'annonce" : "Annonce expirée"}
         </button>

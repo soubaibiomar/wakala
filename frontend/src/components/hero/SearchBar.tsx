@@ -5,6 +5,7 @@ import type { RecommendationResponse } from '../../services/recommendationServic
 import { parseSearchQuery, type NlpExtractionResult } from '../../services/searchParseService';
 import { useMatchmaker } from '../recommendation-form/useMatchmaker';
 import { useVoiceInput } from '../../hooks/useVoiceInput';
+import PriorityModal from '../../pages/PriorityForm/PriorityModal';
 
 interface SearchBarProps {
   userId?: string | null;
@@ -64,6 +65,7 @@ export default function SearchBar({ userId, onResults }: SearchBarProps) {
   const { isLoading, recommend } = useMatchmaker();
   const [nlpResult, setNlpResult] = useState<NlpExtractionResult | null>(null);
   const [nlpLoading, setNlpLoading] = useState(false);
+  const [showPriorityModal, setShowPriorityModal] = useState(false);
 
   // ─── Saisie vocale (Web Speech API) ───────────────────────
   const voice = useVoiceInput({
@@ -89,21 +91,43 @@ export default function SearchBar({ userId, onResults }: SearchBarProps) {
     }
 
     setNlpLoading(true);
-
+    let parsedResult = nlpResult;
     try {
-      // Si on est sur la page d'accueil ou ailleurs, on redirige directement vers le catalogue
-      if (onResults) {
-        onResults(finalQuery, null);
-      } else {
-        navigate(`/catalogue?q=${encodeURIComponent(finalQuery)}`);
-      }
+      parsedResult = await parseSearchQuery(finalQuery);
+      setNlpResult(parsedResult);
     } catch (err) {
-      console.error('Erreur navigation catalogue:', err);
-      navigate(`/catalogue?q=${encodeURIComponent(finalQuery)}`);
+      console.error("Erreur NLP:", err);
     } finally {
       setNlpLoading(false);
     }
-  }, [onResults, navigate, nlpResult, clarificationAnswer]);
+
+    // Au lieu de naviguer directement, on affiche la modale des priorités
+    setShowPriorityModal(true);
+  }, [nlpResult, clarificationAnswer]);
+
+  const handleModalSubmit = (priorities: {name: string, value: number}[], budget: number | null) => {
+    setShowPriorityModal(false);
+    
+    // Construct the query parameters
+    const params = new URLSearchParams();
+    if (nlpResult?.question) {
+      params.append('q', nlpResult.question);
+    } else {
+      params.append('q', query);
+    }
+    
+    // Add dynamic priorities
+    priorities.forEach(p => {
+      params.append(`prio_${p.name}`, p.value.toString());
+    });
+    
+    if (budget) {
+      params.append('budget', budget.toString());
+    }
+    
+    // Redirect to Catalogue instead of chat
+    navigate(`/catalogue?${params.toString()}`);
+  };
 
   const handleSubmitForm = (e: FormEvent) => {
     e.preventDefault();
@@ -126,7 +150,14 @@ export default function SearchBar({ userId, onResults }: SearchBarProps) {
   const needsClarification = nlpResult?.statut === 'clarification_requise';
 
   return (
-    <div className="search-bar-container">
+    <>
+      <PriorityModal 
+        isOpen={showPriorityModal} 
+        onClose={() => setShowPriorityModal(false)}
+        onSubmitPriorities={handleModalSubmit}
+        nlpResult={nlpResult}
+      />
+      <div className="search-bar-container">
       {/* ─── NLP Badges ──────────────────────────────────── */}
       {nlpLoading && (
         <div className="nlp-badges nlp-badges--loading" aria-live="polite">
@@ -265,5 +296,6 @@ export default function SearchBar({ userId, onResults }: SearchBarProps) {
         </button>
       </form>
     </div>
+    </>
   );
 }

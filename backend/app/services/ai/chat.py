@@ -18,7 +18,7 @@ llm = ChatOpenAI(
     model=settings.OLLAMA_MODEL_TEXT,
     api_key=api_key,
     temperature=0.2,
-    max_tokens=1000,
+    max_tokens=2500,
 )
 _ollama_base = settings.OLLAMA_BASE_URL.replace("/v1", "") if settings.OLLAMA_BASE_URL else "http://localhost:11434"
 embeddings_model = OllamaEmbeddings(base_url=_ollama_base, model="bge-m3")
@@ -157,27 +157,27 @@ def detect_language(text: str) -> str:
         return "japanese"
 
     # Espagnol
-    if len(words.intersection(SPANISH_KEYWORDS)) >= 2 or any(t.startswith(kw) for kw in ['hola', 'buenos días', 'buenas tardes', 'qué ', 'cómo ', 'cuánto ']):
+    if len(words.intersection(SPANISH_KEYWORDS)) >= 2 or (len(words) <= 5 and len(words.intersection(SPANISH_KEYWORDS)) >= 1) or any(t.startswith(kw) for kw in ['hola', 'buenos días', 'buenas tardes', 'qué ', 'cómo ', 'cuánto ']):
         return "spanish"
 
     # Allemand
-    if len(words.intersection(GERMAN_KEYWORDS)) >= 2 or any(t.startswith(kw) for kw in ['hallo', 'guten tag', 'guten morgen', 'wie ', 'was ']):
+    if len(words.intersection(GERMAN_KEYWORDS)) >= 2 or (len(words) <= 5 and len(words.intersection(GERMAN_KEYWORDS)) >= 1) or any(t.startswith(kw) for kw in ['hallo', 'guten tag', 'guten morgen', 'wie ', 'was ']):
         return "german"
 
     # Italien
-    if len(words.intersection(ITALIAN_KEYWORDS)) >= 2 or any(t.startswith(kw) for kw in ['ciao', 'buongiorno', 'buonasera', 'come ', 'cosa ']):
+    if len(words.intersection(ITALIAN_KEYWORDS)) >= 2 or (len(words) <= 5 and len(words.intersection(ITALIAN_KEYWORDS)) >= 1) or any(t.startswith(kw) for kw in ['ciao', 'buongiorno', 'buonasera', 'come ', 'cosa ']):
         return "italian"
 
     # Portugais
-    if len(words.intersection(PORTUGUESE_KEYWORDS)) >= 2 or any(t.startswith(kw) for kw in ['olá', 'ola', 'bom dia', 'boa tarde', 'como ']):
+    if len(words.intersection(PORTUGUESE_KEYWORDS)) >= 2 or (len(words) <= 5 and len(words.intersection(PORTUGUESE_KEYWORDS)) >= 1) or any(t.startswith(kw) for kw in ['olá', 'ola', 'bom dia', 'boa tarde', 'como ']):
         return "portuguese"
 
     # Turc
-    if len(words.intersection(TURKISH_KEYWORDS)) >= 2 or any(t.startswith(kw) for kw in ['merhaba', 'selam', 'nasılsınız']):
+    if len(words.intersection(TURKISH_KEYWORDS)) >= 2 or (len(words) <= 5 and len(words.intersection(TURKISH_KEYWORDS)) >= 1) or any(t.startswith(kw) for kw in ['merhaba', 'selam', 'nasılsınız']):
         return "turkish"
 
     # Anglais
-    if len(words.intersection(ENGLISH_KEYWORDS)) >= 2 or any(t.startswith(kw) for kw in ['hello', 'hi ', 'hey ', 'how ', 'what ', 'where ', 'which ', 'i want', 'i need', 'looking for', 'tell me']):
+    if len(words.intersection(ENGLISH_KEYWORDS)) >= 2 or (len(words) <= 5 and len(words.intersection(ENGLISH_KEYWORDS)) >= 1) or any(t.startswith(kw) for kw in ['hello', 'hi ', 'hey ', 'how ', 'what ', 'where ', 'which ', 'i want', 'i need', 'looking for', 'tell me']):
         return "english"
 
     # Français par défaut
@@ -408,8 +408,8 @@ def normalize_multilingual_query_terms(query: str) -> str:
         "ديزل": "diesel",
         "مازوط": "diesel",
         "بنزين": "essence",
-        "مستعملة": "occasion",
-        "مستعمل": "occasion",
+        "مستعملة": "neuf",  # PIVOT: redirected from occasion → neuf
+        "مستعمل": "neuf",  # PIVOT: redirected from occasion → neuf
         "جديدة": "neuf",
         "جديد": "neuf",
         "رخيصة": "economique",
@@ -422,8 +422,8 @@ def normalize_multilingual_query_terms(query: str) -> str:
         "أبحث": "cherche",
         "car": "voiture",
         "cars": "voiture",
-        "used car": "occasion",
-        "used cars": "occasion",
+        "used car": "neuf",   # PIVOT: redirected from occasion → neuf
+        "used cars": "neuf",  # PIVOT: redirected from occasion → neuf
         "new car": "neuf",
         "new cars": "neuf",
         "cheap": "economique",
@@ -525,10 +525,10 @@ def fast_classify_intent(message: str) -> Optional[Dict[str, Any]]:
         'bghit', 'baghi', 'kanqleb', 'kan9leb', 'kayna chi', 'kayn chi',
         '3ndkom chi', '3andkom', 'cherche', 'recherche', 'trouver',
         'je veux acheter', 'acheter', 'voiture pour', 'budget de',
-        'tomobila', 'sayara', 'occasion', 'neuf', 'dacia', 'renault',
+        'tomobila', 'sayara', 'neuf', 'dacia', 'renault',  # PIVOT: removed 'occasion'
         'peugeot', 'clio', 'golf', 'volkswagen', 'hyundai', 'kia', 'mercedes', 'bmw',
         'looking for', 'search', 'want to buy', 'i want', 'i need', 'find me',
-        'show me', 'cheap car', 'diesel car', 'used car', 'new car', 'price of',
+        'show me', 'cheap car', 'diesel car', 'new car', 'price of',  # PIVOT: removed 'used car'
         'comprar', 'coche', 'auto', 'kaufen', 'comprare',
         'سيارة', 'سيارات', 'شراء', 'أبحث', 'أريد', 'بدي', 'طوموبيل'
     ]
@@ -655,9 +655,9 @@ async def retrieve_vehicles(query: str, max_price: Optional[float] = None, top_k
         price = payload.get('price', '')
         city = payload.get('city', 'Maroc')
         fuel = payload.get('fuel_type', '')
-        mileage = payload.get('mileage', '')
+        # PIVOT: mileage removed (new vehicles only)
         
-        context_str += f"- ID: {hit.id} | {brand} {model} ({year}) | Prix: {price} MAD | Ville: {city} | Carburant: {fuel} | {mileage} km\n"
+        context_str += f"- ID: {hit.id} | {brand} {model} ({year}) | Prix: {price} MAD | Ville: {city} | Carburant: {fuel}\n"
     
     return context_str if context_str else "Aucun véhicule correspondant dans la base de données actuelle."
 

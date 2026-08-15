@@ -1,13 +1,21 @@
 """
-price_model.py — XGBoost price predictor with proper feature engineering.
+price_model.py — XGBoost new-car negotiated price predictor.
+
+PIVOT: Repurposed from used-car resale price prediction to new-car
+negotiated price estimation. Predicts the realistic dealer price
+(after negotiation/discount) based on brand positioning, model segment,
+fuel type, body type, region, and time-on-market signals.
 
 Features:
-  - Numeric: year, mileage, engine_power_hp, doors, seats
+  - Numeric: year, engine_power_hp, doors, seats, month
   - Categorical: brand, model, fuel_type, body_type, transmission, city
-  - Target: price (MAD)
+  - Target: price (MAD) — the actual transacted/listed dealer price
 
-Handles cold start: if model file missing, returns fallback estimate.
-Market range: 40 000 - 400 000 MAD (Moroccan used cars).
+Previous used-car features REMOVED (kept for reversibility reference):
+  - mileage, condition_score, vehicle_age, annual_mileage
+  These are meaningless for new vehicles (mileage=0, condition=perfect).
+
+Market range: 80 000 - 2 000 000 MAD (Moroccan new car market).
 """
 
 import json
@@ -29,12 +37,13 @@ ENCODERS_PATH = MODEL_DIR / "encoders.pkl"
 SCALER_PATH = MODEL_DIR / "scaler.pkl"
 FEATURES_PATH = MODEL_DIR / "feature_columns.json"
 
-NUMERIC_FEATURES = ["year", "mileage", "engine_power_hp", "doors", "seats", "month", "condition_score", "vehicle_age", "annual_mileage"]
+# ── PIVOT: Removed mileage, condition_score, vehicle_age, annual_mileage ──
+NUMERIC_FEATURES = ["year", "engine_power_hp", "doors", "seats", "month"]
 CATEGORICAL_FEATURES = ["brand", "model", "fuel_type", "body_type", "transmission", "city"]
 
 ALL_FEATURES = NUMERIC_FEATURES + CATEGORICAL_FEATURES
 
-FALLBACK_PRICE = 150_000.0
+FALLBACK_PRICE = 250_000.0  # Updated for new-car market
 
 
 class PriceModel:
@@ -84,34 +93,13 @@ class PriceModel:
                 df[cols] = self.scaler.transform(df[cols])
         return df
 
-    def _get_smart_condition_default(self, year: int, mileage: int) -> float:
-        # Fallback intelligent (Neo4j proxy) basé sur l'âge et l'usure
-        current_year = datetime.now().year
-        age = max(0, current_year - year)
-        score = 5.0 - (age * 0.12) - (mileage / 60000)
-        return max(1.0, min(5.0, round(score, 1)))
-
     def _build_features(self, vehicle: dict) -> pd.DataFrame:
-        year_val = vehicle.get("year", 2020)
-        mileage_val = vehicle.get("mileage", 50_000)
-        cond_val = vehicle.get("condition_score")
-        if cond_val is None:
-            cond_val = self._get_smart_condition_default(year_val, mileage_val)
-
-        current_year = datetime.now().year
-        vehicle_age = max(0, current_year - year_val)
-        annual_mileage = mileage_val / max(1, vehicle_age)
-
         row = {
-            "year": year_val,
-            "mileage": mileage_val,
+            "year": vehicle.get("year", datetime.now().year),
             "engine_power_hp": vehicle.get("engine_power_hp") or 100,
             "doors": vehicle.get("doors", 5),
             "seats": vehicle.get("seats", 5),
             "month": vehicle.get("month", datetime.now().month),
-            "condition_score": cond_val,
-            "vehicle_age": vehicle_age,
-            "annual_mileage": annual_mileage,
             "brand": vehicle.get("brand", "Inconnu"),
             "model": vehicle.get("model", "Inconnu"),
             "fuel_type": vehicle.get("fuel_type", "essence"),
@@ -125,23 +113,27 @@ class PriceModel:
         return df[self.feature_columns] if self.feature_columns else df
 
     def predict(self, vehicle: dict) -> dict:
+        """
+        Predict the realistic negotiated dealer price for a new vehicle.
+        Returns estimated_price, confidence_interval, method, and feature importance.
+        """
         if self.model is None:
             return {
-                "predicted_price": FALLBACK_PRICE,
+                "estimated_price": FALLBACK_PRICE,
                 "confidence_interval": (FALLBACK_PRICE * 0.85, FALLBACK_PRICE * 1.15),
                 "method": "fallback",
                 "features_importance": {},
             }
         X = self._build_features(vehicle)
         pred = float(self.model.predict(X)[0])
-        pred = max(10_000, min(pred, 1_500_000))
-        margin = pred * 0.10
+        pred = max(50_000, min(pred, 3_000_000))  # New-car price range
+        margin = pred * 0.08  # Tighter margin for new cars (8% vs 10%)
         importance = {}
         if hasattr(self.model, "feature_importances_"):
             cols = self.feature_columns or ALL_FEATURES
             importance = dict(zip(cols, self.model.feature_importances_.tolist()))
         return {
-            "predicted_price": round(pred, 2),
+            "estimated_price": round(pred, 2),
             "confidence_interval": (
                 round(max(0, pred - margin), 2),
                 round(pred + margin, 2),
@@ -151,29 +143,18 @@ class PriceModel:
         }
 
     def train(self, vehicles: list[Vehicle]):
+        """Train on new-car listings only."""
         if len(vehicles) < 10:
             raise ValueError(f"Insufficient data: need >= 10 vehicles, got {len(vehicles)}")
 
         records = []
         for v in vehicles:
-            cond_val = v.condition_score
-            if cond_val is None:
-                cond_val = self._get_smart_condition_default(v.year, v.mileage)
-                
-            current_year = datetime.now().year
-            vehicle_age = max(0, current_year - v.year)
-            annual_mileage = v.mileage / max(1, vehicle_age)
-
             records.append({
                 "year": v.year,
-                "mileage": v.mileage,
                 "engine_power_hp": v.engine_power_hp or 100,
                 "doors": v.doors,
                 "seats": v.seats,
                 "month": v.created_at.month if hasattr(v, "created_at") and v.created_at else datetime.now().month,
-                "condition_score": cond_val,
-                "vehicle_age": vehicle_age,
-                "annual_mileage": annual_mileage,
                 "brand": v.brand,
                 "model": v.model,
                 "fuel_type": v.fuel_type,

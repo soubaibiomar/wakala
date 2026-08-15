@@ -99,9 +99,36 @@ class Settings(BaseSettings):
     HUGGINGFACE_API_KEY: str = ""
     COHERE_API_KEY: str = ""
 
+
     class Config:
         env_file = ".env"
         case_sensitive = True
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # ─── CRITICAL: Reject known placeholder SECRET_KEY values ──
+        _KNOWN_PLACEHOLDERS = {
+            "change-me-in-production-use-openssl-rand-hex-32",
+            "changeme",
+            "secret",
+            "your-secret-key-here",
+        }
+        if self.SECRET_KEY in _KNOWN_PLACEHOLDERS:
+            import warnings
+            warnings.warn(
+                "\n"
+                "╔══════════════════════════════════════════════════════════╗\n"
+                "║  ⚠️  SECURITY WARNING: SECRET_KEY is a placeholder!     ║\n"
+                "║  Generate a real key:                                    ║\n"
+                "║  python -c \"import secrets; print(secrets.token_hex(32))\"║\n"
+                "╚══════════════════════════════════════════════════════════╝\n",
+                stacklevel=2,
+            )
+            if self.APP_ENV != "development":
+                raise ValueError(
+                    "FATAL: SECRET_KEY must not be a placeholder in non-development environments. "
+                    "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+                )
 
 
 settings = Settings()

@@ -17,8 +17,9 @@ type HomeScreenNavigationProp = NativeStackNavigationProp<MainTabParamList, 'Hom
 
 const CATEGORIES = [
   { id: 'neuf', name: 'Neuf', icon: '✨', query: 'Neuf' },
-  { id: 'occasion', name: 'Occasion', icon: '🚗', query: 'Occasion' },
+  // PIVOT: removed { id: 'occasion', name: 'Occasion', ... }
   { id: 'hybride', name: 'Hybride', icon: '⚡', query: 'Hybride' },
+  { id: 'electrique', name: 'Électrique', icon: '🔋', query: 'Électrique' },
   { id: 'suv', name: 'SUV & 4x4', icon: '🚙', query: 'SUV' },
 ];
 

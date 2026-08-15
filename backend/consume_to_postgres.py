@@ -63,10 +63,15 @@ async def consume_to_postgres():
         
         if not row:
             user_id = uuid.uuid4()
+            # Génère un mot de passe aléatoire sécurisé (ce compte système ne doit
+            # jamais être utilisé pour une connexion humaine)
+            from app.core.security import hash_password
+            import secrets as _secrets
+            _system_pw = hash_password(_secrets.token_urlsafe(64))
             user = User(
                 id=user_id,
                 email="scraped_live@wakala.ma",
-                hashed_password="hashed_password", 
+                hashed_password=_system_pw, 
                 full_name="Auto Scraper Live",
                 phone="+212600000001",
                 role="seller",
