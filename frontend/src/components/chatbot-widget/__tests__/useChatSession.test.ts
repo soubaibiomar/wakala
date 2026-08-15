@@ -2,18 +2,24 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useChatSession } from '../useChatSession';
 
-const mockStreamMessage = vi.fn();
+const { mockStreamMessage, mockGetChatHistory } = vi.hoisted(() => ({
+  mockStreamMessage: vi.fn(),
+  mockGetChatHistory: vi.fn().mockResolvedValue([]),
+}));
 
-vi.mock('../../services/chatbotService', () => ({
+vi.mock('../../../services/chatbotService', () => ({
   chatbotService: {
-    streamMessage: (...args: unknown[]) => mockStreamMessage(...args),
+    streamMessage: mockStreamMessage,
+    getChatHistory: mockGetChatHistory,
   },
 }));
 
 describe('useChatSession', () => {
   beforeEach(() => {
+    localStorage.clear();
     sessionStorage.clear();
     mockStreamMessage.mockReset();
+    mockGetChatHistory.mockReset().mockResolvedValue([]);
   });
 
   it('starts with empty messages', () => {
@@ -49,7 +55,7 @@ describe('useChatSession', () => {
   });
 
   it('handles API error gracefully', async () => {
-    mockStreamMessage.mockRejectedValue(new Error('Network error'));
+    mockStreamMessage.mockRejectedValueOnce(new Error('Network error'));
 
     const { result } = renderHook(() => useChatSession());
     await act(async () => {
@@ -72,15 +78,17 @@ describe('useChatSession', () => {
   });
 
   it('manages typing state', async () => {
-    let resolvePromise: (v: unknown) => void;
-    const apiPromise = new Promise((resolve) => {
-      resolvePromise = resolve;
-    });
-    mockStreamMessage.mockReturnValue(apiPromise);
+    let resolveStream: () => void = () => {};
+    mockStreamMessage.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveStream = resolve;
+        })
+    );
 
     const { result } = renderHook(() => useChatSession());
 
-    let sendPromise: Promise<void>;
+    let sendPromise: Promise<void> | undefined;
     act(() => {
       sendPromise = result.current.sendMessage('Test');
     });
@@ -88,9 +96,8 @@ describe('useChatSession', () => {
     expect(result.current.isTyping).toBe(true);
 
     await act(async () => {
-      resolvePromise!(undefined);
-      await apiPromise;
-      await sendPromise;
+      resolveStream();
+      if (sendPromise) await sendPromise;
     });
 
     expect(result.current.isTyping).toBe(false);

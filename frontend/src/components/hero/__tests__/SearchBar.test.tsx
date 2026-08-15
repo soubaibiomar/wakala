@@ -22,7 +22,7 @@ describe('Hero (SearchBar)', () => {
       </AuthProvider>
     );
 
-    const searchInput = screen.queryByPlaceholderText(/Décrivez le véhicule/i);
+    const searchInput = screen.queryByPlaceholderText(/Décrivez vos besoins/i);
     expect(searchInput).toBeTruthy();
   });
 

@@ -35,6 +35,8 @@ class MatchingEngine:
                 extracted.budget = request.quiz_answers["budget"]
             if request.quiz_answers.get("usage_prevu"):
                 extracted.usage_prevu = request.quiz_answers["usage_prevu"]
+            elif request.quiz_answers.get("usage"):
+                extracted.usage_prevu = request.quiz_answers["usage"]
             if request.quiz_answers.get("priorites"):
                 extracted.priorites = request.quiz_answers["priorites"]
                 

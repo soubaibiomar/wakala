@@ -38,7 +38,7 @@ async def test_llm_extractor_timeout_fallback(mock_post):
     
     assert res.erreur is False
     assert res.budget == 150000
-    assert res.usage == "familial"
+    assert res.usage_prevu == "familial"
 
 @pytest.mark.asyncio
 @patch("app.ml.nlp_pipeline.llm_extractor.httpx.AsyncClient.post")
@@ -75,5 +75,5 @@ async def test_llm_extractor_success(mock_post):
     
     assert res.erreur is False
     assert res.budget == 200000
-    assert res.usage == "urbain"
+    assert res.usage_prevu == "urbain"
     assert "automatique" in res.priorites

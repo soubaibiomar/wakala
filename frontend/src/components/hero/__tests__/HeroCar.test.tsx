@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import HeroCar from '../HeroCar';
+import { AuthProvider } from '../../../context/AuthContext';
 
 vi.mock('../../../services/api', () => ({
   default: {
@@ -20,36 +21,44 @@ describe('HeroCar', () => {
 
   it('renders without crashing', () => {
     const { container } = render(
-      <MemoryRouter>
-        <HeroCar />
-      </MemoryRouter>
+      <AuthProvider>
+        <MemoryRouter>
+          <HeroCar />
+        </MemoryRouter>
+      </AuthProvider>
     );
     expect(container).toBeTruthy();
   });
 
   it('renders the title elements', () => {
     render(
-      <MemoryRouter>
-        <HeroCar />
-      </MemoryRouter>
+      <AuthProvider>
+        <MemoryRouter>
+          <HeroCar />
+        </MemoryRouter>
+      </AuthProvider>
     );
     expect(screen.getByText(/WAKALA/i)).toBeInTheDocument();
   });
 
   it('renders CTA button', () => {
     render(
-      <MemoryRouter>
-        <HeroCar />
-      </MemoryRouter>
+      <AuthProvider>
+        <MemoryRouter>
+          <HeroCar />
+        </MemoryRouter>
+      </AuthProvider>
     );
     expect(screen.getByText(/Explorer les véhicules/i)).toBeInTheDocument();
   });
 
   it('renders the scroll hint initially', () => {
     render(
-      <MemoryRouter>
-        <HeroCar />
-      </MemoryRouter>
+      <AuthProvider>
+        <MemoryRouter>
+          <HeroCar />
+        </MemoryRouter>
+      </AuthProvider>
     );
     const scrollBtn = screen.queryByLabelText(/Défiler vers le bas/i);
     expect(scrollBtn).toBeInTheDocument();

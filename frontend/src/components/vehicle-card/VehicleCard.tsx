@@ -21,12 +21,107 @@ interface VehicleCardProps {
   bestVersionName?: string | null;
 }
 
+function cleanVehicleTitle(brand: string, model: string): { brand: string; model: string } {
+  let cleanBrand = (brand || '').trim();
+  let cleanModel = (model || '').trim();
+
+  // If brand is "MAN" (scraped artifact from "MAN Citroën..."), fix brand
+  if (cleanBrand.toUpperCase() === 'MAN' && cleanModel.toLowerCase().includes('citroën')) {
+    cleanBrand = 'Citroën';
+    cleanModel = cleanModel.replace(/^citro[eë]n\s*/i, '');
+  }
+
+  // Remove duplicate brand prefix in model (e.g. "Volkswagen Touareg" where brand is "Volkswagen")
+  const brandRegex = new RegExp(`^${cleanBrand}\\s+`, 'i');
+  cleanModel = cleanModel.replace(brandRegex, '');
+
+  // Remove noisy words from scraped titles
+  cleanModel = cleanModel
+    .replace(/^vente\s+(voiture|auto)?\s*/i, '')
+    .replace(/^vente\s+/i, '')
+    .replace(/\s*à\s+[A-Za-zÀ-ÿ\-]+$/i, '')
+    .replace(/\s*en\s+(très\s+)?bon\s+état.*$/i, '')
+    .replace(/\s*[–\-]\s*(très|bon état|première main).*$/i, '')
+    .replace(/\s+\d+\s*(km|kms|000\s*km).*$/i, '')
+    .replace(/\s+(diesel|essence|hybride|electrique|électrique)\s+(manuelle|automatique|auto|bva|bvm).*$/i, '')
+    .replace(/\s+(manuelle|automatique|diesel|essence)\s+\d{4}.*$/i, '')
+    .replace(/\s+\d{4}$/, '')
+    .trim();
+
+  if (!cleanModel) {
+    cleanModel = model.split(' ')[0] || 'Modèle';
+  }
+
+  return { brand: cleanBrand, model: cleanModel };
+}
+
+function getDisplayBodyType(brand: string, model: string, currentBodyType?: string): string {
+  const name = `${brand} ${model}`.toLowerCase();
+  
+  if (name.includes('r 1250') || name.includes('f 900') || name.includes('f 850') || name.includes('tmax') || name.includes('xmax') || name.includes('ninja') || name.includes('moto')) {
+    return 'Moto';
+  }
+  
+  const suvKeywords = [
+    'duster', 'touareg', 'qashqai', 'sportage', 'tucson', 'tiguan', 't-roc', 't-cross', 'glc', 'gle', 'gla', 'glb', 'gls',
+    'x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7', '3008', '2008', '5008', 'kuga', 'puma', 'captur', 'kadjar', 'austral',
+    'ateca', 'arona', 'tarraco', 'karoq', 'kamiq', 'kodiaq', 'juke', 'rav4', 'c-hr', 'cr-v', 'hr-v', 'renegade',
+    'compass', 'cherokee', 'grandland', 'crossland', 'mokka', 'macan', 'cayenne', 'q2', 'q3', 'q5', 'q7', 'q8',
+    'suv', '4x4', 'crossover', 'range rover', 'defender', 'discovery', 'evoque', 'velar', 'stelvio', 'tonale'
+  ];
+  if (suvKeywords.some(kw => name.includes(kw))) {
+    return 'SUV';
+  }
+  
+  const citadineKeywords = [
+    'clio', '208', '207', '206', 'c3', 'sandero', 'fiesta', 'polo', 'golf', 'yaris', 'i10', 'i20', 'picanto',
+    'rio', 'micra', 'swift', 'c1', '108', '107', 'aygo', 'twingo', 'fiat 500', 'panda', 'punto', 'ibiza', 'fabia', 'citadine'
+  ];
+  if (citadineKeywords.some(kw => name.includes(kw))) {
+    return 'Citadine';
+  }
+
+  if (currentBodyType && currentBodyType.toLowerCase() !== 'berline') {
+    return currentBodyType.charAt(0).toUpperCase() + currentBodyType.slice(1);
+  }
+
+  return 'Berline';
+}
+
 function getFallbackImage(brand: string, model: string): string {
-  const b = brand.toLowerCase();
-  if (b.includes('dacia')) return '/assets/dacia-logan.jpg';
-  if (b.includes('mercedes') || b.includes('benz')) return '/assets/mercedes-cla.jpg';
-  if (b.includes('jeep') || b.includes('dodge')) return '/assets/jeep-grand-cherokee.jpg';
-  return `https://placehold.co/600x400/f8fafc/64748b?text=${encodeURIComponent(brand)}+${encodeURIComponent(model)}`;
+  const b = (brand || '').toLowerCase();
+  const m = (model || '').toLowerCase();
+  
+  if (b.includes('dacia')) {
+    if (m.includes('duster')) return 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?q=80&w=600';
+    if (m.includes('sandero')) return 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?q=80&w=600';
+    return '/assets/dacia-logan.jpg';
+  }
+  if (b.includes('mercedes') || b.includes('benz')) {
+    return '/assets/mercedes-cla.jpg';
+  }
+  if (b.includes('jeep') || b.includes('dodge')) {
+    return '/assets/jeep-grand-cherokee.jpg';
+  }
+  if (b.includes('renault')) {
+    return '/assets/clio5.jpg';
+  }
+  if (b.includes('volkswagen') || b.includes('vw')) {
+    return 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?q=80&w=600';
+  }
+  if (b.includes('peugeot')) {
+    return 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=600';
+  }
+  if (b.includes('bmw')) {
+    return 'https://images.unsplash.com/photo-1555215695-3004980ad54e?q=80&w=600';
+  }
+  if (b.includes('audi')) {
+    return 'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?q=80&w=600';
+  }
+  if (b.includes('toyota') || b.includes('nissan') || b.includes('hyundai') || b.includes('kia')) {
+    return 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=600';
+  }
+  return '/assets/phares-intro.jpg';
 }
 
 function getSourceName(url?: string): string | null {
@@ -64,6 +159,11 @@ export default function VehicleCard({
   const { addVehicle, compareList } = useCompare();
   const isCompared = compareList.some((v) => v.id === vehicle.id);
 
+  // Clean brand and model for crisp presentation
+  const { brand: cleanBrand, model: cleanModel } = cleanVehicleTitle(vehicle.brand, vehicle.model);
+  const displayBodyType = getDisplayBodyType(cleanBrand, cleanModel, vehicle.body_type);
+  const fallbackImg = getFallbackImage(cleanBrand, cleanModel);
+
   // Format price securely
   const formattedPrice = new Intl.NumberFormat('fr-MA', {
     style: 'currency',
@@ -80,16 +180,16 @@ export default function VehicleCard({
 
   const finalPrice = isNewOfficial ? `À partir de ${formattedPrice}` : formattedPrice;
   const shortId = vehicle.id.split('-')[0];
-  const occSlug = `${vehicle.brand.toLowerCase()}-${vehicle.model.toLowerCase()}-${vehicle.year || '0'}-${shortId}`
+  const occSlug = `${cleanBrand.toLowerCase()}-${cleanModel.toLowerCase()}-${vehicle.year || '0'}-${shortId}`
     .replace(/[^a-z0-9\-]+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-+|-+$/g, '');
   
   // Clean model name for clean URL
-  const cleanModelForUrl = vehicle.model.toLowerCase().trim();
+  const cleanModelForUrl = cleanModel.toLowerCase().trim();
   
   const linkTo = isNewOfficial 
-    ? `/marque/${encodeURIComponent(vehicle.brand.toLowerCase())}/${encodeURIComponent(cleanModelForUrl)}` 
+    ? `/marque/${encodeURIComponent(cleanBrand.toLowerCase())}/${encodeURIComponent(cleanModelForUrl)}` 
     : `/vehicule/${occSlug}`;
 
   let displayDescription = vehicle.description || '';
@@ -105,25 +205,25 @@ export default function VehicleCard({
   }
 
   return (
-    <Link to={linkTo} className="vehicle-card" title={isNewOfficial ? `Voir les versions de ${vehicle.brand} ${vehicle.model}` : `${vehicle.brand} ${vehicle.model}`}>
+    <Link to={linkTo} className="vehicle-card" title={isNewOfficial ? `Voir les versions de ${cleanBrand} ${cleanModel}` : `${cleanBrand} ${cleanModel}`}>
       
       {/* ─── Image Header ──────────────────────────────────────── */}
       <div className="vehicle-card__image">
         {vehicle.images && vehicle.images.length > 0 && vehicle.images[0].file_path ? (
           <img
             src={vehicle.images[0].file_path}
-            alt={`${vehicle.brand} ${vehicle.model}`}
+            alt={`${cleanBrand} ${cleanModel}`}
             loading="lazy"
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              target.src = getFallbackImage(vehicle.brand, vehicle.model);
+              target.src = fallbackImg;
             }}
           />
         ) : (
           <img
-            src={getFallbackImage(vehicle.brand, vehicle.model)}
-            alt={`${vehicle.brand} ${vehicle.model}`}
+            src={fallbackImg}
+            alt={`${cleanBrand} ${cleanModel}`}
             loading="lazy"
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
@@ -216,10 +316,10 @@ export default function VehicleCard({
         {/* Header: Title + Meta */}
         <div className="vehicle-card__header">
           <h3 className="vehicle-card__title">
-            {vehicle.brand} {vehicle.model}
+            {cleanBrand} {cleanModel}
           </h3>
           <div className="vehicle-card__subtitle">
-            {bestVersionName || `Modèle ${vehicle.year}`}
+            {bestVersionName || (vehicle.year ? `Modèle ${vehicle.year}` : 'Véhicule')}
           </div>
         </div>
 
@@ -235,7 +335,7 @@ export default function VehicleCard({
           </div>
           <div className="vehicle-card__specs-item">
             <span style={{ color: '#e11d48' }}>🚗</span> 
-            <span style={{ textTransform: 'capitalize' }}>{vehicle.body_type || 'Berline'}</span>
+            <span style={{ textTransform: 'capitalize' }}>{displayBodyType}</span>
           </div>
           <div className="vehicle-card__specs-item">
             <span style={{ color: '#bba14f' }}><Gauge size={14} /></span> 

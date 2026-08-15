@@ -119,6 +119,7 @@ class PriceModel:
         """
         if self.model is None:
             return {
+                "predicted_price": FALLBACK_PRICE,
                 "estimated_price": FALLBACK_PRICE,
                 "confidence_interval": (FALLBACK_PRICE * 0.85, FALLBACK_PRICE * 1.15),
                 "method": "fallback",
@@ -133,6 +134,7 @@ class PriceModel:
             cols = self.feature_columns or ALL_FEATURES
             importance = dict(zip(cols, self.model.feature_importances_.tolist()))
         return {
+            "predicted_price": round(pred, 2),
             "estimated_price": round(pred, 2),
             "confidence_interval": (
                 round(max(0, pred - margin), 2),

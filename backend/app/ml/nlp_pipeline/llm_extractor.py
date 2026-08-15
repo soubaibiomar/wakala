@@ -106,7 +106,8 @@ async def extract_search_criteria(texte: str) -> ExtractedCriteria:
             
             # Post-processing
             budget = normalize_and_validate_budget(parsed.get("budget"))
-            usage_prevu = parsed.get("usage_prevu") if isinstance(parsed.get("usage_prevu"), str) else None
+            raw_usage = parsed.get("usage_prevu") or parsed.get("usage")
+            usage_prevu = raw_usage if isinstance(raw_usage, str) else None
             priorites = [p for p in parsed.get("priorites", []) if isinstance(p, str)]
             profil = parsed.get("profil_passagers") if isinstance(parsed.get("profil_passagers"), str) else None
             

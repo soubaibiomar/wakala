@@ -26,7 +26,7 @@ def mock_db_session():
 @patch("app.ml.matching.matching_engine.compute_collaborative_scores")
 async def test_matching_engine_simple_query(mock_collab, mock_semantic, mock_nlp, mock_db_session):
     # Setup mocks
-    mock_nlp.return_value = ExtractedCriteria(budget=150000, usage="familial", priorites=[], erreur=False)
+    mock_nlp.return_value = ExtractedCriteria(budget=150000, usage_prevu="familial", priorites=[], erreur=False)
     mock_semantic.return_value = ["v2", "v1"] # Qdrant returns v2 then v1
     mock_collab.return_value = ([{"vehicle_id": "v1", "collaborative_score": 0.5}], False)
     
@@ -48,7 +48,7 @@ async def test_matching_engine_simple_query(mock_collab, mock_semantic, mock_nlp
 @patch("app.ml.matching.matching_engine.semantic_search")
 async def test_matching_engine_quiz_answers_override(mock_semantic, mock_nlp, mock_db_session):
     # Setup mocks: NLP says "urbain" but quiz says "familial"
-    mock_nlp.return_value = ExtractedCriteria(budget=150000, usage="urbain", priorites=[], erreur=False)
+    mock_nlp.return_value = ExtractedCriteria(budget=150000, usage_prevu="urbain", priorites=[], erreur=False)
     mock_semantic.return_value = []
     
     req = SearchRequest(

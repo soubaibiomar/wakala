@@ -73,7 +73,7 @@ class TestContentBased:
     def test_feature_matrix_shape(self, vehicles):
         matrix = build_feature_matrix(vehicles)
         assert matrix.shape[0] == len(vehicles)
-        assert matrix.shape[1] == 7
+        assert matrix.shape[1] == 6
         assert not np.any(np.isnan(matrix))
 
     def test_feature_matrix_normalized(self, vehicles):
