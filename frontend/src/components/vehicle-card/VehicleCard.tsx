@@ -58,10 +58,6 @@ function cleanVehicleTitle(brand: string, model: string): { brand: string; model
 function getDisplayBodyType(brand: string, model: string, currentBodyType?: string): string {
   const name = `${brand} ${model}`.toLowerCase();
   
-  if (name.includes('r 1250') || name.includes('f 900') || name.includes('f 850') || name.includes('tmax') || name.includes('xmax') || name.includes('ninja') || name.includes('moto')) {
-    return 'Moto';
-  }
-  
   const suvKeywords = [
     'duster', 'touareg', 'qashqai', 'sportage', 'tucson', 'tiguan', 't-roc', 't-cross', 'glc', 'gle', 'gla', 'glb', 'gls',
     'x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7', '3008', '2008', '5008', 'kuga', 'puma', 'captur', 'kadjar', 'austral',
