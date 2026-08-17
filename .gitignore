@@ -42,3 +42,6 @@ logs/
 # ─── Uploads & Output ─────────────────────────────────
 backend/uploads/
 output/
+
+# ─── Deliverables / Assets ───────────────────────────
+Livrables/
