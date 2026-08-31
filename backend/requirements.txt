@@ -54,6 +54,7 @@ xgboost
 pandas
 numpy
 joblib
+openpyxl
 
 # ─── Computer Vision — Analyse d'images véhicules ─────────────
 # YOLO (ultralytics) pour la détection de dommages,

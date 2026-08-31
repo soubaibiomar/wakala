@@ -1,0 +1,46 @@
+{
+  "vehicle_slug": "dacia-sandero-stepway",
+  "vehicle_name": "Dacia Sandero Stepway (2026)",
+  "carrosserie_materials": [
+    "Car_Body_Paint"
+  ],
+  "glass_materials": [
+    "Car_Glass"
+  ],
+  "rims_materials": [
+    "Rims_Alloy"
+  ],
+  "wheels_materials": [
+    "Car_Tires_Mat"
+  ],
+  "plastic_materials": [
+    "Trim_Plastic_Black"
+  ],
+  "metallic_accents": [
+    "Skid_Silver"
+  ],
+  "lights_materials": [
+    "Headlights_LED",
+    "Taillights_LED"
+  ],
+  "optional_meshes": {
+    "Barres de toit": [
+      "Roof_Bars"
+    ],
+    "Barres de toit longitudinales": [
+      "Roof_Bars"
+    ],
+    "Barres de toit aluminium": [
+      "Roof_Bars"
+    ],
+    "Marchepieds": [
+      "Side_Steps"
+    ],
+    "Marchepieds latéraux inox": [
+      "Side_Steps"
+    ],
+    "Marchepieds latéraux": [
+      "Side_Steps"
+    ]
+  }
+}

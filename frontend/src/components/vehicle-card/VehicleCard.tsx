@@ -8,6 +8,7 @@ import { Scale, Gauge, ArrowRight } from 'lucide-react';
 import type { Vehicle } from '../../types/vehicle';
 import MatchScoreBadge from '../recommendation-form/MatchScoreBadge';
 import { useCompare } from '../../context/CompareContext';
+import { resolveVehicleImage } from '../../utils/vehicleImageResolver';
 import './VehicleCard.css';
 
 interface VehicleCardProps {
@@ -85,39 +86,7 @@ function getDisplayBodyType(brand: string, model: string, currentBodyType?: stri
 }
 
 function getFallbackImage(brand: string, model: string): string {
-  const b = (brand || '').toLowerCase();
-  const m = (model || '').toLowerCase();
-  
-  if (b.includes('dacia')) {
-    if (m.includes('duster')) return 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?q=80&w=600';
-    if (m.includes('sandero')) return 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?q=80&w=600';
-    return '/assets/dacia-logan.jpg';
-  }
-  if (b.includes('mercedes') || b.includes('benz')) {
-    return '/assets/mercedes-cla.jpg';
-  }
-  if (b.includes('jeep') || b.includes('dodge')) {
-    return '/assets/jeep-grand-cherokee.jpg';
-  }
-  if (b.includes('renault')) {
-    return '/assets/clio5.jpg';
-  }
-  if (b.includes('volkswagen') || b.includes('vw')) {
-    return 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?q=80&w=600';
-  }
-  if (b.includes('peugeot')) {
-    return 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=600';
-  }
-  if (b.includes('bmw')) {
-    return 'https://images.unsplash.com/photo-1555215695-3004980ad54e?q=80&w=600';
-  }
-  if (b.includes('audi')) {
-    return 'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?q=80&w=600';
-  }
-  if (b.includes('toyota') || b.includes('nissan') || b.includes('hyundai') || b.includes('kia')) {
-    return 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=600';
-  }
-  return '/assets/phares-intro.jpg';
+  return resolveVehicleImage(brand, model);
 }
 
 function getSourceName(url?: string): string | null {
@@ -188,6 +157,8 @@ export default function VehicleCard({
     ? `/marque/${encodeURIComponent(cleanBrand.toLowerCase())}/${encodeURIComponent(cleanModelForUrl)}` 
     : `/vehicule/${occSlug}`;
 
+  const carImgSrc = resolveVehicleImage(cleanBrand, cleanModel, vehicle.images);
+
   let displayDescription = vehicle.description || '';
   let versionsCount: string | null = null;
   
@@ -204,61 +175,38 @@ export default function VehicleCard({
     <Link to={linkTo} className="vehicle-card" title={isNewOfficial ? `Voir les versions de ${cleanBrand} ${cleanModel}` : `${cleanBrand} ${cleanModel}`}>
       
       {/* ─── Image Header ──────────────────────────────────────── */}
-      <div className="vehicle-card__image">
-        {vehicle.images && vehicle.images.length > 0 && vehicle.images[0].file_path ? (
-          <img
-            src={vehicle.images[0].file_path}
-            alt={`${cleanBrand} ${cleanModel}`}
-            loading="lazy"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = fallbackImg;
-            }}
-          />
-        ) : (
-          <img
-            src={fallbackImg}
-            alt={`${cleanBrand} ${cleanModel}`}
-            loading="lazy"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        )}
+      <div className="vehicle-card__image" style={{ background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <img
+          src={carImgSrc}
+          alt={`${cleanBrand} ${cleanModel}`}
+          loading="lazy"
+          style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '10px' }}
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = fallbackImg;
+          }}
+        />
 
-        {/* Badges container: Trust Score & Source */}
+        {/* Badges container */}
         <div style={{
           position: 'absolute', top: 12, left: 12, 
           display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 2
         }}>
-          {isNewOfficial && (
-            <div style={{
-              background: 'linear-gradient(135deg, #122135 0%, #1e3a5f 100%)',
-              color: '#AE8C4E', 
-              padding: '3px 10px', 
-              borderRadius: '12px', 
-              fontSize: '0.72rem', 
-              fontWeight: 700,
-              boxShadow: '0 2px 6px rgba(0,0,0,0.15)', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '4px',
-              border: '1px solid rgba(174, 140, 78, 0.4)'
-            }}>
-              <span>✨ Neuf</span>
-            </div>
-          )}
-
-          {/* Source Badge */}
-          {getSourceName(vehicle.source_url) && (
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.92)', color: '#111827', 
-              padding: '2px 8px', borderRadius: '12px', 
-              fontSize: '0.7rem', fontWeight: 700,
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '4px', width: 'fit-content'
-            }}>
-              <span>🔗 {getSourceName(vehicle.source_url)}</span>
-            </div>
-          )}
+          <div style={{
+            background: 'linear-gradient(135deg, #ae8c4e 0%, #c9a24b 100%)', 
+            color: '#ffffff', 
+            padding: '4px 10px', 
+            borderRadius: '12px', 
+            fontSize: '0.72rem', 
+            fontWeight: 700,
+            boxShadow: '0 2px 6px rgba(0,0,0,0.15)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '4px',
+            border: '1px solid rgba(174, 140, 78, 0.4)'
+          }}>
+            <span>✨ Neuf</span>
+          </div>
         </div>
         
         {/* Render dynamic NLP matching badges if provided */}
@@ -315,7 +263,7 @@ export default function VehicleCard({
             {cleanBrand} {cleanModel}
           </h3>
           <div className="vehicle-card__subtitle">
-            {bestVersionName || (vehicle.year ? `Modèle ${vehicle.year}` : 'Véhicule')}
+            {bestVersionName || (vehicle.year ? `Modèle ${vehicle.year} · Neuf` : 'Véhicule Neuf')}
           </div>
         </div>
 
@@ -335,13 +283,7 @@ export default function VehicleCard({
           </div>
           <div className="vehicle-card__specs-item">
             <span style={{ color: '#bba14f' }}><Gauge size={14} /></span> 
-            <span>
-              {isNewOfficial
-                ? 'Neuf' 
-                : vehicle.mileage === 0 || vehicle.mileage === -1 
-                  ? 'N/C' 
-                  : `${vehicle.mileage.toLocaleString('fr-FR')} km`}
-            </span>
+            <span>Neuf (0 km)</span>
           </div>
         </div>
 
@@ -363,23 +305,6 @@ export default function VehicleCard({
               </span>
             ))}
           </div>
-        )}
-
-        {/* Description Snippet (si pas de faits chiffrés) */}
-        {(!keyFacts || keyFacts.length === 0) && displayDescription && !isNewOfficial && (
-          <p style={{
-            fontSize: '0.75rem',
-            color: '#64748b',
-            margin: '8px 0 0 0',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            lineHeight: '1.4'
-          }}>
-            {stripMarkdown(displayDescription)}
-          </p>
         )}
 
         {/* Footer: Price + Budget Margin + Versions CTA */}

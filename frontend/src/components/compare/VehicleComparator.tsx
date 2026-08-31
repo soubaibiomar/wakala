@@ -27,7 +27,7 @@ export default function VehicleComparator({ onClose }: { onClose: () => void }) 
   const prices = data?.vehicles.map(v => v.price) || [];
   const minPrice = prices.length ? Math.min(...prices) : 0;
   
-  const mileages = data?.vehicles.map(v => v.mileage) || [];
+  const mileages = data?.vehicles.map(v => v.mileage || 0) || [];
   const minMileage = mileages.length ? Math.min(...mileages) : 0;
   
   const conditionScores = data?.vehicles.map(v => v.condition_score || 0) || [];
@@ -134,7 +134,7 @@ export default function VehicleComparator({ onClose }: { onClose: () => void }) 
                             fontSize: '1rem', fontWeight: 600,
                             color: v.mileage === minMileage ? 'var(--accent-green)' : 'var(--text-primary)'
                           }}>
-                            {v.mileage.toLocaleString('fr-FR')} km
+                            {v.mileage?.toLocaleString('fr-FR') || '0'} km
                           </div>
                         </div>
 

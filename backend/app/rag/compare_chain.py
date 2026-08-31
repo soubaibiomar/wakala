@@ -66,13 +66,26 @@ class CompareChain:
         if not LANGCHAIN_AVAILABLE:
             raise RuntimeError("LangChain/OpenAI n'est pas installe")
         if self._llm is None:
-            self._llm = ChatOpenAI(
-                base_url=settings.OLLAMA_BASE_URL,
-                api_key=settings.OPENAI_API_KEY,
-                model=settings.OLLAMA_MODEL_TEXT,
-                temperature=0.3,
-                max_tokens=500,
-            )
+            if settings.OPENROUTER_API_KEY:
+                self._llm = ChatOpenAI(
+                    base_url=settings.OPENROUTER_BASE_URL,
+                    api_key=settings.OPENROUTER_API_KEY,
+                    model=settings.OPENROUTER_MODEL,
+                    temperature=0.3,
+                    max_tokens=500,
+                    default_headers={
+                        "HTTP-Referer": "https://wakala.ma",
+                        "X-Title": "Wakala Platform",
+                    }
+                )
+            else:
+                self._llm = ChatOpenAI(
+                    base_url=settings.OLLAMA_BASE_URL,
+                    api_key=settings.OPENAI_API_KEY,
+                    model=settings.OLLAMA_MODEL_TEXT,
+                    temperature=0.3,
+                    max_tokens=500,
+                )
         return self._llm
 
     async def generate_comparison(self, vehicles: list[dict]) -> str:

@@ -2,13 +2,14 @@ import base64
 import io
 import logging
 
-from fastapi import APIRouter, File, UploadFile, HTTPException
+from fastapi import APIRouter, File, UploadFile, HTTPException, Request
 from pydantic import BaseModel
 import numpy as np
 import cv2
 
 from app.ml.vision.plate_blur import PlateBlur
 from app.ml.vision.yolo_detector import yolo_detector
+from app.core.limiter import limiter
 
 router = APIRouter(prefix="/vision", tags=["Computer Vision"])
 logger = logging.getLogger(__name__)
@@ -23,7 +24,8 @@ class VisionAnalysisResponse(BaseModel):
     image_base64: str  # L'image floutée renvoyée au frontend
 
 @router.post("/analyze", response_model=VisionAnalysisResponse)
-async def analyze_image(file: UploadFile = File(...)):
+@limiter.limit("10/minute")
+async def analyze_image(request: Request, file: UploadFile = File(...)):
     """
     Reçoit une image de véhicule.
     1. Vérifie si elle est lisible.

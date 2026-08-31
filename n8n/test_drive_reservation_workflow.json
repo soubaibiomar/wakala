@@ -1,0 +1,169 @@
+{
+  "name": "Wakala - Test Drive Reservation & CRM Dispatch Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "test-drive-reservation",
+        "options": {
+          "responseCode": 200,
+          "responseMode": "onReceived",
+          "responseData": "{\n  \"status\": \"success\",\n  \"message\": \"Demande d'essai reçue avec succès par le moteur d'automatisation n8n\",\n  \"timestamp\": \"{{ $now.toISO() }}\"\n}"
+        }
+      },
+      "id": "node-webhook-trigger",
+      "name": "Webhook : Réception Demande Essai",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "wakala-test-drive-lead-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ─── Validation et Enrichissement de la Réservation d'Essai ───\nconst payload = $input.first().json.body || $input.first().json;\n\nconst fullName = payload.full_name || 'Client Wakala';\nconst rawPhone = payload.phone_number || '';\nconst email = payload.email || null;\nconst city = payload.city || 'Casablanca';\nconst vehicleName = payload.vehicle_name || payload.trim_name || 'Véhicule Neuf';\nconst brand = payload.brand || payload.brand_name || 'Marque Officielle';\nconst preferredDate = payload.preferred_date || new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0];\nconst showroomName = payload.showroom_name || `Concessionnaire Officiel ${brand} ${city}`;\nconst showroomAddress = payload.showroom_address || `Centre Automobile Agréé, ${city}`;\n\n// Génération de la référence unique de réservation marocaine\nconst cityCode = city.substring(0, 3).toUpperCase();\nconst randomSuffix = Math.floor(1000 + Math.random() * 9000);\nconst bookingReference = `TD-${new Date().getFullYear()}-${cityCode}-${randomSuffix}`;\n\n// Normalisation E.164 Téléphone Marocain (+212...)\nlet cleanPhone = rawPhone.replace(/[^0-9+]/g, '');\nif (cleanPhone.startsWith('0')) {\n  cleanPhone = '+212' + cleanPhone.substring(1);\n} else if (!cleanPhone.startsWith('+')) {\n  cleanPhone = '+' + cleanPhone;\n}\n\n// Message WhatsApp / SMS client bilingue\nconst whatsappMessage = `🚗 *WAKALA MAROC — Confirmation de Demande d'Essai*\\n\\nBonjour *${fullName}*,\\n\\nVotre réservation d'essai sur route pour la *${brand} ${vehicleName}* est bien enregistrée !\\n\\n📍 *Showroom :* ${showroomName} (${showroomAddress})\\n📅 *Date souhaitée :* ${preferredDate}\\n🔖 *Réf. dossier :* ${bookingReference}\\n\\nUn conseiller commercial prendra contact avec vous dans un délai de 2h ouvrées pour valider l'horaire précis.\\n\\n*Conformité CNDP Loi n° 09-08 — Wakala.ma*`;\n\nreturn [{\n  json: {\n    bookingReference,\n    fullName,\n    cleanPhone,\n    email,\n    city,\n    vehicleName,\n    brand,\n    preferredDate,\n    showroomName,\n    showroomAddress,\n    whatsappMessage,\n    receivedAt: new Date().toISOString(),\n    cndpConsent: payload.cndp_consent_accepted ?? true\n  }\n}];"
+      },
+      "id": "node-data-enrichment",
+      "name": "Enrichissement & Normalisation CNDP",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.infobip.com/whatsapp/1/message/template",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "App YOUR_INFOBIP_OR_TWILIO_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"messages\": [\n    {\n      \"from\": \"212522000000\",\n      \"to\": \"{{ $json.cleanPhone }}\",\n      \"messageId\": \"{{ $json.bookingReference }}\",\n      \"content\": {\n        \"text\": \"{{ $json.whatsappMessage }}\"\n      }\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "node-whatsapp-sms-dispatch",
+      "name": "Envoi WhatsApp Client Instantané",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        740,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "essais@wakala.ma",
+        "toEmail": "={{ $json.email || 'leads@wakala.ma' }}",
+        "subject": "=Confirmation de votre essai sur route : {{ $json.brand }} {{ $json.vehicleName }} (Réf: {{ $json.bookingReference }})",
+        "html": "=<!DOCTYPE html>\n<html>\n<body style=\"font-family: Arial, sans-serif; color: #1e293b; line-height: 1.6;\">\n  <div style=\"max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;\">\n    <div style=\"background: #0f172a; padding: 24px; text-align: center; color: #c8a96a;\">\n      <h1 style=\"margin: 0; font-size: 24px;\">WAKALA MAROC</h1>\n      <p style=\"margin: 4px 0 0 0; font-size: 14px; color: #94a3b8;\">Plateforme Automobile Officielle</p>\n    </div>\n    <div style=\"padding: 30px;\">\n      <h2 style=\"color: #0f172a; font-size: 18px;\">Bonjour {{ $json.fullName }},</h2>\n      <p>Votre demande d'essai sur route a été transmise avec succès au concessionnaire agréé :</p>\n      \n      <div style=\"background: #f8fafc; border-left: 4px solid #c8a96a; padding: 16px; margin: 20px 0; border-radius: 4px;\">\n        <p style=\"margin: 0 0 8px 0;\"><strong>Modèle :</strong> {{ $json.brand }} {{ $json.vehicleName }}</p>\n        <p style=\"margin: 0 0 8px 0;\"><strong>Concessionnaire :</strong> {{ $json.showroomName }}</p>\n        <p style=\"margin: 0 0 8px 0;\"><strong>Ville :</strong> {{ $json.city }}</p>\n        <p style=\"margin: 0 0 8px 0;\"><strong>Date souhaitée :</strong> {{ $json.preferredDate }}</p>\n        <p style=\"margin: 0;\"><strong>Référence :</strong> <span style=\"color: #c8a96a; font-weight: bold;\">{{ $json.bookingReference }}</span></p>\n      </div>\n      \n      <p style=\"font-size: 13px; color: #64748b;\">\n        Ce traitement est réalisé en stricte conformité avec la loi n° 09-08 de la CNDP relative à la protection des données à caractère personnel.\n      </p>\n    </div>\n  </div>\n</body>\n</html>"
+      },
+      "id": "node-email-confirmation",
+      "name": "Email de Confirmation Client",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        740,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO lead_inquiries (id, trim_id, showroom_id, full_name, phone_number, email, city, preferred_date, message, status, cndp_consent_accepted, created_at)\nVALUES (\n  gen_random_uuid(),\n  '{{ $json.trimId || \"00000000-0000-0000-0000-000000000000\" }}',\n  NULL,\n  '{{ $json.fullName }}',\n  '{{ $json.cleanPhone }}',\n  '{{ $json.email }}',\n  '{{ $json.city }}',\n  '{{ $json.preferredDate }}',\n  'Réservation via n8n - Réf: {{ $json.bookingReference }}',\n  'PENDING_SHOWROOM_CONTACT',\n  TRUE,\n  NOW()\n);"
+      },
+      "id": "node-postgres-crm-sync",
+      "name": "Synchro PostgreSQL Lead CRM",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "calendar": "primary",
+        "start": "={{ $json.preferredDate }}T10:00:00+01:00",
+        "end": "={{ $json.preferredDate }}T11:00:00+01:00",
+        "summary": "=Essai sur Route : {{ $json.fullName }} — {{ $json.brand }} {{ $json.vehicleName }}",
+        "description": "=Réf: {{ $json.bookingReference }}\\nClient: {{ $json.fullName }} ({{ $json.cleanPhone }})\\nShowroom: {{ $json.showroomName }}\\nVille: {{ $json.city }}",
+        "location": "={{ $json.showroomAddress }}",
+        "attendees": "={{ $json.email ? [$json.email] : [] }}"
+      },
+      "id": "node-calendar-invite",
+      "name": "Création Rendez-vous Google Calendar",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.2,
+      "position": [
+        1220,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook : Réception Demande Essai": {
+      "main": [
+        [
+          {
+            "node": "Enrichissement & Normalisation CNDP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrichissement & Normalisation CNDP": {
+      "main": [
+        [
+          {
+            "node": "Envoi WhatsApp Client Instantané",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email de Confirmation Client",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Synchro PostgreSQL Lead CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Synchro PostgreSQL Lead CRM": {
+      "main": [
+        [
+          {
+            "node": "Création Rendez-vous Google Calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -49,8 +49,9 @@ async def chat_endpoint(
                 full_response += chunk
                 yield chunk
         except Exception as e:
-            # En cas d'erreur de stream
-            yield f"\n[Erreur: {str(e)}]"
+            import logging
+            logging.getLogger(__name__).error(f"Chat streaming error: {e}", exc_info=True)
+            yield "\n[Désolé, une difficulté technique temporaire est survenue. Veuillez réessayer.]"
             
         # 3. Sauvegarder en DB après complétion
         if current_user:

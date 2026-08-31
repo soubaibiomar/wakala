@@ -1,0 +1,490 @@
+/* ═══════════════════════════════════════════════════════════════
+   Wakala — MarquesPage Luxury Design System
+   Color Palette: Deep Navy #122135, Warm Gold #AE8C4E, Surface #F8F7F4
+   ═══════════════════════════════════════════════════════════════ */
+
+.marques-page {
+  min-height: 100vh;
+  background-color: var(--color-bg-secondary, #F8F7F4);
+  padding-bottom: 6rem;
+  color: var(--color-text-primary, #122135);
+}
+
+/* ─── HERO BANNER ───────────────────────────────────────────── */
+.marques-hero {
+  position: relative;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8F7F4 100%);
+  border-bottom: 1px solid rgba(18, 33, 53, 0.08);
+  padding: 3.5rem 0 3rem;
+  overflow: hidden;
+}
+
+.marques-hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 900px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(174, 140, 78, 0.08) 0%, rgba(248, 247, 244, 0) 70%);
+  pointer-events: none;
+}
+
+.marques-hero-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+.marques-breadcrumbs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #8492A6;
+  margin-bottom: 1.25rem;
+}
+
+.marques-breadcrumbs a {
+  color: #8492A6;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.marques-breadcrumbs a:hover {
+  color: #AE8C4E;
+}
+
+.marques-breadcrumbs .current {
+  color: #122135;
+  font-weight: 600;
+}
+
+.marques-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 1rem;
+  background: rgba(174, 140, 78, 0.1);
+  border: 1px solid rgba(174, 140, 78, 0.25);
+  border-radius: 999px;
+  color: #AE8C4E;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+.marques-title {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  color: #122135;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.75rem;
+  line-height: 1.15;
+}
+
+.marques-title span {
+  color: #AE8C4E;
+}
+
+.marques-subtitle {
+  font-size: 1.05rem;
+  color: #64748B;
+  max-width: 680px;
+  margin: 0 auto 2rem;
+  line-height: 1.6;
+}
+
+/* Quick Search & Filter Controls */
+.marques-search-bar {
+  max-width: 600px;
+  margin: 0 auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.marques-search-input {
+  width: 100%;
+  padding: 1rem 1.25rem 1rem 3.25rem;
+  background: #FFFFFF;
+  border: 1.5px solid rgba(18, 33, 53, 0.12);
+  border-radius: 16px;
+  font-size: 1rem;
+  color: #122135;
+  box-shadow: 0 8px 24px rgba(18, 33, 53, 0.06);
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.marques-search-input:focus {
+  border-color: #AE8C4E;
+  box-shadow: 0 10px 30px rgba(174, 140, 78, 0.15);
+}
+
+.marques-search-icon {
+  position: absolute;
+  left: 1.25rem;
+  color: #8492A6;
+  pointer-events: none;
+}
+
+.marques-search-clear {
+  position: absolute;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: #8492A6;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.marques-search-clear:hover {
+  color: #122135;
+  background: #F1F5F9;
+}
+
+/* ─── ORIGIN PILLS & STATS BAR ───────────────────────────────── */
+.marques-filters-wrapper {
+  max-width: 1280px;
+  margin: -1.25rem auto 2.5rem;
+  padding: 0 1.5rem;
+  position: relative;
+  z-index: 10;
+}
+
+.marques-pills-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.5rem 0.25rem 1rem;
+  scrollbar-width: none;
+}
+
+.marques-pills-row::-webkit-scrollbar {
+  display: none;
+}
+
+.marques-pill-btn {
+  white-space: nowrap;
+  padding: 0.6rem 1.2rem;
+  background: #FFFFFF;
+  border: 1px solid rgba(18, 33, 53, 0.1);
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(18, 33, 53, 0.04);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.marques-pill-btn:hover {
+  border-color: #AE8C4E;
+  color: #122135;
+  transform: translateY(-1px);
+}
+
+.marques-pill-btn.active {
+  background: #122135;
+  color: #FFFFFF;
+  border-color: #122135;
+  box-shadow: 0 4px 14px rgba(18, 33, 53, 0.2);
+}
+
+.marques-pill-count {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.45rem;
+  background: rgba(18, 33, 53, 0.08);
+  border-radius: 999px;
+  color: inherit;
+}
+
+.marques-pill-btn.active .marques-pill-count {
+  background: rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+}
+
+/* ─── ALPHABETICAL NAV ──────────────────────────────────────── */
+.marques-alpha-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 2rem;
+  padding: 0.75rem 1rem;
+  background: #FFFFFF;
+  border-radius: 16px;
+  border: 1px solid rgba(18, 33, 53, 0.06);
+  box-shadow: 0 4px 16px rgba(18, 33, 53, 0.03);
+}
+
+.alpha-letter-btn {
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #64748B;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.alpha-letter-btn:hover:not(:disabled) {
+  background: rgba(174, 140, 78, 0.15);
+  color: #AE8C4E;
+}
+
+.alpha-letter-btn.active {
+  background: #AE8C4E;
+  color: #FFFFFF;
+}
+
+.alpha-letter-btn:disabled {
+  color: #CBD5E1;
+  cursor: not-allowed;
+}
+
+/* ─── BRANDS GRID ───────────────────────────────────────────── */
+.marques-content-wrapper {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.marques-results-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+  color: #64748B;
+}
+
+.marques-results-count strong {
+  color: #122135;
+  font-weight: 700;
+}
+
+.marques-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+/* ─── BRAND LUXURY CARD ─────────────────────────────────────── */
+.brand-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.brand-card {
+  background: #FFFFFF;
+  border: 1px solid rgba(18, 33, 53, 0.08);
+  border-radius: 20px;
+  padding: 1.75rem 1.5rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 16px rgba(18, 33, 53, 0.03);
+  height: 100%;
+}
+
+.brand-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(174, 140, 78, 0.4);
+  box-shadow: 0 16px 36px rgba(18, 33, 53, 0.08), 0 0 0 1px rgba(174, 140, 78, 0.2);
+}
+
+.brand-card-flag-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  font-size: 1.1rem;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.brand-card-logo-box {
+  width: 90px;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F8FAFC;
+  border-radius: 18px;
+  border: 1px solid rgba(18, 33, 53, 0.06);
+  padding: 0.75rem;
+  margin-bottom: 1.25rem;
+  transition: all 0.3s ease;
+}
+
+.brand-card:hover .brand-card-logo-box {
+  background: #FFFFFF;
+  box-shadow: 0 6px 20px rgba(18, 33, 53, 0.06);
+  transform: scale(1.05);
+}
+
+.brand-card-logo {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.brand-card-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #122135;
+  margin-bottom: 0.25rem;
+  letter-spacing: -0.01em;
+}
+
+.brand-card-origin {
+  font-size: 0.82rem;
+  color: #8492A6;
+  margin-bottom: 1rem;
+}
+
+.brand-card-divider {
+  width: 100%;
+  height: 1px;
+  background: rgba(18, 33, 53, 0.06);
+  margin-bottom: 1rem;
+}
+
+.brand-card-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 1.25rem;
+  padding: 0 0.25rem;
+}
+
+.brand-card-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.brand-card-stat-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94A3B8;
+  font-weight: 600;
+}
+
+.brand-card-stat-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #122135;
+}
+
+.brand-card-stat-value.price {
+  color: #AE8C4E;
+}
+
+.brand-card-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  background: #F8FAFC;
+  border: 1px solid rgba(18, 33, 53, 0.08);
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #122135;
+  transition: all 0.2s ease;
+}
+
+.brand-card:hover .brand-card-cta {
+  background: #122135;
+  color: #FFFFFF;
+  border-color: #122135;
+}
+
+/* ─── EMPTY STATE ───────────────────────────────────────────── */
+.marques-empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: #FFFFFF;
+  border-radius: 24px;
+  border: 1px solid rgba(18, 33, 53, 0.08);
+  max-width: 500px;
+  margin: 2rem auto;
+}
+
+.marques-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.marques-empty-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #122135;
+  margin-bottom: 0.5rem;
+}
+
+.marques-empty-desc {
+  font-size: 0.95rem;
+  color: #64748B;
+  margin-bottom: 1.5rem;
+}
+
+.btn-reset-search {
+  padding: 0.75rem 1.5rem;
+  background: #122135;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-reset-search:hover {
+  background: #AE8C4E;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .marques-hero {
+    padding: 2.5rem 0 2rem;
+  }
+  .marques-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+  .marques-alpha-bar {
+    display: none;
+  }
+}

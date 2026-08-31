@@ -163,6 +163,18 @@ export function useChatSession() {
     }
   }, [messages, cancelGeneration]);
 
+  const initConversation = useCallback((welcomeText: string) => {
+    cancelGeneration();
+    const assistantMsg: Message = {
+      id: 'welcome-' + generateId(),
+      role: 'assistant',
+      content: welcomeText,
+      timestamp: Date.now(),
+    };
+    setMessages([assistantMsg]);
+    setError(null);
+  }, [cancelGeneration]);
+
   const clearHistory = useCallback(() => {
     cancelGeneration();
     setMessages([]);
@@ -180,6 +192,7 @@ export function useChatSession() {
     sendMessage,
     cancelGeneration,
     clearHistory,
+    initConversation,
     sessionId: sessionIdRef.current,
   };
 }

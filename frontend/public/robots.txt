@@ -1,7 +1,16 @@
+# robots.txt — Wakala Marketplace Automobile Maroc (100% Véhicules Neufs)
+
 User-agent: Googlebot
 Allow: /
 
+User-agent: Bingbot
+Allow: /
+
+# GEO — Crawlers IA et Moteurs Génératifs autorisés pour indexation et citation
 User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
 Allow: /
 
 User-agent: PerplexityBot
@@ -10,7 +19,30 @@ Allow: /
 User-agent: ClaudeBot
 Allow: /
 
+User-agent: Claude-Web
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+# Règles globales
 User-agent: *
 Allow: /
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /api/v1/admin/
+Disallow: /api/auth/
 
 Sitemap: https://wakala.ma/sitemap.xml

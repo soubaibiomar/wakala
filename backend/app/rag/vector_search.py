@@ -14,15 +14,21 @@ def _get_embedding_service():
     return embedding_service
 
 
+def compute_query_embedding(query: str) -> list[float]:
+    """Compute the embedding for a query string once, to reuse across searches."""
+    emb = _get_embedding_service()
+    return emb.embed_text(query)
+
+
 def search_vehicles(
     query: str,
     limit: int = 5,
     threshold: float = SIMILARITY_THRESHOLD,
+    precomputed_embedding: Optional[list[float]] = None,
 ) -> list[dict]:
     try:
-        emb = _get_embedding_service()
         vs = _get_vector_store()
-        embedding = emb.embed_text(query)
+        embedding = precomputed_embedding or compute_query_embedding(query)
         results = vs.search(embedding, limit=limit)
         return [
             {
@@ -41,11 +47,11 @@ def search_reviews(
     query: str,
     limit: int = 3,
     threshold: float = SIMILARITY_THRESHOLD,
+    precomputed_embedding: Optional[list[float]] = None,
 ) -> list[dict]:
     try:
-        emb = _get_embedding_service()
         vs = _get_vector_store()
-        embedding = emb.embed_text(query)
+        embedding = precomputed_embedding or compute_query_embedding(query)
         review_store = vs.client
         collections = [c.name for c in review_store.get_collections().collections]
         if REVIEW_COLLECTION not in collections:

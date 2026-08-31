@@ -20,7 +20,10 @@
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.5",
+    "@react-three/drei": "^9.114.0",
+    "@react-three/fiber": "^8.17.10",
     "@tanstack/react-query": "^5.101.2",
+    "@types/three": "^0.160.0",
     "axios": "^1.7.7",
     "date-fns": "^4.4.0",
     "framer-motion": "^11.5.0",
@@ -31,7 +34,8 @@
     "react-hook-form": "^7.81.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^6.26.0",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "three": "^0.160.0"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.1",

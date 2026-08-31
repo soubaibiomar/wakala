@@ -30,18 +30,14 @@ export default function Navbar() {
               <Link to="/" className={isActive('/')}>Accueil</Link>
             </li>
             <li>
-              <Link to="/catalogue" className={isActive('/catalogue')}>Catalogue</Link>
-            </li>
-
-            <li>
               <Link to="/dedouanement" className={isActive('/dedouanement')}>Dédouanement</Link>
             </li>
 
             {isAuthenticated && user ? (
               <>
                 <li>
-                  <Link to="/dashboard" className={isActive('/dashboard')}>
-                    Mon espace ({user.full_name})
+                  <Link to="/admin" className={isActive('/admin')}>
+                    Cockpit Admin ({user.full_name})
                   </Link>
                 </li>
                 <li>
@@ -54,11 +50,6 @@ export default function Navbar() {
                     Déconnexion
                   </button>
                 </li>
-                {user.role === 'admin' && (
-                  <li>
-                    <Link to="/admin" className="navbar__link">Admin</Link>
-                  </li>
-                )}
               </>
             ) : (
               <li>

@@ -215,11 +215,11 @@ def extract_filters_from_query(query: str) -> dict:
     return filters
 
 
-def semantic_search(query: str, limit: int = 50) -> list[str]:
+def semantic_search(query: str, limit: int = 50, precomputed_embedding: list[float] | None = None) -> list[str]:
     try:
-        from app.rag.embeddings import embedding_service
+        from app.rag.vector_search import compute_query_embedding
         from app.rag.vector_store import vector_store
-        embedding = embedding_service.embed_text(query)
+        embedding = precomputed_embedding or compute_query_embedding(query)
         results = vector_store.search(embedding, limit=limit)
         return [r["vehicle_id"] for r in results if r.get("vehicle_id")]
     except Exception:

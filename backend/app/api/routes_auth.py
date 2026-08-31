@@ -23,10 +23,12 @@ from app.schemas.user_schema import (
     ResendOTPRequest,
     ForgotPasswordRequest,
     ResetPasswordRequest,
+    ChangePasswordRequest,
     TokenResponse,
     UserCreate,
     UserRead,
 )
+from app.core.security import get_current_user
 
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
@@ -279,6 +281,52 @@ async def reset_password(
     await db.commit()
     
     return {"message": "Mot de passe réinitialisé avec succès."}
+
+
+# ──────────────────────────────────────────────────────────────
+# POST /change-password — Modifier le mot de passe (Connecté)
+# ──────────────────────────────────────────────────────────────
+
+@router.post(
+    "/change-password",
+    summary="Modifier le mot de passe du compte connecté",
+    description="Permet à un utilisateur (admin, concessionnaire, acheteur) authentifié de changer son mot de passe.",
+)
+async def change_password(
+    payload: ChangePasswordRequest,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    # Vérifier l'ancien mot de passe
+    if not verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Le mot de passe actuel est incorrect",
+        )
+
+    # Vérifier que la confirmation correspond
+    if payload.new_password != payload.confirm_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La confirmation ne correspond pas au nouveau mot de passe",
+        )
+
+    # Vérifier que le nouveau mot de passe n'est pas identique à l'ancien
+    if payload.current_password == payload.new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Le nouveau mot de passe doit être différent du mot de passe actuel",
+        )
+
+    # Mettre à jour et hasher le nouveau mot de passe
+    current_user.hashed_password = hash_password(payload.new_password)
+    await db.commit()
+
+    return {
+        "status": "success",
+        "message": "Votre mot de passe a été mis à jour avec succès.",
+    }
+
 
 
 # ──────────────────────────────────────────────────────────────

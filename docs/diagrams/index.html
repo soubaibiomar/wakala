@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagrammes d'Architecture Wakala — NLP & Scoring Hybride</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --bg-card: #111827;
+      --text-primary: #f3f4f6;
+      --text-secondary: #9ca3af;
+      --accent-blue: #3b82f6;
+      --accent-purple: #8b5cf6;
+      --accent-emerald: #10b981;
+      --border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-dark);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      line-height: 1.6;
+    }
+
+    header {
+      background: radial-gradient(circle at 50% 0%, #1e293b 0%, var(--bg-dark) 80%);
+      padding: 3rem 2rem 2rem 2rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .badge {
+      display: inline-block;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      color: #60a5fa;
+      padding: 0.35rem 0.9rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      margin: 0 0 0.5rem 0;
+      background: linear-gradient(135deg, #ffffff, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p.subtitle {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .container {
+      max-width: 1300px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 3rem;
+    }
+
+    .diagram-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .card-header {
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0 0 0.4rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .card-desc {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      margin: 0;
+    }
+
+    .mermaid-wrapper {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 2rem 1rem;
+      display: flex;
+      justify-content: center;
+      overflow-x: auto;
+    }
+
+    .tech-specs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .spec-box {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    .spec-box h4 {
+      margin: 0 0 0.4rem 0;
+      color: #93c5fd;
+      font-size: 0.95rem;
+    }
+
+    .spec-box p {
+      margin: 0;
+      color: #9ca3af;
+      font-size: 0.85rem;
+      line-height: 1.45;
+    }
+
+    footer {
+      text-align: center;
+      padding: 3rem 1.5rem;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border-color);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="badge">Architecture Technique Officielle</div>
+    <h1>Wakala — Moteurs d'Intelligence & NLP</h1>
+    <p class="subtitle">
+      Pipeline de traitement du langage naturel multilingue (FR / AR / Darija) & Moteur de scoring hybride pour le marché automobile marocain.
+    </p>
+  </header>
+
+  <div class="container">
+
+    <!-- ─── DIAGRAMME 1 : PIPELINE NLP MULTILINGUE ─────────────────── -->
+    <div class="diagram-card">
+      <div class="card-header">
+        <h2 class="card-title">🌐 1. Pipeline NLP Multilingue (FR / AR / Darija / Arabizi)</h2>
+        <p class="card-desc">
+          Traitement robuste du code-switching, normalisation de l'argot financier marocain ("25 melyoun", "180k dh") et anonymisation Zero-PII conforme CNDP.
+        </p>
+      </div>
+
+      <div class="mermaid-wrapper">
+        <pre class="mermaid">
+flowchart TD
+    classDef inputNode fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#ffffff;
+    classDef piiNode fill:#7f1d1d,stroke:#ef4444,stroke-width:2px,color:#ffffff;
+    classDef nlpNode fill:#1e1b4b,stroke:#8b5cf6,stroke-width:2px,color:#ffffff;
+    classDef normNode fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ffffff;
+    classDef queryNode fill:#0f172a,stroke:#64748b,stroke-width:2px,color:#ffffff;
+
+    subgraph INGRESS["1. Entree Utilisateur Multicanale"]
+        A1["Texte Libre (Chatbot / Barre de recherche)"]:::inputNode
+        A2["Message Vocal (Audio WebRTC)"]:::inputNode
+        A3["Whisper ASR (Transcription Audio en Texte)"]:::inputNode
+        A2 --> A3
+        A1 --> B
+        A3 --> B
+    end
+
+    subgraph PII_SECURITY["2. Securite & Conformite CNDP (Loi 09-08)"]
+        B["Sanitizer Regex Zero-PII"]:::piiNode
+        B1["Masquage CIN Marocaine (ex: AB123456)"]
+        B2["Masquage Telephones (+212 / 06 / 07)"]
+        B3["Masquage Emails"]
+        B --> B1
+        B --> B2
+        B --> B3
+        B1 --> C["Texte Anonymise et Securise"]:::piiNode
+        B2 --> C
+        B3 --> C
+    end
+
+    subgraph MOROCCAN_NLP["3. Analyse & Normalisation Linguistique"]
+        C --> D["Detecteur de Langue & Code-Switching"]:::nlpNode
+        D --> D1["Darija / Arabizi (bghit, mazot, tomobil...)"]
+        D --> D2["Arabe Standard (Sayara, Mizaneya...)"]
+        D --> D3["Francais / Anglais (SUV, boite auto, budget...)"]
+        
+        D1 --> E["Convertisseur Argot Financier Marocain"]:::normNode
+        D2 --> E
+        D3 --> E
+        
+        E --> E1["25 melyoun / 25 mlyon -> 250 000 MAD"]
+        E --> E2["180k / 180 alf dh -> 180 000 MAD"]
+        E --> E3["500 alf ryal -> 25 000 MAD"]
+        
+        E1 --> F["Mappeur Vocabulaire Automobile"]:::normNode
+        E2 --> F
+        E3 --> F
+        
+        F --> F1["mazot / gasoil -> DIESEL"]
+        F --> F2["lisans / essence -> ESSENCE"]
+        F --> F3["hybride / hybrid -> HYBRIDE"]
+        F --> F4["bva / auto -> AUTOMATIQUE"]
+        F --> F5["4x4 / baroudeur -> SUV"]
+    end
+
+    subgraph OUTPUT_DISPATCH["4. Generation de Contraintes & Dispatcher"]
+        F1 --> G["Extracteur d'Intentions & Slots JSON"]:::nlpNode
+        F2 --> G
+        F3 --> G
+        F4 --> G
+        F5 --> G
+        
+        G --> H1["Filtres Structures SQL (PostgreSQL)"]:::queryNode
+        G --> H2["Vecteur Semantique Dense (Qdrant RAG)"]:::queryNode
+        
+        H1 --> I["Catalogue Neuf 4-Tier (Brands, Models, Trims)"]
+        H2 --> J["Recommandation LLM (Groq / Ollama)"]
+    end
+        </pre>
+      </div>
+
+      <div class="tech-specs-grid">
+        <div class="spec-box">
+          <h4>🔒 Conformité CNDP</h4>
+          <p>Masquage immédiat des PII (numéros CIN, téléphones +212, emails) avant toute indexation vectorielle ou requête LLM.</p>
+        </div>
+        <div class="spec-box">
+          <h4>🇲🇦 Argot Financier</h4>
+          <p>Traduction mathématique automatique des devises populaires : 1 Melyoun = 10 000 DH, 1 Alf = 1 000 DH, 1 Ryal = 0.05 DH.</p>
+        </div>
+        <div class="spec-box">
+          <h4>⚡ Double Indexation</h4>
+          <p>Routage hybride : contraintes relationnelles SQL dures (PostgreSQL) + similarité sémantique vectorielle (Qdrant).</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── DIAGRAMME 2 : MOTEUR DE SCORING HYBRIDE ───────────────── -->
+    <div class="diagram-card">
+      <div class="card-header">
+        <h2 class="card-title">⚖️ 2. Schéma du Moteur de Scoring Hybride</h2>
+        <p class="card-desc">
+          Agrégation pondérée multi-critères intégrant le moteur fiscal marocain en temps réel (Vignette DGI, Carte Grise, Taxe de Luxe).
+        </p>
+      </div>
+
+      <div class="mermaid-wrapper">
+        <pre class="mermaid">
+flowchart LR
+    classDef inputBlock fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#ffffff;
+    classDef engineBlock fill:#1e1b4b,stroke:#8b5cf6,stroke-width:2px,color:#ffffff;
+    classDef calcBlock fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ffffff;
+    classDef finalBlock fill:#311042,stroke:#d946ef,stroke-width:2px,color:#ffffff;
+
+    subgraph INPUTS["1. Entrees du Systeme"]
+        U1["Criteres Explicites (Marque, Carburant, Boite, Carrosserie)"]:::inputBlock
+        U2["Curseurs de Priorites (Priority Tubes : 0-100)"]:::inputBlock
+        U3["Budget Maximal Utilisateur (MAD)"]:::inputBlock
+        DB["Catalogue Neuf 4-Tier & Fiches Techniques"]:::inputBlock
+    end
+
+    subgraph TAX_ENGINE["2. Moteur Fiscal Marocain (Temps Reel)"]
+        DB --> T1["Calcul Prix Cle en Main (OTR)"]:::calcBlock
+        T1 --> T2["Vignette DGI (CGI Art. 262 : CV & Carburant)"]
+        T1 --> T3["Frais Immatriculation & Carte Grise"]
+        T1 --> T4["Taxe de Luxe (Loi de Finances : Bareme 0-20%)"]
+    end
+
+    subgraph SCORING_PILLARS["3. Piliers de Scoring Specialises"]
+        U3 --> P1["Score d'Adequation Budget (S_budget : 0-100)"]:::engineBlock
+        T1 --> P1
+        U1 --> P2["Score Concordance Technique (S_specs : 0-100)"]:::engineBlock
+        DB --> P2
+        U2 --> P3["Score Radar Benchmark (S_radar : 0-100)"]:::engineBlock
+        DB --> P3
+        DB --> P4["Score Garantie & Confiance Concession (S_trust : 0-100)"]:::engineBlock
+    end
+
+    subgraph RADAR_DETAILS["Sous-indices du Radar"]
+        P3 --> R1["Indice Economie & Vignette"]
+        P3 --> R2["Indice Puissance & Reprise"]
+        P3 --> R3["Indice Habitabilite & Coffre"]
+        P3 --> R4["Indice Equipements de Serie"]
+    end
+
+    subgraph AGGREGATION["4. Moteur d'Agregation Ponderee"]
+        P1 --> AGG["Agregateur Multi-Criteres<br/>S_total = w_b*S_budget + w_s*S_specs + w_r*S_radar + w_t*S_trust"]:::finalBlock
+        P2 --> AGG
+        P3 --> AGG
+        P4 --> AGG
+        
+        AGG --> RANK["Classement Final & Top Recommandations"]:::finalBlock
+        RANK --> OUT1["Showroom Digital (Catalogue Trie)"]
+        RANK --> OUT2["Comparateur Face-a-Face (Matrice Diff)"]
+    end
+        </pre>
+      </div>
+
+      <div class="tech-specs-grid">
+        <div class="spec-box">
+          <h4>📊 Formule d'Agrégation</h4>
+          <p>Score global S_total = w_b·S_budget + w_s·S_specs + w_r·S_radar + w_t·S_trust avec normalisation continue.</p>
+        </div>
+        <div class="spec-box">
+          <h4>🇲🇦 Fiscalité Marocaine Live</h4>
+          <p>Évaluation sur le Prix Clé en Main réel (Prix TTC + Vignette DGI + Immatriculation + Frais Concessionnaire).</p>
+        </div>
+        <div class="spec-box">
+          <h4>🎛️ Priority Tubes</h4>
+          <p>Ajustement dynamique en temps réel selon les préférences (Économie, Puissance, Habitabilité, Équipements).</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    © 2026 Wakala — Plateforme Automobile 100% Véhicules Neufs & Showroom Digital Maroc
+  </footer>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      themeVariables: {
+        darkMode: true,
+        background: '#0f172a',
+        primaryColor: '#1e293b',
+        primaryTextColor: '#f8fafc',
+        primaryBorderColor: '#3b82f6',
+        lineColor: '#60a5fa',
+        secondaryColor: '#1e1b4b',
+        tertiaryColor: '#064e3b'
+      }
+    });
+  </script>
+</body>
+</html>

@@ -102,7 +102,14 @@ async def consume_to_postgres():
             if not data:
                 continue
                 
-            print(f"Received listing from Kafka: {data.get('brand')} {data.get('model')}")
+            # Wakala is strictly a new car platform (0 km)
+            mileage = data.get("mileage") or 0
+            year = data.get("year") or 2026
+            if mileage > 0 or year < 2024:
+                print(f"Skipping used vehicle ({data.get('brand')} {data.get('model')} - {year}, {mileage} km) — Wakala is new cars only.")
+                continue
+
+            print(f"Received new car listing from Kafka: {data.get('brand')} {data.get('model')}")
             
             async with async_session_factory() as db:
                 vehicle_id = uuid.uuid4()
@@ -118,14 +125,16 @@ async def consume_to_postgres():
                     seller_id=user_id,
                     brand=str(data.get("brand") or "Inconnu"),
                     model=str(data.get("model") or "Inconnu"),
-                    year=data.get("year") if data.get("year") is not None else 2020,
-                    mileage=data.get("mileage") if data.get("mileage") is not None else 0,
+                    year=year,
+                    mileage=0,
+                    condition="new",
+                    source="wakala_catalogue",
                     fuel_type=data.get("fuel_type") or "diesel",
                     body_type=data.get("body_type") or "suv",
                     transmission=data.get("transmission") or "manuelle",
                     city=str(data.get("city") or "Casablanca"),
                     price=price,
-                    description=data.get("description", ""),
+                    description=data.get("description", "") or f"Véhicule Neuf Officiel — {data.get('brand')} {data.get('model')}.",
                     created_at=datetime.now(timezone.utc),
                     updated_at=datetime.now(timezone.utc)
                 )

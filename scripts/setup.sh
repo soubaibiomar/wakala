@@ -238,8 +238,8 @@ else
     cd "$PROJECT_ROOT"
 
     # Démarrer les services d'infrastructure uniquement
-    echo -e "  ${YELLOW}→${NC} Démarrage : PostgreSQL, Neo4j, Qdrant, Kafka, Zookeeper..."
-    docker compose up -d postgres neo4j qdrant zookeeper kafka 2>&1 | tail -10
+    echo -e "  ${YELLOW}→${NC} Démarrage : PostgreSQL, Neo4j, Qdrant, Kafka (KRaft)..."
+    docker compose up -d postgres neo4j qdrant kafka 2>&1 | tail -10
 
     # Attendre que PostgreSQL soit prêt
     echo -e "  ${YELLOW}→${NC} Attente de PostgreSQL..."

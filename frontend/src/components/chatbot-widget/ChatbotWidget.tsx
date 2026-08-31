@@ -8,7 +8,7 @@ import styles from './chatbot.module.css';
 
 export default function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const { messages, isTyping, error, sendMessage, cancelGeneration, clearHistory } = useChatSession();
+  const { messages, isTyping, error, sendMessage, cancelGeneration, clearHistory, initConversation } = useChatSession();
   const [notificationCount, setNotificationCount] = useState(0);
   const location = useLocation();
 
@@ -35,16 +35,14 @@ export default function ChatbotWidget() {
   );
 
   const hasNewMessage = messages.length > 0 && !isOpen;
-  
-
 
   return (
     <>
       <motion.div 
         className={`${styles.widget} ${isOpen ? styles.widgetOpen : ''}`}
-        drag
-        dragElastic={0.1}
-        dragMomentum={false}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
         style={{ pointerEvents: 'none' }}
       >
       {isOpen && (
@@ -55,6 +53,7 @@ export default function ChatbotWidget() {
           onSend={handleSend}
           onCancel={cancelGeneration}
           onClear={clearHistory}
+          onInitLanguage={initConversation}
           onClose={toggleOpen}
         />
       )}

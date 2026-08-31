@@ -27,8 +27,8 @@ class SchemaValidator:
         if price is not None:
             if not isinstance(price, (int, float)):
                 errors.append(f"Price must be a number, got {type(price)}")
-            elif price < 5000 or price > 3000000:
-                errors.append(f"Price {price} out of realistic range [5000, 3000000]")
+            elif price < 5000 or price > 20000000:
+                errors.append(f"Price {price} out of realistic range [5000, 20000000]")
         else:
             errors.append("Missing price")
             

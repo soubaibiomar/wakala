@@ -11,16 +11,19 @@
  *   </AuthProvider>
  */
 
-import { BrowserRouter, Routes, Route, Link, useLocation, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useLocation, Outlet, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Home as HomeIcon, Search, Calculator, User, LogOut } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CompareProvider } from './context/CompareContext';
 import Home from './pages/Home';
 import Catalogue from './pages/Catalogue';
+import { NewCarDetailPage } from './pages/NewCarDetailPage';
+import { ComparatorPage } from './pages/ComparatorPage';
 import VehicleDetail from './pages/VehicleDetail';
 import AuthPage from './pages/Auth/AuthPage';
 import BrandPage from './pages/BrandPage/BrandPage';
+import MarquesPage from './pages/MarquesPage';
 import ModelPage from './pages/ModelPage/ModelPage';
 import AdminDashboard from './pages/AdminDashboard';
 import MaintenanceBook from './pages/Dashboard/MaintenanceBook';
@@ -33,6 +36,11 @@ import LegalPage from './pages/LegalPage';
 import HowItWorksPage from './pages/HowItWorksPage';
 import TechnologyPage from './pages/TechnologyPage';
 import TrustScorePage from './pages/TrustScorePage';
+import GuideAchatPage from './pages/GuideAchatPage';
+import ComparatifPage from './pages/ComparatifPage';
+import VilleCataloguePage from './pages/VilleCataloguePage';
+import FinancementPage from './pages/FinancementPage';
+import OrganizationStructuredData from './components/seo/OrganizationStructuredData';
 import ChatbotWidget from './components/chatbot-widget/ChatbotWidget';
 import CompareDrawer from './components/compare/CompareDrawer';
 import DashboardLayout from './components/dashboard/DashboardLayout';
@@ -62,39 +70,46 @@ function Footer() {
         <div>
           <div className="footer__brand">Wakala</div>
           <p className="footer__desc">
-            La marketplace automobile intelligente propulsée par l'IA.
-            Recherche intuitive, recommandation hybride,
-            score de confiance transparent.
+            Le tiers de confiance automobile au Maroc.
+            Catalogue officiel certifié 100% véhicules neufs, Scoring Déterministe 8D,
+            simulateur de dédouanement (Diwana) et Conseiller IA multilingue.
           </p>
         </div>
         <div>
-          <div className="footer__title">Plateforme</div>
+          <div className="footer__title">Plateforme &amp; Guides</div>
           <ul className="footer__list">
-            <li><Link to="/catalogue">Catalogue</Link></li>
-            <li><Link to="/dedouanement">Calculateur Douane</Link></li>
-            <li><Link to="/register">Vendre un véhicule</Link></li>
-            <li><Link to="/comment-ca-marche">Comment ça marche</Link></li>
+            <li><Link to="/guide-achat-voiture-maroc">Guide d'Achat Maroc (Pilier)</Link></li>
+            <li><Link to="/catalogue">Catalogue Véhicules Neufs</Link></li>
+            <li><Link to="/financement-auto-maroc">Financement &amp; Mourabaha</Link></li>
+            <li><Link to="/comparateur">Comparateur Radar 8D</Link></li>
+            <li><Link to="/dedouanement">Simulateur Dédouanement</Link></li>
+            <li><Link to="/chat">Conseiller IA Multilingue</Link></li>
           </ul>
         </div>
         <div>
-          <div className="footer__title">Technologie</div>
+          <div className="footer__title">Villes &amp; Réseau</div>
           <ul className="footer__list">
+            <li><Link to="/voitures-neuves/casablanca">Casablanca</Link></li>
+            <li><Link to="/voitures-neuves/rabat">Rabat</Link></li>
+            <li><Link to="/voitures-neuves/marrakech">Marrakech</Link></li>
+            <li><Link to="/voitures-neuves/tanger">Tanger</Link></li>
+            <li><Link to="/voitures-neuves/agadir">Agadir</Link></li>
+            <li><Link to="/marque">Toutes les Marques</Link></li>
+          </ul>
+        </div>
+        <div>
+          <div className="footer__title">Technologie &amp; Légal</div>
+          <ul className="footer__list">
+            <li><Link to="/score-de-confiance">Scoring Déterministe 8D</Link></li>
             <li><Link to="/technologie">IA &amp; Big Data</Link></li>
-            <li><Link to="/score-de-confiance">Score de confiance</Link></li>
-            <li><a href="http://localhost:8000/docs" target="_blank" rel="noreferrer">API Docs</a></li>
-          </ul>
-        </div>
-        <div>
-          <div className="footer__title">Entreprise</div>
-          <ul className="footer__list">
-            <li><Link to="/a-propos">À propos</Link></li>
-            <li><Link to="/contact">Contact</Link></li>
+            <li><Link to="/a-propos">À propos de Wakala</Link></li>
+            <li><Link to="/contact">Contact &amp; Réseau</Link></li>
             <li><Link to="/mentions-legales">Mentions légales</Link></li>
           </ul>
         </div>
       </div>
       <div className="footer__bottom">
-        © {new Date().getFullYear()} Wakala — Propulsé par l'intelligence artificielle
+        © {new Date().getFullYear()} Wakala — Tiers de Confiance Automobile au Maroc
       </div>
     </footer>
   );
@@ -105,6 +120,7 @@ function Footer() {
 function MainLayout() {
   return (
     <>
+      <OrganizationStructuredData />
       <Navbar />
       <main className="page">
         <Outlet />
@@ -125,12 +141,25 @@ function AppRoutes() {
       <Route element={<MainLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/catalogue" element={<Catalogue />} />
+        
+        {/* SEO & GEO Semantic Silos */}
+        <Route path="/guide-achat-voiture-maroc" element={<GuideAchatPage />} />
+        <Route path="/comparer/:slug" element={<ComparatifPage />} />
+        <Route path="/voitures-neuves/:ville" element={<VilleCataloguePage />} />
+        <Route path="/financement-auto-maroc" element={<FinancementPage />} />
+        
+        <Route path="/neuf/:slug" element={<NewCarDetailPage />} />
+        <Route path="/neuf/:brand/:slug" element={<NewCarDetailPage />} />
+        <Route path="/comparateur" element={<ComparatorPage />} />
         <Route path="/vehicule/:id" element={<VehicleDetail />} />
+        <Route path="/marque" element={<MarquesPage />} />
+        <Route path="/marques" element={<MarquesPage />} />
         <Route path="/marque/:brandName" element={<BrandPage />} />
         <Route path="/marque/:brandName/:modelName" element={<ModelPage />} />
         <Route path="/marque/:brandName/:modelName/:versionSlug" element={<VehicleDetail />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/chat" element={<ChatbotPage />} />
+        <Route path="/conseiller-ia" element={<ChatbotPage />} />
         <Route path="/login" element={<AuthPage />} />
         <Route path="/register" element={<AuthPage />} />
         <Route path="/dedouanement" element={<CustomsPage />} />
@@ -141,25 +170,15 @@ function AppRoutes() {
         <Route path="/comment-ca-marche" element={<HowItWorksPage />} />
         <Route path="/technologie" element={<TechnologyPage />} />
         <Route path="/score-de-confiance" element={<TrustScorePage />} />
-        {/* L'ancien admin, en attendant d'être supprimé ou refactoré */}
+        {/* Master Admin Cockpit Route & Catalogue Management */}
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/cockpit" element={<AdminDashboard />} />
+        <Route path="/admin/catalogue" element={<Catalogue />} />
       </Route>
       
-      {/* Dashboard Routes with Sidebar/BottomNav */}
-      <Route path="/dashboard" element={<DashboardLayout />}>
-        <Route index element={<DashboardIndex />} />
-        <Route path="maintenance" element={<MaintenanceBook />} />
-        <Route path="listings" element={<SellerListings />} />
-        <Route path="new-listing" element={<NewListing />} />
-        <Route path="messages" element={<Messages />} />
-        <Route path="offers" element={<Offers />} />
-        <Route path="favorites" element={<Favorites />} />
-        <Route path="recommendations" element={<Recommendations />} />
-        <Route path="profile" element={<Profile />} />
-        <Route path="argus" element={<div>Argus Complet (À venir)</div>} />
-        {/* L'Admin Bento est géré par l'index qui check le role, ou on peut le forcer ici */}
-        <Route path="admin" element={<DashboardIndex />} />
-      </Route>
+      {/* Redirect old dashboard to Admin Cockpit */}
+      <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
+      <Route path="/dashboard/*" element={<Navigate to="/admin" replace />} />
     </Routes>
   );
 }

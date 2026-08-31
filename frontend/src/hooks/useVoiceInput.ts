@@ -41,18 +41,32 @@ export function useVoiceInput({
   const audioChunksRef = useRef<Blob[]>([]);
   const onTranscriptRef = useRef(onTranscript);
 
+  // Synchronise le callback de transcription
   useEffect(() => {
     onTranscriptRef.current = onTranscript;
   }, [onTranscript]);
 
-  const setLang = useCallback((newLang: string) => {
-    setLangState(newLang);
-    if (recognitionRef.current && status === 'listening' && !useFallback) {
-      recognitionRef.current.stop();
+  // Synchronise la langue dynamique (quand l'utilisateur change de langue dans l'UI)
+  useEffect(() => {
+    if (defaultLang && defaultLang !== lang) {
+      setLangState(defaultLang);
+      if (recognitionRef.current) {
+        recognitionRef.current.lang = defaultLang;
+      }
     }
-  }, [status, useFallback]);
+  }, [defaultLang]);
 
-  // --- NATIVE SPEECH API LOGIC ---
+  const setLang = useCallback(
+    (newLang: string) => {
+      setLangState(newLang);
+      if (recognitionRef.current && status === 'listening' && !useFallback) {
+        recognitionRef.current.stop();
+      }
+    },
+    [status, useFallback]
+  );
+
+  // --- NATIVE SPEECH API (Web Speech API) ---
   useEffect(() => {
     if (!SpeechRecognitionAPI || useFallback) return;
 
@@ -60,6 +74,7 @@ export function useVoiceInput({
     recognition.continuous = continuous;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
+    recognition.lang = lang;
 
     recognition.onresult = (event: any) => {
       let interim = '';
@@ -84,15 +99,15 @@ export function useVoiceInput({
         setStatus('idle');
         return;
       }
-      // If native fails with network error, switch to fallback seamlessly
+      // Bascule automatique vers le fallback backend si le réseau du navigateur bloque
       if (code === 'network') {
-        console.warn("Native Speech API network error. Switching to Whisper fallback.");
+        console.warn('Native Speech API network error. Bascule sur la transcription IA backend.');
         setUseFallback(true);
         setStatus('idle');
         return;
       }
       setStatus('error');
-      setErrorMessage(`Erreur micro: ${code}`);
+      setErrorMessage(`Microphone : ${code}`);
     };
 
     recognition.onend = () => {
@@ -103,42 +118,43 @@ export function useVoiceInput({
     recognitionRef.current = recognition;
 
     return () => {
-      try { recognition.abort(); } catch {}
+      try {
+        recognition.abort();
+      } catch {}
     };
-  }, [continuous, useFallback]);
+  }, [continuous, useFallback, lang]);
 
-  useEffect(() => {
-    if (recognitionRef.current && !useFallback) {
-      recognitionRef.current.lang = lang;
-    }
-  }, [lang, useFallback]);
-
-  // --- FALLBACK (WHISPER) LOGIC ---
+  // --- FALLBACK MULTI-MODÈLES BACKEND (Cohere Arabic / HuBERT / Groq) ---
   const handleAudioUpload = async (audioBlob: Blob) => {
     setStatus('processing');
-    setInterimTranscript('Analyse en cours...');
-    
+    setInterimTranscript('Transcription vocale en cours...');
+
     try {
       const formData = new FormData();
       formData.append('audio', audioBlob, 'recording.webm');
-      
-      const response = await fetch('http://localhost:8000/api/voice/transcribe', {
+      formData.append('language', lang);
+
+      const apiBase = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${apiBase}/api/voice/transcribe`, {
         method: 'POST',
         body: formData,
       });
-      
-      if (!response.ok) throw new Error('Transcription failed');
+
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+
       const data = await response.json();
-      
-      if (data.text) {
-        onTranscriptRef.current(data.text);
+
+      if (data && data.text) {
+        onTranscriptRef.current(data.text.trim());
       }
       setStatus('idle');
       setInterimTranscript('');
     } catch (err) {
-      console.error(err);
+      console.error('[Voice] Erreur backend:', err);
       setStatus('error');
-      setErrorMessage('La transcription IA a échoué.');
+      setErrorMessage('La transcription vocale a échoué.');
       setInterimTranscript('');
     }
   };
@@ -159,7 +175,7 @@ export function useVoiceInput({
 
         mediaRecorder.onstop = () => {
           const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-          stream.getTracks().forEach(track => track.stop());
+          stream.getTracks().forEach((track) => track.stop());
           handleAudioUpload(audioBlob);
         };
 
@@ -173,13 +189,14 @@ export function useVoiceInput({
     } else {
       if (!recognitionRef.current) return;
       try {
+        recognitionRef.current.lang = lang;
         recognitionRef.current.start();
         setStatus('listening');
       } catch (err) {
         console.warn('SpeechRecognition.start() error:', err);
       }
     }
-  }, [useFallback]);
+  }, [useFallback, lang]);
 
   const stopListening = useCallback(() => {
     if (useFallback) {
@@ -188,7 +205,9 @@ export function useVoiceInput({
       }
     } else {
       if (!recognitionRef.current) return;
-      try { recognitionRef.current.stop(); } catch {}
+      try {
+        recognitionRef.current.stop();
+      } catch {}
       setStatus('idle');
     }
   }, [useFallback]);
@@ -202,7 +221,7 @@ export function useVoiceInput({
   }, [status, startListening, stopListening]);
 
   return {
-    isSupported: true, // We now always support it via fallback!
+    isSupported: true,
     status,
     interimTranscript,
     errorMessage,

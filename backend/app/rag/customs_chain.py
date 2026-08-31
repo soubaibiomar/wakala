@@ -31,13 +31,26 @@ class CustomsChain:
             return
 
         try:
-            self.llm = ChatOpenAI(
-                base_url=settings.OLLAMA_BASE_URL,
-                api_key=settings.OPENAI_API_KEY,
-                model=settings.OLLAMA_MODEL_TEXT,
-                temperature=0.2,
-                max_tokens=350,
-            )
+            if settings.OPENROUTER_API_KEY:
+                self.llm = ChatOpenAI(
+                    base_url=settings.OPENROUTER_BASE_URL,
+                    api_key=settings.OPENROUTER_API_KEY,
+                    model=settings.OPENROUTER_MODEL,
+                    temperature=0.2,
+                    max_tokens=350,
+                    default_headers={
+                        "HTTP-Referer": "https://wakala.ma",
+                        "X-Title": "Wakala Platform",
+                    }
+                )
+            else:
+                self.llm = ChatOpenAI(
+                    base_url=settings.OLLAMA_BASE_URL,
+                    api_key=settings.OPENAI_API_KEY,
+                    model=settings.OLLAMA_MODEL_TEXT,
+                    temperature=0.2,
+                    max_tokens=350,
+                )
             
 
             self.prompt = PromptTemplate(

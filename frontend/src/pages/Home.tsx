@@ -17,7 +17,6 @@ import VehicleCard from '../components/vehicle-card/VehicleCard';
 import { POPULAR_BRANDS } from '../constants/brands';
 
 import HeroCar from '../components/hero/HeroCar';
-import HeroIntro from '../components/hero/HeroIntro';
 import './Home.css';
 
 
@@ -129,45 +128,63 @@ function CarSection({ id, tag, title, subtitle, fetchParams, emptyMessage }: Car
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Features Section — présentation des 6 modules IA
+// Features Section — Suite d'Outils Intelligents Wakala
 // ═══════════════════════════════════════════════════════════════
 
 function FeaturesSection() {
-  const features = [
+  const tools = [
     {
-      icon: <Search size={22} />,
-      title: 'Trouvez en un mot',
-      desc: 'Dites simplement ce que vous cherchez — « SUV familial diesel » — et on s\'occupe du reste.',
-      accent: 'var(--color-accent-gold)',
-    },
-    {
-      icon: <Cpu size={22} />,
-      title: 'Des suggestions sur mesure',
-      desc: 'Plus vous cherchez, mieux on vous connaît. Nos recommandations s\'adaptent à vos goûts et votre budget.',
-      accent: '#6366f1',
-    },
-    {
-      icon: <ShieldCheck size={22} />,
-      title: 'Annonces vérifiées',
-      desc: 'Chaque annonce est passée au crible : photos, prix, historique du vendeur. Fini les mauvaises surprises.',
+      tag: 'Taxes & Douane',
+      title: 'Simulateur de Dédouanement',
+      desc: 'Calculez instantanément les droits de douane, la TVA et la taxe de luxe selon le barème officiel marocain en vigueur.',
+      badge: 'Barème 2026',
+      link: '/dedouanement',
+      linkText: 'Calculer mes frais',
       accent: '#10b981',
     },
     {
-      icon: <MessageSquare size={22} />,
-      title: 'Un expert à vos côtés',
-      desc: 'Notre assistant connaît tout le catalogue. Posez-lui vos questions, il vous guide comme un ami.',
+      tag: 'Conseil Intelligent',
+      title: 'Conseiller IA & Recherche Vocale',
+      desc: 'Exprimez vos critères en Darija ou Français. Notre IA diagnostique vos besoins et extrait les fiches certifiées du catalogue.',
+      badge: 'Multilingue • Sans Hallucination',
+      link: '/chat',
+      linkText: 'Consulter l’IA',
       accent: '#f59e0b',
     },
     {
-      icon: <LineChart size={22} />,
-      title: 'Le juste prix, garanti',
-      desc: 'Notre IA analyse le marché en temps réel pour vous dire si le prix affiché est bon — ou pas.',
+      tag: 'Outil Décisionnel',
+      title: 'Comparateur Technique Multicritères',
+      desc: 'Mettez en concurrence jusqu’à 4 véhicules côte à côte : consommation réelle, volume de coffre, puissance fiscale et équipements.',
+      badge: '+30 Critères Comparés',
+      link: '/comparateur',
+      linkText: 'Lancer la comparaison',
+      accent: '#6366f1',
+    },
+    {
+      tag: 'Valorisation Marché',
+      title: 'Argus & Cote Prédictive',
+      desc: 'Évaluez la juste valeur marchande de chaque modèle grâce à notre algorithme basé sur l’historique des transactions réelles au Maroc.',
+      badge: 'Modèle Machine Learning',
+      link: '/catalogue',
+      linkText: 'Explorer les cotes',
+      accent: '#0ea5e9',
+    },
+    {
+      tag: 'Sécurité & Prévention',
+      title: 'Audit & Fiabilité Moteurs',
+      desc: 'Identifiez en amont les motorisations et boîtes de vitesses à risque (PureTech, TCe, THP, DSG sèches) avant votre achat.',
+      badge: 'Base Pannes Constructeurs',
+      link: '/chat?q=Quels+moteurs+eviter+en+occasion',
+      linkText: 'Vérifier un moteur',
       accent: '#ec4899',
     },
     {
-      icon: <Network size={22} />,
-      title: 'Comparez facilement',
-      desc: 'On identifie automatiquement les voitures similaires pour que vous puissiez comparer en un coup d\'œil.',
+      tag: 'Catalogue Officiel',
+      title: 'Fiches Techniques Constructeurs',
+      desc: 'Consultez les caractéristiques officielles, dimensions, finitions, motorisations et tarifs neufs de chaque marque au Maroc.',
+      badge: 'Toutes Marques Maroc',
+      link: '/marque',
+      linkText: 'Consulter les fiches',
       accent: '#8b5cf6',
     },
   ];
@@ -181,29 +198,42 @@ function FeaturesSection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <span className="home-features__tag">Pourquoi nous choisir</span>
+          <span className="home-features__tag">Suite d'Outils Intelligents</span>
           <h2 className="home-features__title">
-            Acheter une voiture, <span className="text-gradient">simplifié</span>.
+            L'Automobile en toute <span className="text-gradient">clarté</span>.
           </h2>
           <p className="home-features__subtitle">
-            Tout ce qu'il faut pour trouver la bonne voiture, au bon prix, en toute confiance.
+            Des outils interactifs exclusifs pour estimer, comparer, dédouaner et choisir votre véhicule en toute indépendance.
           </p>
         </motion.div>
 
         <div className="home-features__grid">
-          {features.map((f, i) => (
+          {tools.map((tool, i) => (
             <motion.div
-              key={f.title}
+              key={tool.title}
               className="home-features__card"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.08 }}
-              style={{ '--feature-accent': f.accent } as React.CSSProperties}
+              transition={{ duration: 0.45, delay: i * 0.07 }}
+              style={{ '--feature-accent': tool.accent } as React.CSSProperties}
             >
-              <div className="home-features__card-icon">{f.icon}</div>
-              <h3 className="home-features__card-title">{f.title}</h3>
-              <p className="home-features__card-desc">{f.desc}</p>
+              <div className="home-features__card-top">
+                <span className="home-features__card-tag" style={{ color: tool.accent }}>
+                  {tool.tag}
+                </span>
+                <span className="home-features__card-badge">{tool.badge}</span>
+              </div>
+
+              <h3 className="home-features__card-title">{tool.title}</h3>
+              <p className="home-features__card-desc">{tool.desc}</p>
+
+              <div className="home-features__card-footer">
+                <Link to={tool.link} className="home-features__card-link" style={{ color: tool.accent }}>
+                  <span>{tool.linkText}</span>
+                  <span className="home-features__card-arrow">→</span>
+                </Link>
+              </div>
             </motion.div>
           ))}
         </div>
@@ -257,34 +287,21 @@ function BrandsSection() {
 // ═══════════════════════════════════════════════════════════════
 
 export default function Home() {
-  const [introDone, setIntroDone] = useState(() => {
-    return sessionStorage.getItem('wakala_intro_seen') === 'true';
-  });
-  const handleIntroComplete = useCallback(() => {
-    sessionStorage.setItem('wakala_intro_seen', 'true');
-    setIntroDone(true);
-  }, []);
-
   return (
     <>
-      {!introDone && <HeroIntro onComplete={handleIntroComplete} />}
-      {introDone && (
-        <>
-          <HeroCar />
+      <HeroCar />
 
-          <BrandsSection />
-          {/* PIVOT: Replaced "Véhicules d'Occasion" with "Véhicules Neufs" */}
-          <CarSection
-            id="new-vehicles"
-            tag="Neufs"
-            title="Véhicules Neufs"
-            subtitle="Derniers modèles neufs ajoutés, analysés par notre IA."
-            fetchParams={{ page_size: 15, sort_by: 'created_at', sort_order: 'desc' }}
-            emptyMessage="Aucun véhicule neuf disponible."
-          />
-          <FeaturesSection />
-        </>
-      )}
+      <BrandsSection />
+      {/* PIVOT: Replaced "Véhicules d'Occasion" with "Véhicules Neufs" */}
+      <CarSection
+        id="new-vehicles"
+        tag="Neufs"
+        title="Véhicules Neufs"
+        subtitle="Derniers modèles neufs ajoutés, analysés par notre IA."
+        fetchParams={{ page_size: 15, sort_by: 'created_at', sort_order: 'desc' }}
+        emptyMessage="Aucun véhicule neuf disponible."
+      />
+      <FeaturesSection />
     </>
   );
 }

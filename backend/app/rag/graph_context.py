@@ -18,18 +18,44 @@ async def enrich_with_graph(
     graph_service = get_graph_service()
     enriched: dict[str, dict] = {}
 
-    for vid in vehicle_ids[:5]:
-        similar = await graph_service.get_similar_vehicles(vid, limit=limit)
-        enriched[vid] = {
-            "similar_vehicles": [
-                {
-                    "id": s["id"],
-                    "title": s.get("title", ""),
-                    "popularity_score": s.get("score", 0),
+    # Batch query: fetch similar vehicles for all IDs in a single Cypher call
+    try:
+        async with graph_service.driver.session() as session:
+            result = await session.run(
+                """
+                UNWIND $vids AS vid
+                MATCH (v:Vehicle {id: vid})
+                OPTIONAL MATCH (v)-[r:SIMILAR_TO]-(other:Vehicle)
+                WITH vid, other, r
+                ORDER BY r.score DESC
+                WITH vid, collect({
+                    id: other.id,
+                    title: coalesce(other.brand, '') + ' ' + coalesce(other.model, ''),
+                    score: coalesce(r.score, 0)
+                })[0..$limit] AS similar
+                RETURN vid, similar
+                """,
+                vids=vehicle_ids[:5],
+                limit=limit,
+            )
+            async for record in result:
+                vid = record["vid"]
+                similar_raw = record["similar"]
+                enriched[vid] = {
+                    "similar_vehicles": [
+                        {
+                            "id": s["id"],
+                            "title": s["title"],
+                            "popularity_score": s["score"],
+                        }
+                        for s in similar_raw
+                        if s.get("id") is not None
+                    ],
                 }
-                for s in similar
-            ],
-        }
+    except Exception:
+        # Graceful fallback: return empty enrichment if Neo4j is unavailable
+        for vid in vehicle_ids[:5]:
+            enriched[vid] = {"similar_vehicles": []}
 
     return enriched
 
@@ -42,16 +68,26 @@ async def get_popularity_scores(
 
     graph_service = get_graph_service()
     scores: dict[str, float] = {}
-    async with graph_service.driver.session() as session:
-        for vid in vehicle_ids:
+
+    # Batch query: fetch all popularity scores in a single Cypher call
+    try:
+        async with graph_service.driver.session() as session:
             result = await session.run(
                 """
-                MATCH (v:Vehicle {id: $vid})
-                RETURN v.popularity_score AS score
+                UNWIND $vids AS vid
+                MATCH (v:Vehicle {id: vid})
+                RETURN vid, coalesce(v.popularity_score, 0.0) AS score
                 """,
-                vid=vid,
+                vids=vehicle_ids,
             )
-            row = await result.single()
-            scores[vid] = row["score"] if row and row["score"] is not None else 0.0
+            async for record in result:
+                scores[record["vid"]] = record["score"]
+    except Exception:
+        pass
+
+    # Fill missing IDs with 0.0
+    for vid in vehicle_ids:
+        if vid not in scores:
+            scores[vid] = 0.0
 
     return scores

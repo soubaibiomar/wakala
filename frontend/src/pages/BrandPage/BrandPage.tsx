@@ -123,7 +123,7 @@ export default function BrandPage() {
           <div className="brand-breadcrumbs">
             <Link to="/">Accueil</Link>
             <ChevronRight size={14} />
-            <Link to="/catalogue">Catalogue</Link>
+            <Link to="/marque">Toutes les Marques</Link>
             <ChevronRight size={14} />
             <span className="current">{displayBrandName}</span>
           </div>

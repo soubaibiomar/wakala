@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import (
-    DateTime, Enum, Integer, Numeric, SmallInteger, String, Text,
+    Boolean, DateTime, Enum, Integer, Numeric, SmallInteger, String, Text,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -59,6 +59,17 @@ class Vehicle(Base):
     color: Mapped[str | None] = mapped_column(String(50), nullable=True)
     doors: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=5)
     seats: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=5)
+
+    # ─── Caractéristiques Techniques Catalogue & Neuf ──────────
+    trunk_volume_l: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    ncap_rating: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    fuel_consumption: Mapped[float | None] = mapped_column(Numeric(5, 2), nullable=True)
+    co2_emissions: Mapped[float | None] = mapped_column(Numeric(6, 2), nullable=True)
+    length_cm: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    is_4x4: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    engine_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    condition: Mapped[str] = mapped_column(String(50), nullable=False, default="new")
+    source: Mapped[str] = mapped_column(String(100), nullable=False, default="wakala_catalogue")
 
     # ─── Statut (Soft Delete) ──────────────────────────────────
     status: Mapped[str] = mapped_column(
@@ -111,6 +122,15 @@ class Vehicle(Base):
     )
     reminders: Mapped[list["ServiceReminder"]] = relationship( # noqa: F821
         "ServiceReminder", back_populates="vehicle", lazy="selectin"
+    )
+    options: Mapped[list["VehicleOption"]] = relationship(  # noqa: F821
+        "VehicleOption", back_populates="vehicle", lazy="selectin", cascade="all, delete-orphan"
+    )
+    colors: Mapped[list["VehicleColor"]] = relationship(  # noqa: F821
+        "VehicleColor", back_populates="vehicle", lazy="selectin", cascade="all, delete-orphan"
+    )
+    wakala_scores: Mapped["VehicleWakalaScore | None"] = relationship(  # noqa: F821
+        "VehicleWakalaScore", back_populates="vehicle", uselist=False, lazy="selectin", cascade="all, delete-orphan"
     )
 
     @property

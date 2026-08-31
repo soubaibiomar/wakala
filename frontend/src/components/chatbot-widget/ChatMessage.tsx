@@ -6,9 +6,10 @@ import styles from './chatbot.module.css';
 
 interface ChatMessageProps {
   message: Message;
+  isStreaming?: boolean;
 }
 
-export default function ChatMessage({ message }: ChatMessageProps) {
+export default function ChatMessage({ message, isStreaming = false }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
 
@@ -18,7 +19,6 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for older browsers
       const textarea = document.createElement('textarea');
       textarea.value = message.content;
       document.body.appendChild(textarea);
@@ -32,17 +32,29 @@ export default function ChatMessage({ message }: ChatMessageProps) {
 
   return (
     <div className={`${styles.message} ${isUser ? styles.messageUser : styles.messageAssistant}`}>
-      <div className={styles.messageAvatar}>
+      <div
+        className={styles.messageAvatar}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 8,
+          width: 30,
+          height: 30,
+          flexShrink: 0,
+          overflow: 'hidden',
+          background: isUser ? '#1E293B' : '#FFFFFF',
+          border: isUser ? 'none' : '1px solid rgba(18, 33, 53, 0.1)',
+        }}
+      >
         {isUser ? (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <circle cx="12" cy="8" r="4" />
-            <path d="M20 21c0-4.4-3.6-8-8-8s-8 3.6-8 8" />
-          </svg>
+          <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94A3B8' }}>V</span>
         ) : (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <rect x="3" y="3" width="18" height="14" rx="2" />
-            <path d="M8 21h8M12 17v4" />
-          </svg>
+          <img
+            src="/assets/chatlogo.png"
+            alt="Wakala"
+            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+          />
         )}
       </div>
 
@@ -55,25 +67,32 @@ export default function ChatMessage({ message }: ChatMessageProps) {
                 if (!inline && match && match[1] === 'json') {
                   try {
                     const rawJson = Array.isArray(children) ? children.join('') : String(children);
-                    // Nettoyer les virgules traînantes courantes (trailing commas) générées par les LLM
                     const cleanJson = rawJson.replace(/,\s*([\]}])/g, '$1').trim();
                     const data = JSON.parse(cleanJson);
-                    
+
                     if (data.type === 'CAR_RECOMMENDATION') {
                       return <CarRecommendation {...data} />;
                     }
                   } catch (e) {
                     const rawStr = Array.isArray(children) ? children.join('') : String(children);
                     if (rawStr.includes('CAR_RECOMMENDATION')) {
-                       return (
-                         <div style={{ padding: '16px', background: 'rgba(18,33,53,0.03)', borderRadius: '12px', border: '1px dashed rgba(18,33,53,0.15)', textAlign: 'center', margin: '12px 0' }}>
-                           <p style={{ fontSize: '0.85rem', color: '#b89a44', margin: 0, fontWeight: 500 }}>
-                             ⏳ Chargement de la fiche véhicule...
-                           </p>
-                         </div>
-                       );
+                      return (
+                        <div
+                          style={{
+                            padding: '12px',
+                            background: 'rgba(245, 158, 11, 0.06)',
+                            borderRadius: '10px',
+                            border: '1px dashed rgba(245, 158, 11, 0.3)',
+                            textAlign: 'center',
+                            margin: '10px 0',
+                          }}
+                        >
+                          <p style={{ fontSize: '0.82rem', color: '#D97706', margin: 0, fontWeight: 600 }}>
+                            Chargement du véhicule recommandé...
+                          </p>
+                        </div>
+                      );
                     }
-                    // fall back to default rendering if not valid JSON and not a car recommendation
                   }
                 }
                 return inline ? (
@@ -81,38 +100,60 @@ export default function ChatMessage({ message }: ChatMessageProps) {
                     {children}
                   </code>
                 ) : (
-                  <pre style={{ background: '#f4f4f4', padding: '8px', borderRadius: '4px', overflowX: 'auto', fontSize: '0.8rem' }}>
+                  <pre
+                    style={{
+                      background: 'rgba(15, 23, 42, 0.05)',
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      overflowX: 'auto',
+                      fontSize: '0.82rem',
+                    }}
+                  >
                     <code className={className} {...props}>
                       {children}
                     </code>
                   </pre>
                 );
-              }
+              },
             }}
           >
             {message.content}
           </ReactMarkdown>
+
+          {/* Curseur animé de streaming */}
+          {isStreaming && (
+            <span
+              style={{
+                display: 'inline-block',
+                width: '6px',
+                height: '14px',
+                marginLeft: '4px',
+                verticalAlign: 'middle',
+                background: '#10B981',
+                borderRadius: '1px',
+                animation: 'cursor-blink 0.8s infinite',
+              }}
+            />
+          )}
         </div>
 
-        {/* ─── Copy button (shown on hover) ──── */}
-        {message.content && (
+        {/* Bouton de copie textuel épuré */}
+        {message.content && !isStreaming && (
           <div className={styles.messageActions}>
             <button
-              className={styles.copyBtn}
               onClick={handleCopy}
-              title={copied ? 'Copié !' : 'Copier le message'}
-              aria-label="Copier le message"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#94A3B8',
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                padding: '2px 6px',
+                borderRadius: 4,
+              }}
             >
-              {copied ? (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 6 9 17l-5-5" />
-                </svg>
-              ) : (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                </svg>
-              )}
+              {copied ? 'Copié' : 'Copier'}
             </button>
           </div>
         )}

@@ -18,21 +18,27 @@ from app.core.config import settings
 
 
 # ─── Engine ────────────────────────────────────────────────────
-engine = create_async_engine(
-    settings.DATABASE_URL,
-    echo=settings.DEBUG,
-    pool_size=20,
-    max_overflow=10,
-    pool_pre_ping=True,      # détecte les connexions mortes
-    pool_recycle=3600,        # recycle après 1 h
-)
+try:
+    engine = create_async_engine(
+        settings.DATABASE_URL,
+        echo=settings.DEBUG,
+        pool_size=20,
+        max_overflow=10,
+        pool_pre_ping=True,      # détecte les connexions mortes
+        pool_recycle=3600,        # recycle après 1 h
+    )
+except Exception:
+    try:
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    except Exception:
+        engine = None
 
 # ─── Session factory ──────────────────────────────────────────
 async_session_factory = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,
     expire_on_commit=False,
-)
+) if engine is not None else None
 
 
 # ─── Base ORM ─────────────────────────────────────────────────

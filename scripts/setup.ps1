@@ -216,8 +216,8 @@ if ($SkipDocker) {
 } else {
     Set-Location $ProjectRoot
 
-    Write-Host "  → Demarrage : PostgreSQL, Neo4j, Qdrant, Kafka, Zookeeper..." -ForegroundColor Yellow
-    docker compose up -d postgres neo4j qdrant zookeeper kafka 2>&1 | Select-Object -Last 10
+    Write-Host "  → Demarrage : PostgreSQL, Neo4j, Qdrant, Kafka (KRaft)..." -ForegroundColor Yellow
+    docker compose up -d postgres neo4j qdrant kafka 2>&1 | Select-Object -Last 10
 
     # Attendre que PostgreSQL soit prêt
     Write-Host "  → Attente de PostgreSQL..." -ForegroundColor Yellow

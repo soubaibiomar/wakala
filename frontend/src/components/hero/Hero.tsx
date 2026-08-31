@@ -18,7 +18,7 @@ export default function Hero() {
     <section className="hero" id="hero-section">
       <div className="hero-bg"><div className="bg-grid" /><div className="bg-glow bg-glow--1" /><div className="bg-glow bg-glow--2" /></div>
       <motion.div className="car-container" initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8 }}>
-        <img src="/assets/hero-car.png" alt="Véhicule premium — Wakala" className="car-image" />
+        <img src="/assets/hero-car.png" alt="Véhicule premium — AutoMind" className="car-image" />
         <motion.div className="headlight headlight--left" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8, duration: 0.6 }} />
         <motion.div className="headlight headlight--right" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9, duration: 0.6 }} />
       </motion.div>

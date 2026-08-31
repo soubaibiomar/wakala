@@ -73,6 +73,11 @@ class Settings(BaseSettings):
     # ─── Kafka ─────────────────────────────────────────────────
     KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
 
+    # ─── OpenRouter (Cloud LLMs: Llama 3.3, DeepSeek, Gemini, etc.) ─
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    OPENROUTER_MODEL: str = "nvidia/nemotron-3.5-lightning:free"
+
     # ─── Groq — LLM ultra-rapide (Désactivé) ──────────────────
     GROQ_API_KEY: str = ""
 
@@ -85,13 +90,13 @@ class Settings(BaseSettings):
 
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
-    # ─── LLM / RAG (Ollama) ───────────────────────────────────
+    # ─── LLM / RAG (Ollama / Local / Fallback) ───────────────
     OLLAMA_BASE_URL: str = "http://localhost:11434/v1"
-    OLLAMA_MODEL_TEXT: str = "qwen3:8b"
+    OLLAMA_MODEL_TEXT: str = "llama3.2:1b"
     OLLAMA_MODEL_CODE: str = "qwen2.5-coder:7b"
     
     OPENAI_API_KEY: str = "ollama" # placeholder needed for langchain_openai
-    LLM_MODEL: str = "qwen3:8b"
+    LLM_MODEL: str = "llama3.2:1b"
     EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
 
     # ─── Hugging Face / Cohere ────────────────────────────────

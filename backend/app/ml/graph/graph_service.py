@@ -4,7 +4,13 @@ Utilise PageRank et requêtes Cypher pour explorer le graphe
 véhicules/marques/acheteurs.
 """
 
-from neo4j import AsyncGraphDatabase
+try:
+    from neo4j import AsyncGraphDatabase
+    NEO4J_AVAILABLE = True
+except ImportError:
+    AsyncGraphDatabase = None
+    NEO4J_AVAILABLE = False
+
 from app.core.config import settings
 
 
@@ -12,10 +18,13 @@ class VehicleGraphService:
     """Service de requêtes sur le graphe Neo4j."""
 
     def __init__(self):
-        self.driver = AsyncGraphDatabase.driver(
-            settings.NEO4J_URI,
-            auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD),
-        )
+        if NEO4J_AVAILABLE and AsyncGraphDatabase is not None:
+            self.driver = AsyncGraphDatabase.driver(
+                settings.NEO4J_URI,
+                auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD),
+            )
+        else:
+            self.driver = None
 
     async def close(self):
         await self.driver.close()

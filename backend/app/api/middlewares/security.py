@@ -1,7 +1,11 @@
 import logging
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
-from slowapi.util import get_remote_address
+try:
+    from slowapi.util import get_remote_address
+except ImportError:
+    def get_remote_address(request: Request) -> str:
+        return request.client.host if request.client else "127.0.0.1"
 
 logger = logging.getLogger(__name__)
 

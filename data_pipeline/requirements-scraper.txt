@@ -8,6 +8,7 @@ apscheduler==3.10.4
 python-dotenv==1.0.1
 PyYAML==6.0.1
 cloudscraper==1.2.71
+openpyxl==3.1.5
 
 # LLM for selector regeneration
 langchain==0.3.0

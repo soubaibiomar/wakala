@@ -1,0 +1,262 @@
+/* ═══════════════════════════════════════════════════════════════
+   Wakala — Test Drive Modal (Demande d'Essai Concessionnaire)
+   Harmonisé avec le Design System Wakala (Navy #122135 + Gold #AE8C4E)
+   ═══════════════════════════════════════════════════════════════ */
+
+.test-drive-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 33, 53, 0.6);
+  backdrop-filter: blur(10px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.test-drive-modal-container {
+  background: var(--bg-primary, #FFFFFF);
+  border: 1px solid var(--border-subtle, rgba(18, 33, 53, 0.08));
+  border-radius: 24px;
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 2.25rem;
+  position: relative;
+  box-shadow: 0 25px 60px -15px rgba(18, 33, 53, 0.25), 0 0 30px rgba(174, 140, 78, 0.1);
+  color: var(--text-primary, #122135);
+  font-family: var(--font-body, 'Inter', sans-serif);
+}
+
+.test-drive-modal-close {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  background: var(--bg-surface, #F8F7F4);
+  border: 1px solid var(--border-subtle, rgba(18, 33, 53, 0.08));
+  color: var(--text-muted, #8492A6);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.test-drive-modal-close:hover {
+  background: rgba(18, 33, 53, 0.08);
+  color: var(--text-primary, #122135);
+}
+
+.test-drive-modal-header {
+  margin-bottom: 1.75rem;
+}
+
+.test-drive-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(174, 140, 78, 0.1);
+  border: 1px solid rgba(174, 140, 78, 0.25);
+  color: var(--accent-gold, #AE8C4E);
+  padding: 0.35rem 0.9rem;
+  border-radius: var(--radius-pill, 999px);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+}
+
+.test-drive-modal-header h2 {
+  font-family: var(--font-display, 'Outfit', sans-serif);
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: var(--text-primary, #122135);
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.01em;
+}
+
+.test-drive-subtitle {
+  font-size: 0.92rem;
+  color: var(--text-secondary, #4A5568);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.test-drive-subtitle strong {
+  color: var(--text-primary, #122135);
+}
+
+.test-drive-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary, #122135);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 540px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.test-drive-form input,
+.test-drive-form select {
+  background: var(--bg-surface, #F8F7F4);
+  border: 1px solid var(--border-subtle, rgba(18, 33, 53, 0.12));
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  color: var(--text-primary, #122135);
+  font-size: 0.92rem;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.test-drive-form input:focus,
+.test-drive-form select:focus {
+  background: #FFFFFF;
+  border-color: var(--accent-gold, #AE8C4E);
+  box-shadow: 0 0 0 3px rgba(174, 140, 78, 0.2);
+}
+
+.cndp-consent-box {
+  background: var(--bg-surface, #F8F7F4);
+  border: 1px solid var(--border-subtle, rgba(18, 33, 53, 0.08));
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+}
+
+.cndp-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #4A5568);
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.cndp-checkbox-label input {
+  margin-top: 0.15rem;
+  accent-color: var(--accent-gold, #AE8C4E);
+}
+
+.test-drive-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-gold, #AE8C4E), #C9A24B);
+  color: #0F1A2B;
+  border: none;
+  padding: 0.85rem 1.6rem;
+  border-radius: var(--radius-pill, 999px);
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 14px rgba(174, 140, 78, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(174, 140, 78, 0.45);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--bg-surface, #F8F7F4);
+  border: 1px solid var(--border-subtle, rgba(18, 33, 53, 0.1));
+  color: var(--text-secondary, #4A5568);
+  padding: 0.85rem 1.3rem;
+  border-radius: var(--radius-pill, 999px);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background: #FFFFFF;
+  color: var(--text-primary, #122135);
+}
+
+.test-drive-success-card {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.test-drive-success-card .success-icon {
+  width: 64px;
+  height: 64px;
+  background: rgba(45, 134, 89, 0.12);
+  border: 2px solid var(--accent-green, #2D8659);
+  color: var(--accent-green, #2D8659);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  margin: 0 auto 1.25rem auto;
+}
+
+.test-drive-success-card h3 {
+  font-family: var(--font-display, 'Outfit', sans-serif);
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--text-primary, #122135);
+  margin-bottom: 0.5rem;
+}
+
+.test-drive-success-card p {
+  color: var(--text-secondary, #4A5568);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 1.75rem;
+}
+
+.test-drive-error-banner {
+  background: rgba(192, 57, 43, 0.12);
+  border: 1px solid rgba(192, 57, 43, 0.3);
+  color: var(--accent-red, #C0392B);
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}

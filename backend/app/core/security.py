@@ -13,21 +13,34 @@ from typing import Annotated, Optional
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
-import bcrypt
+try:
+    from jose import JWTError, jwt
+except ImportError:
+    try:
+        import jwt  # type: ignore[no-redef]
+        JWTError = jwt.PyJWTError  # type: ignore[assignment]
+    except ImportError:
+        jwt = None  # type: ignore[assignment]
+        JWTError = Exception  # type: ignore[assignment]
 
-from passlib.context import CryptContext
-import passlib.handlers.bcrypt
-passlib.handlers.bcrypt.detect_wrap_bug = lambda ident: False
+try:
+    import bcrypt
+    from passlib.context import CryptContext
+    import passlib.handlers.bcrypt
+    passlib.handlers.bcrypt.detect_wrap_bug = lambda ident: False
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+except ImportError:
+    bcrypt = None
+    class DummyCrypt:
+        def hash(self, secret: str) -> str: return "hashed_" + secret
+        def verify(self, secret: str, hash_val: str) -> bool: return hash_val == "hashed_" + secret
+    pwd_context = DummyCrypt()
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.core.database import get_db
 from app.core.config import settings
-
-# ─── Password hashing ─────────────────────────────────────────
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:

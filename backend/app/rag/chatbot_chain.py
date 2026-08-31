@@ -1,9 +1,12 @@
+import asyncio
+import logging
+import time
 from typing import Any, Optional
 
 try:
     from langchain_openai import ChatOpenAI
     from langchain_core.prompts import ChatPromptTemplate
-    from langchain_core.messages import HumanMessage, SystemMessage
+    from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
     LANGCHAIN_AVAILABLE = True
 except ImportError:  # Allows retrieval/no-match routes and unit tests to run in a slim environment.
     class ChatOpenAI:  # type: ignore[no-redef]
@@ -17,6 +20,9 @@ except ImportError:  # Allows retrieval/no-match routes and unit tests to run in
     class HumanMessage(SystemMessage):  # type: ignore[no-redef]
         pass
 
+    class AIMessage(SystemMessage):  # type: ignore[no-redef]
+        pass
+
     class ChatPromptTemplate:  # type: ignore[no-redef]
         @classmethod
         def from_messages(cls, messages: list[Any]) -> "ChatPromptTemplate":
@@ -28,11 +34,14 @@ except ImportError:  # Allows retrieval/no-match routes and unit tests to run in
             return self.messages
 
 from app.core.config import settings
-from app.rag.vector_search import search_reviews, search_vehicles
+from app.rag.vector_search import compute_query_embedding, search_reviews, search_vehicles
 from app.rag.graph_context import enrich_with_graph, get_popularity_scores
 from app.rag.conversation_memory import conversation_memory
 from app.rag.schemas import ChatResponse, SourceReference
 from app.rag.style_detector import style_detector
+from app.rag.consultative_flow import consultative_flow
+
+logger = logging.getLogger(__name__)
 
 
 SYSTEM_PROMPT = """Tu es Wakala, l'assistant expert et empathique de la marketplace automobile Wakala au Maroc.
@@ -43,20 +52,20 @@ INSTRUCTION DE LANGUE : Ta réponse doit être ENTIÈREMENT en {detected_languag
 - Si Arabe, réponds en Arabe standard ou marocain avec alphabet arabe.
 - Si Anglais, réponds en Anglais.
 - Si Français, réponds en Français.
-Tu es un expert automobile : tu expliques les avantages/inconvénients (consommation, coût, revente).
-Tes connaissances sont limitées aux données fournies. Tu n'inventes JAMAIS de véhicules. Si Aucun vehicule n'est pertinent, dis le dans la bonne langue.
-Tu exprimes les prix en MAD.
-Si l'utilisateur est vague, pose une question pertinente sur son budget ou son usage dans SA langue ({detected_language}).
-DIRECTIVE LOI 09-08 : Tu ne dois JAMAIS demander, stocker ou exposer des données personnelles sensibles.
-OBLIGATION DE FORMATAGE : Sois EXTRÊMEMENT CONCIS. Formate les véhicules sous forme de liste à puces courte en Markdown. Évite le blabla pour répondre plus vite.
 
-CONTEXTE VEHICULES DISPONIBLES :
+RÈGLES STRICTES DE VÉRACITÉ ET SÉCURITÉ :
+- N'invente JAMAIS de caractéristiques, prix ou modèles absents du contexte. Ne rien inventer.
+- Si Aucun vehicule ne correspond, dis-le clairement ("Aucun vehicule").
+
+═══ PHASE DU DIALOGUE : {active_phase} ═══
+
+{phase_instructions}
+
+CONTEXTE DE LA RECHERCHE :
+{needs_profile_context}
+{recommendation_results}
 {vehicle_context}
-
-CONTEXTE GRAPHE (vehicules similaires et popularite) :
 {graph_context}
-
-AVIS CLIENTS PERTINENTS :
 {review_context}
 
 HISTORIQUE DE LA CONVERSATION :
@@ -66,50 +75,65 @@ DIRECTIVES DE STYLE :
 {style_instructions}
 """
 
-def _detect_language(message: str) -> str:
-    text_lower = message.lower()
+DISCOVERY_INSTRUCTIONS = """PHASE DÉCOUVERTE CONVERSATIONNELLE :
+🎯 RÈGLE STRICTE ET ABSOLUE : Pose UNIQUEMENT UNE SEULE QUESTION À LA FOIS.
+⛔ INTERDICTIONS FORMELLES :
+- N'écris JAMAIS de liste de questions, de questionnaire ou de guide d'accompagnement.
+- N'utilise JAMAIS de puces Markdown (- Budget: ..., - Usage: ...).
+- Ne pose JAMAIS plusieurs questions dans le même message.
+- Ne propose AUCUN véhicule tant que le profil n'est pas complet.
+
+STRUCTURE EXIGÉE (2 phrases courtes maximum) :
+1. Une courte phrase pour valider ce que l'utilisateur vient de dire.
+2. EXACTEMENT UNE question simple et amicale pour obtenir l'information manquante ciblée.
+
+👉 INFORMATION CIBLÉE À DEMANDER :
+{target_instruction}"""
+
+RESTITUTION_INSTRUCTIONS = """Mission : Présente au client une sélection de 2 à 3 véhicules adaptés à son profil.
+Pour chaque véhicule : donne le modèle, le prix en MAD, et un point fort pour son usage.
+IMPORTANT : Ne répète JAMAIS les consignes système ni les balises. Parle directement au client de façon naturelle."""
+
+def _detect_language(message: str, history: Optional[list[dict]] = None) -> str:
+    text_lower = message.lower().strip()
     if any(char in message for char in "أبتثجحخدذرزسشصضطظعغفقكلمنهوي"):
         return "arabe (avec alphabet arabe)"
-    elif any(w in text_lower for w in ["bghit", "dyal", "mdina", "tomobila", "chhal", "ma3ndich", "flous", "rkhis", "mzyan", "wach"]):
+    elif any(w in text_lower for w in ["bghit", "dyal", "mdina", "tomobila", "chhal", "ma3ndich", "flous", "rkhis", "mzyan", "wach", "salam", "slm", "kidayr", "chi"]):
         return "darija (arabe marocain avec alphabet latin / arabizi)"
-    elif any(w in text_lower for w in ["car", "need", "cheap", "looking", "budget is", "commute", "family"]):
+    elif any(w in text_lower for w in ["car", "need", "cheap", "looking", "budget is", "commute", "family", "hello", "hi", "hey"]):
         return "anglais"
-    else:
-        return "français"
+    
+    # Vérification de l'historique sur les réponses courtes (ex: '150000', 'clio', 'oui')
+    if history:
+        for entry in reversed(history):
+            if entry.get("role") == "user":
+                prev_lang = _detect_language(entry.get("content", ""), history=None)
+                if prev_lang != "français":
+                    return prev_lang
+
+    return "français"
 
 def _get_no_match_reply(lang: str) -> str:
     if "arabe" in lang:
-        return "عذراً، لم أجد أي سيارة مطابقة في الكتالوج الحالي."
+        return "عذراً، لم نجد أي سيارة مطابقة لبحثك حالياً."
     elif "darija" in lang:
-        return "Smeh lia, malqitch chi tomobila katnasb talab dyalek f l'catalogue db."
+        return "Smeh liya, ma lqitch chi tomobila katnasbek f l-catalogue daba."
     elif "anglais" in lang:
-        return "Sorry, I couldn't find a matching vehicle in the current catalog."
-    else:
-        return "Je n'ai pas trouvé de véhicule correspondant dans le catalogue actuel."
+        return "Sorry, no vehicles matching your criteria were found in our catalog."
+    return "Désolé, aucun véhicule ne correspond à vos critères dans notre catalogue actuel."
 
 
 def _format_vehicle_context(vehicles: list[dict]) -> str:
     if not vehicles:
-        return "Aucun vehicule trouve dans le catalogue."
+        return "Aucun vehicule trouve."
     lines = []
-    for i, v in enumerate(vehicles, 1):
+    for v in vehicles[:3]:
         meta = v.get("metadata", {})
         title = f"{meta.get('brand', '')} {meta.get('model', '')} ({meta.get('year', '')})"
         price = meta.get("price", "N/A")
         fuel = meta.get("fuel_type", "N/A")
-        body = meta.get("body_type", "N/A")
         city = meta.get("city", "N/A")
-        desc = meta.get("description", "")
-
-        line = (
-            f"{i}. {title}\n"
-            f"   Prix: {price} MAD\n"
-            f"   Carburant: {fuel} | Carrosserie: {body}\n"
-            f"   Ville: {city} | Score similarite: {v.get('score', 0):.2f}\n"
-        )
-        if desc:
-            line += f"   Description: {desc}\n"
-        lines.append(line)
+        lines.append(f"• {title} — Prix : {price} MAD | Carburant : {fuel} | Ville : {city}")
     return "\n".join(lines)
 
 
@@ -162,8 +186,13 @@ def _retrieval_query(message: str, history: list[dict]) -> str:
 
 
 class ChatbotChain:
+    # Use lightweight model for fast responses on local machines (RTX 4060 / CPU)
+    DISCOVERY_MODEL = "llama3.2:1b"
+    RESTITUTION_MODEL = "llama3.2:1b"
+
     def __init__(self):
-        self._llm: Optional[Any] = None
+        self._llm_discovery: Optional[Any] = None
+        self._llm_restitution: Optional[Any] = None
 
     async def _validate_query(self, message: str, history: list[dict]) -> Optional[str]:
         """Returns a clarification question if the query is vague, else None."""
@@ -182,7 +211,7 @@ class ChatbotChain:
             HumanMessage(content=message)
         ])
         try:
-            llm = self._get_llm()
+            llm = self._get_llm(phase="discovery")
             response = await llm.ainvoke(prompt.format_messages())
             reply = response.content.strip()
             if reply.upper() == "OK" or reply.upper().startswith("OK"):
@@ -191,106 +220,229 @@ class ChatbotChain:
         except Exception:
             return None
 
-    def _get_llm(self) -> Any:
+    def _get_llm(self, phase: str = "restitution") -> Any:
         if not LANGCHAIN_AVAILABLE:
             raise RuntimeError("LangChain/OpenAI n'est pas installe")
-        if self._llm is None:
-            self._llm = ChatOpenAI(
-                base_url=settings.OLLAMA_BASE_URL,
-                api_key=settings.OPENAI_API_KEY,
-                model=settings.OLLAMA_MODEL_TEXT,
-                temperature=0.3,
-                max_tokens=600,
-                model_kwargs={
-                    "frequency_penalty": 1.2,
-                    "presence_penalty": 0.5
-                }
-            )
-        return self._llm
+
+        if settings.OPENROUTER_API_KEY:
+            model = settings.OPENROUTER_MODEL
+            headers = {"HTTP-Referer": "https://wakala.ma", "X-Title": "Wakala Platform"}
+            if phase == "discovery":
+                if self._llm_discovery is None:
+                    self._llm_discovery = ChatOpenAI(
+                        base_url=settings.OPENROUTER_BASE_URL,
+                        api_key=settings.OPENROUTER_API_KEY,
+                        model=model,
+                        temperature=0.3,
+                        max_tokens=250,
+                        request_timeout=30.0,
+                        timeout=30.0,
+                        default_headers=headers
+                    )
+                return self._llm_discovery
+            else:
+                if self._llm_restitution is None:
+                    self._llm_restitution = ChatOpenAI(
+                        base_url=settings.OPENROUTER_BASE_URL,
+                        api_key=settings.OPENROUTER_API_KEY,
+                        model=model,
+                        temperature=0.3,
+                        max_tokens=350,
+                        request_timeout=30.0,
+                        timeout=30.0,
+                        default_headers=headers
+                    )
+                return self._llm_restitution
+
+        api_key = settings.OPENAI_API_KEY if settings.OPENAI_API_KEY else "ollama"
+
+        if phase == "discovery":
+            if self._llm_discovery is None:
+                self._llm_discovery = ChatOpenAI(
+                    base_url=settings.OLLAMA_BASE_URL,
+                    api_key=api_key,
+                    model=self.DISCOVERY_MODEL,
+                    temperature=0.3,
+                    max_tokens=200,
+                    frequency_penalty=1.2,
+                    presence_penalty=0.5,
+                    request_timeout=30.0,
+                    timeout=30.0,
+                )
+            return self._llm_discovery
+        else:
+            if self._llm_restitution is None:
+                self._llm_restitution = ChatOpenAI(
+                    base_url=settings.OLLAMA_BASE_URL,
+                    api_key=api_key,
+                    model=self.RESTITUTION_MODEL,
+                    temperature=0.3,
+                    max_tokens=250,
+                    frequency_penalty=1.2,
+                    presence_penalty=0.5,
+                    request_timeout=30.0,
+                    timeout=30.0,
+                )
+            return self._llm_restitution
 
     async def answer(
         self,
         message: str,
         session_id: str,
     ) -> ChatResponse:
+        t0 = time.perf_counter()
         history = conversation_memory.get_history(session_id)
 
-        # Validation step: intercept vague queries
-        clarification = await self._validate_query(message, history)
-        if clarification:
-            conversation_memory.add_turn(session_id, message, clarification)
-            return ChatResponse(reply=clarification, sources=[], session_id=session_id)
+        # ── Consultative Flow: update profile and determine phase ──
+        profile = consultative_flow.update_profile(session_id, message)
+        phase = consultative_flow.get_phase(session_id)
+        needs_profile_context = consultative_flow.get_discovery_context(session_id)
 
-        detected_lang = _detect_language(message)
+        detected_lang = _detect_language(message, history=history)
+        style_profile = style_detector.detect_style(message)
 
-        # The caps here are intentional: never send an unbounded catalogue to the LLM.
+        # Compute embedding once and query Qdrant
         query = _retrieval_query(message, history)
-        vehicles = search_vehicles(query, limit=5)[:5]
-        reviews = search_reviews(query, limit=3)[:3]
+        t_emb = time.perf_counter()
+        try:
+            query_embedding = compute_query_embedding(query)
+        except Exception:
+            query_embedding = None
+        logger.info("[perf] embedding: %.2fs", time.perf_counter() - t_emb)
 
-        # Do not let the model turn an empty (or insufficient) retrieval into a guess.
+        t_qdrant = time.perf_counter()
+        vehicles = search_vehicles(query, limit=3, precomputed_embedding=query_embedding)[:3]
+        reviews = search_reviews(query, limit=1, precomputed_embedding=query_embedding)[:1]
+        logger.info("[perf] qdrant searches: %.2fs", time.perf_counter() - t_qdrant)
+
         if not vehicles:
             no_match = _get_no_match_reply(detected_lang)
             conversation_memory.add_turn(session_id, message, no_match)
             return ChatResponse(reply=no_match, sources=[], session_id=session_id)
 
         vehicle_ids = [v["vehicle_id"] for v in vehicles if v.get("vehicle_id")]
+        t_neo4j = time.perf_counter()
         try:
-            enriched = await enrich_with_graph(vehicle_ids, limit=3)
-            popularity = await get_popularity_scores(vehicle_ids)
+            enriched, popularity = await asyncio.gather(
+                enrich_with_graph(vehicle_ids, limit=3),
+                get_popularity_scores(vehicle_ids),
+            )
         except Exception:
-            # Neo4j enrichment is useful but must not make grounded Qdrant answers unavailable.
             enriched, popularity = {}, {}
+        logger.info("[perf] neo4j enrichment: %.2fs", time.perf_counter() - t_neo4j)
 
-        vehicle_context = _format_vehicle_context(vehicles)
-        graph_context = _format_graph_context(enriched, popularity)
-        review_context = _format_review_context(reviews)
-        conversation_history = _format_history(history)
+        vehicle_context = "CONTEXTE VEHICULES DISPONIBLES :\n" + _format_vehicle_context(vehicles)
+        graph_context = "CONTEXTE GRAPHE :\n" + _format_graph_context(enriched, popularity)
+        review_context = "AVIS CLIENTS :\n" + _format_review_context(reviews)
 
-        style_profile = style_detector.detect_style(message)
-        style_instructions = ""
-        if style_profile["formality"] == "casual":
-            style_instructions += "- Ton: Direct, détendu et chaleureux (sans familiarité excessive).\n"
+        if phase == "discovery":
+            # ── DISCOVERY: Focus on EXACTLY ONE question at a time ──
+            target_field, target_instruction = consultative_flow.get_next_question_target(session_id)
+            phase_instructions = DISCOVERY_INSTRUCTIONS.format(target_instruction=target_instruction)
+            recommendation_results = ""
         else:
-            style_instructions += "- Ton: Poli, vouvoiement de rigueur.\n"
-            
-        if style_profile["verbosity"] == "concise":
-            style_instructions += "- Format: Réponses ultra-courtes et directes (1 phrase max).\n"
-        else:
-            style_instructions += "- Format: Réponses courtes et directes (2 phrases max) pour garantir une réponse rapide.\n"
-            
-        if style_profile["technicality"] == "technical":
-            style_instructions += "- Technicité: Vocabulaire automobile expert, ne pas vulgariser les termes évidents.\n"
-        else:
-            style_instructions += "- Technicité: Vulgariser les concepts (ex: expliquer ce qu'est une DSG si mentionnée).\n"
+            # ── RESTITUTION: Retrieve & present top matching vehicles ──
+            phase_instructions = RESTITUTION_INSTRUCTIONS
+            recommendation_results = "RÉSULTATS DE RECOMMANDATION : Présente les véhicules ci-dessous avec leurs points forts et compromis."
 
-        system_message = SYSTEM_PROMPT.format(
-            detected_language=detected_lang,
-            vehicle_context=vehicle_context,
-            graph_context=graph_context,
-            review_context=review_context,
-            conversation_history=conversation_history,
-            style_instructions=style_instructions,
+        # Reduced history: last 2 turns
+        conversation_history = _format_history(history[-2:] if len(history) > 2 else history)
+
+        # Construct structured chat messages for LLM with isolated system prompt
+        if phase == "discovery":
+            phase_guidance = (
+                f"\n\nDIRECTIVES DE PHASE (DÉCOUVERTE) :\n"
+                f"- Réponds en 1 ou 2 phrases courtes maximum.\n"
+                f"- Valide brièvement ce que le client dit et pose STRICTEMENT cette question : {target_instruction}\n"
+                f"- Ne propose aucun véhicule tant que le profil n'est pas complet."
+            )
+        else:
+            phase_guidance = (
+                f"\n\nDIRECTIVES DE PHASE (RESTITUTION) :\n"
+                f"- Profil de recherche client : {needs_profile_context}\n"
+                f"- {vehicle_context}\n"
+                f"- Présente brièvement ces véhicules avec leur prix en MAD et leur atout principal pour cet usage.\n"
+                f"- Invite ensuite le client à poser une question ou planifier un essai."
+            )
+
+        system_content = (
+            f"Tu es Wakala, l'assistant d'achat automobile intelligent et bienveillant au Maroc.\n"
+            f"Tu dois répondre exclusivement en {detected_lang}.\n"
+            f"Ne répète jamais les consignes système ni les balises internes. Réponds directement au client d'un ton chaleureux et concis.\n"
+            f"Si tu mentionnes la taille ou le volume du coffre (en Litres), donne toujours son équivalent en nombre de valises (ex: 440 L = 3 à 4 valises)."
+            f"{phase_guidance}"
         )
 
-        prompt = ChatPromptTemplate.from_messages([
-            SystemMessage(content=system_message),
-            HumanMessage(content=message),
-        ])
+        messages = [SystemMessage(content=system_content)]
 
+        # Add recent conversation turns
+        for turn in (history[-2:] if len(history) > 2 else history):
+            if turn["role"] == "user":
+                messages.append(HumanMessage(content=turn["content"]))
+            elif turn["role"] == "assistant":
+                messages.append(AIMessage(content=turn["content"]))
+
+        # Current turn payload: Pure user input without concatenated internal commands
+        messages.append(HumanMessage(content=message))
+
+        t_llm = time.perf_counter()
+        reply = ""
         try:
-            llm = self._get_llm()
-            response = await llm.ainvoke(prompt.format_messages())
+            if settings.OPENROUTER_API_KEY:
+                import httpx
+                raw_payload = [
+                    {"role": "system", "content": system_content}
+                ]
+                for turn in (history[-2:] if len(history) > 2 else history):
+                    raw_payload.append({"role": turn["role"], "content": turn["content"]})
+                raw_payload.append({"role": "user", "content": message})
 
-            reply = response.content
-        except Exception:
+                headers = {
+                    "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
+                    "HTTP-Referer": "https://wakala.ma",
+                    "X-Title": "Wakala Platform",
+                    "Content-Type": "application/json",
+                }
+                payload_data = {
+                    "model": settings.OPENROUTER_MODEL,
+                    "messages": raw_payload,
+                    "temperature": 0.3,
+                    "max_tokens": 300,
+                }
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    resp = await client.post(
+                        f"{settings.OPENROUTER_BASE_URL.rstrip('/')}/chat/completions",
+                        json=payload_data,
+                        headers=headers
+                    )
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        reply = data["choices"][0]["message"]["content"].strip()
+                    else:
+                        logger.error(f"OpenRouter error {resp.status_code}: {resp.text}")
+            
+            if not reply and LANGCHAIN_AVAILABLE:
+                try:
+                    llm = self._get_llm(phase=phase)
+                except TypeError:
+                    llm = self._get_llm()
+
+                response = await llm.ainvoke(messages)
+                reply = response.content.strip()
+        except Exception as e:
+            logger.exception("Error during LLM invocation: %s", e)
+
+        if not reply:
             reply = (
                 "Desole, je rencontre une difficulte technique. "
                 "Veuillez reformuler votre question ou reessayer."
             )
+        logger.info("[perf] LLM (%s, model=%s): %.2fs", phase,
+                    settings.OPENROUTER_MODEL if settings.OPENROUTER_API_KEY else (self.DISCOVERY_MODEL if phase == "discovery" else self.RESTITUTION_MODEL),
+                    time.perf_counter() - t_llm)
 
         sources = []
-        for v in vehicles[:5]:
+        for v in vehicles[:3]:
             if not v.get("vehicle_id"):
                 continue
             
@@ -315,6 +467,8 @@ class ChatbotChain:
             )
 
         conversation_memory.add_turn(session_id, message, reply)
+
+        logger.info("[perf] TOTAL chatbot answer: %.2fs", time.perf_counter() - t0)
 
         return ChatResponse(
             reply=reply,

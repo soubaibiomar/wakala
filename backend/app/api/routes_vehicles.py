@@ -134,15 +134,11 @@ async def list_vehicles(
     if mileage_max is not None:
         query = query.where(Vehicle.mileage <= mileage_max)
     
-    if condition == 'neuf':
-        query = query.where(Vehicle.description.ilike('%Véhicule Neuf Officiel%'))
-    elif condition == 'occasion':
-        query = query.where(
-            or_(
-                Vehicle.description.is_(None),
-                Vehicle.description.notilike('%Véhicule Neuf Officiel%')
-            )
-        )
+    # Wakala is exclusively a new cars platform (0 km)
+    query = query.where(Vehicle.condition == "new", Vehicle.mileage == 0)
+
+    if condition == 'occasion':
+        query = query.where(1 == 0)
 
     # Compter le total
     count_query = select(func.count()).select_from(query.subquery())
@@ -298,19 +294,61 @@ async def get_vehicle_by_slug(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     import re
-    # Récupérer tous les véhicules de cette marque et modèle
+    from sqlalchemy import cast, String
+
+    # 1. Vérifier si version_slug contient un Short ID (8 hex) ou un UUID (36 chars)
+    short_id_match = re.search(r'([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{8})$', version_slug, re.IGNORECASE)
+    if short_id_match:
+        matched_id = short_id_match.group(1)
+        if len(matched_id) == 8:
+            res_id = await db.execute(select(Vehicle).where(cast(Vehicle.id, String).startswith(matched_id)))
+            v_id = res_id.scalars().first()
+            if v_id:
+                return v_id
+        else:
+            res_id = await db.execute(select(Vehicle).where(Vehicle.id == matched_id))
+            v_id = res_id.scalar_one_or_none()
+            if v_id:
+                return v_id
+
+    # 2. Récupérer tous les véhicules de cette marque et modèle
+    clean_brand = brand.strip().replace('-', ' ')
+    clean_model = model.strip().replace('-', ' ')
     result = await db.execute(
         select(Vehicle)
-        .where(Vehicle.brand.ilike(brand))
-        .where(Vehicle.model.ilike(model))
+        .where(Vehicle.brand.ilike(f"%{clean_brand}%"))
+        .where(Vehicle.model.ilike(f"%{clean_model}%"))
+        .order_by(Vehicle.price.asc())
     )
     vehicles = result.scalars().all()
     
+    if not vehicles:
+        # Essayer avec recherche plus souple sur le modèle
+        result = await db.execute(
+            select(Vehicle)
+            .where(Vehicle.brand.ilike(f"%{brand.strip()}%"))
+            .order_by(Vehicle.price.asc())
+        )
+        vehicles = [v for v in result.scalars().all() if clean_model.lower() in v.model.lower() or v.model.lower() in clean_model.lower()]
+
+    if not vehicles:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Véhicule non trouvé pour cette marque et modèle",
+        )
+
+    # 3. Match par index "finition-X" ou "finition X"
+    norm_slug = version_slug.lower().replace('%20', ' ').replace('-', ' ').strip()
+    finition_idx_match = re.search(r'finition\s*(\d+)', norm_slug)
+    if finition_idx_match:
+        idx = int(finition_idx_match.group(1)) - 1
+        if 0 <= idx < len(vehicles):
+            return vehicles[idx]
+
+    # 4. Match par slug généré
     for v in vehicles:
-        # On génère le slug pour chaque véhicule
-        # Note: on utilise la même logique que côté frontend: "version-annee" (ou juste version si pas d'année)
         parts = []
-        if v.version and v.version != 'Fiche Technique':
+        if v.version and v.version.lower() != 'fiche technique':
             parts.append(v.version)
         if v.year:
             parts.append(str(v.year))
@@ -318,13 +356,18 @@ async def get_vehicle_by_slug(
         generated_slug = '-'.join(parts).lower()
         generated_slug = re.sub(r'[^a-z0-9]+', '-', generated_slug).strip('-')
         
-        if generated_slug == version_slug:
+        if generated_slug and (generated_slug == version_slug.lower() or version_slug.lower() in generated_slug or generated_slug in version_slug.lower()):
             return v
-            
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Véhicule non trouvé pour ce slug",
-    )
+
+    # 5. Match par mot-clé de finition ou motorisation (ex: expression, journey, extreme, 115, 155)
+    for v in vehicles:
+        v_text = f"{v.version or ''} {v.engine_power_hp or ''} {v.fuel_type or ''} {v.transmission or ''}".lower()
+        slug_words = [w for w in re.split(r'[^a-z0-9]+', norm_slug) if w and w not in ('finition', 'version', 'neuf', 'dacia', 'renault', 'peugeot')]
+        if slug_words and all(w in v_text for w in slug_words):
+            return v
+
+    # 6. Fallback vers le premier véhicule disponible du modèle
+    return vehicles[0]
 
 
 

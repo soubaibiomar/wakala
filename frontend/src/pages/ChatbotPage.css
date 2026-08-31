@@ -69,6 +69,9 @@
   font-size: 1rem;
   animation: slideUp 0.3s var(--transition-spring) forwards;
   box-shadow: var(--shadow-sm);
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  cursor: text;
 }
 
 .message.user {
@@ -238,4 +241,117 @@
   background: var(--color-bg-primary);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
+}
+
+/* ─── Language Selector Screen (ChatbotPage) ──────────── */
+.chat-lang-select-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: auto;
+  padding: 40px 20px;
+  max-width: 680px;
+  width: 100%;
+  text-align: center;
+}
+
+.chat-lang-hero {
+  margin-bottom: 28px;
+}
+
+.chat-lang-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #b89a44;
+  background: rgba(184, 154, 68, 0.1);
+  padding: 4px 14px;
+  border-radius: 14px;
+  display: inline-block;
+  margin-bottom: 12px;
+}
+
+.chat-lang-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #122135;
+  margin: 0 0 8px;
+  letter-spacing: -0.02em;
+}
+
+.chat-lang-subtitle {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.chat-lang-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .chat-lang-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chat-lang-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(18, 33, 53, 0.1);
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  text-align: left;
+}
+
+.chat-lang-card:hover {
+  background: #ffffff;
+  border-color: var(--lang-accent, #122135);
+  box-shadow: 0 8px 24px rgba(18, 33, 53, 0.09);
+  transform: translateY(-3px);
+}
+
+.chat-lang-tag {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.5px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+}
+
+.chat-lang-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.chat-lang-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #122135;
+  line-height: 1.2;
+}
+
+.chat-lang-sub {
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 500;
+  margin-top: 3px;
 }

@@ -4,7 +4,7 @@ export interface PricePredictionInput {
   brand: string;
   model: string;
   year: number;
-  // PIVOT: mileage removed (new vehicles only)
+  mileage?: number;
   fuel_type: string;
   body_type: string;
   transmission?: string;
@@ -12,7 +12,7 @@ export interface PricePredictionInput {
   doors?: number;
   seats?: number;
   city: string;
-  // PIVOT: condition_score removed (new vehicles only)
+  condition_score?: number;
   month?: number;
 }
 
@@ -22,7 +22,8 @@ export interface ConfidenceInterval {
 }
 
 export interface PricePredictionResult {
-  estimated_price: number;  // PIVOT: renamed from predicted_price
+  estimated_price: number;
+  predicted_price: number;
   confidence_interval: ConfidenceInterval;
   method: string;
   market_trend?: string;

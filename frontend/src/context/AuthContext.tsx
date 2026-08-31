@@ -33,7 +33,7 @@ interface AuthState {
   updateUser: (user: User) => void;
 }
 
-const AuthContext = createContext<AuthState | undefined>(undefined);
+export const AuthContext = createContext<AuthState | undefined>(undefined);
 
 // ─── Provider ─────────────────────────────────────────────────
 

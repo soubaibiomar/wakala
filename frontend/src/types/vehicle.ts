@@ -40,6 +40,17 @@ export interface Vehicle {
   popularity_score?: number;  // ← Neo4j PageRank
   images?: Array<{ file_path: string }>;
 
+  // Champs Catalogue Officiel
+  trunk_volume_l?: number;
+  ncap_rating?: string;
+  fuel_consumption?: number;
+  co2_emissions?: number;
+  length_cm?: number;
+  is_4x4?: boolean;
+  engine_type?: string;
+  condition?: string;
+  source?: string;
+
   created_at: string;
   updated_at: string;
 
@@ -67,8 +78,8 @@ export interface VehicleFilters {
   price_max?: number;
   year_min?: number;
   year_max?: number;
-  mileage_max?: number;  // PIVOT: unused for new vehicles
-  condition?: 'neuf';  // PIVOT: removed 'occasion'
+  mileage_max?: number;
+  condition?: 'neuf' | 'occasion' | string;
   sort_by?: string;
   sort_order?: 'asc' | 'desc';
   group_by_model?: boolean;

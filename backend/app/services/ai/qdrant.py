@@ -1,12 +1,19 @@
-from qdrant_client import AsyncQdrantClient
-from qdrant_client.http import models as qmodels
+try:
+    from qdrant_client import AsyncQdrantClient
+    from qdrant_client.http import models as qmodels
+    QDRANT_AVAILABLE = True
+except ImportError:
+    AsyncQdrantClient = None
+    qmodels = None
+    QDRANT_AVAILABLE = False
+
 from app.core.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 
 # Initialize Qdrant client asynchronously
-qdrant_client = AsyncQdrantClient(host=settings.QDRANT_HOST, port=settings.QDRANT_PORT)
+qdrant_client = AsyncQdrantClient(host=settings.QDRANT_HOST, port=settings.QDRANT_PORT) if QDRANT_AVAILABLE else None
 
 async def ensure_collection_exists(collection_name: str, vector_size: int = 1024):
     """

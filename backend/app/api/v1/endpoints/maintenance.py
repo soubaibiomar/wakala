@@ -39,12 +39,30 @@ async def add_service(
 
     receipt_url = None
     if receipt:
+        # Validation taille (max 5MB)
         if receipt.size and receipt.size > 5 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="La facture est trop volumineuse (maximum 5MB).")
-            
-        # Save file locally
-        file_ext = os.path.splitext(receipt.filename)[1]
-        file_name = f"{uuid.uuid4()}{file_ext}"
+
+        # Validation type MIME
+        allowed_mimes = {"application/pdf", "image/jpeg", "image/png", "image/webp"}
+        if receipt.content_type and receipt.content_type.lower() not in allowed_mimes:
+            raise HTTPException(
+                status_code=400,
+                detail="Format de fichier non supporté. Formats acceptés : PDF, JPEG, PNG, WEBP."
+            )
+
+        # Validation stricte de l'extension (liste blanche)
+        allowed_extensions = {"pdf", "jpg", "jpeg", "png", "webp"}
+        raw_ext = (receipt.filename or "").rsplit(".", 1)[-1].lower() if receipt.filename and "." in receipt.filename else ""
+        if raw_ext not in allowed_extensions:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Extension de fichier non autorisée. Extensions acceptées : {', '.join(allowed_extensions)}"
+            )
+
+        # Enregistrement sécurisé avec nom UUID normalisé
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        file_name = f"{uuid.uuid4().hex}.{raw_ext}"
         file_path = os.path.join(UPLOAD_DIR, file_name)
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(receipt.file, buffer)

@@ -55,7 +55,7 @@ export default function PriorityModal({ isOpen, onClose, onSubmitPriorities, nlp
     return new Intl.NumberFormat('fr-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(value);
   };
 
-  const hideBudgetSlider = nlpResult && nlpResult.budget !== null;
+  const hideBudgetSlider = Boolean(nlpResult && nlpResult.budget !== null && nlpResult.budget !== undefined);
 
   return (
     <div className="priority-modal-overlay" onClick={onClose}>

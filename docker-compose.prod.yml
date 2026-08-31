@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: wakala-prod-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-wakala_db}
+    volumes:
+      - prod_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - wakala-prod-network
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: wakala-prod-redis
+    restart: always
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - prod_redis_data:/data
+    networks:
+      - wakala-prod-network
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: wakala-prod-qdrant
+    restart: always
+    volumes:
+      - prod_qdrant_data:/qdrant/storage
+    networks:
+      - wakala-prod-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: wakala-prod-backend
+    restart: always
+    command: >
+      sh -c "python scripts/seed_morocco_new_cars.py &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-wakala_db}
+      - REDIS_URL=redis://redis:6379/0
+      - QDRANT_URL=http://qdrant:6333
+      - ENVIRONMENT=production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - wakala-prod-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: wakala-prod-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - wakala-prod-network
+
+volumes:
+  prod_postgres_data:
+  prod_redis_data:
+  prod_qdrant_data:
+
+networks:
+  wakala-prod-network:
+    driver: bridge

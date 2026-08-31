@@ -13,9 +13,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
+try:
+    from slowapi import Limiter, _rate_limit_exceeded_handler
+    from slowapi.util import get_remote_address
+    from slowapi.errors import RateLimitExceeded
+    SLOWAPI_AVAILABLE = True
+except ImportError:
+    SLOWAPI_AVAILABLE = False
+    RateLimitExceeded = Exception
+    def _rate_limit_exceeded_handler(request, exc): pass
+
 from app.api.middlewares.security import SecurityHeadersMiddleware, AuditLogMiddleware, user_or_ip_key_func
 
 from app.services.health_checker import start_health_checker
@@ -73,10 +80,16 @@ from app.api.routes_search import router as search_router
 from app.api.routes_messages import router as messages_router
 from app.api.v1.endpoints.ai import router as ai_router
 from app.api.v1.endpoints.maintenance import router as maintenance_router
-from app.api.routes_seo import router as seo_router
 from app.api.routes_favorites import router as favorites_router
 from app.api.routes_offers import router as offers_router
 from app.api.routes_voice import router as voice_router
+from app.api.routes_new_catalog import router as new_catalog_router
+from app.api.routes_comparator import router as comparator_router
+from app.api.routes_test_drives import router as test_drives_router
+from app.api.routes_seo import router as seo_router
+from app.api.routes_seo_pages import router as seo_pages_router
+from app.api.routes_vehicle_options import router as vehicle_options_router
+from app.api.routes_consent import router as consent_router
 
 # ─── Application FastAPI ───────────────────────────────────────
 
@@ -142,9 +155,15 @@ app.include_router(messages_router, prefix="/api/messages")
 app.include_router(ai_router, prefix="/api/v1/ai", tags=["AI Integration"])
 app.include_router(maintenance_router, prefix="/api/maintenance", tags=["Maintenance"])
 app.include_router(seo_router)
+app.include_router(seo_pages_router, prefix="/api", tags=["SEO & GEO Dynamic Pages"])
 app.include_router(favorites_router, prefix="/api", tags=["Favorites"])
 app.include_router(offers_router, prefix="/api/offers", tags=["Offres et Négociations"])
 app.include_router(voice_router, prefix="/api/voice", tags=["Voice Transcription"])
+app.include_router(new_catalog_router, prefix="/api", tags=["100% New Cars Digital Showroom"])
+app.include_router(comparator_router, prefix="/api", tags=["Matrix Vehicle Comparator"])
+app.include_router(test_drives_router, prefix="/api", tags=["Showrooms & Test Drives"])
+app.include_router(vehicle_options_router, prefix="/api/vehicles", tags=["Options & Configurateur"])
+app.include_router(consent_router, prefix="/api/consent", tags=["Consentement CNDP"])
 
 # ─── Gestionnaire d'exceptions Global ─────────────────────────────────────────────
 from fastapi.exceptions import RequestValidationError

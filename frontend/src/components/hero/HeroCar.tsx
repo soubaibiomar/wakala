@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { ChevronDown, ChevronRight, ArrowRight } from 'lucide-react';
+import { AuthContext } from '../../context/AuthContext';
 import type { RecommendationResponse } from '../../services/recommendationService';
 import SearchBar from './SearchBar';
-import './Hero.css';
-import { ChevronDown, ChevronRight, ArrowRight } from 'lucide-react';
 import styles from './hero.module.css';
+import './Hero.css';
 
 // Utilisation des données Wakala
 const slides = [
@@ -48,17 +48,13 @@ const slides = [
 ];
 
 export default function HeroCar() {
+  const navigate = useNavigate();
+  const authContext = useContext(AuthContext);
+  const user = authContext?.user;
   const [currentSlide, setCurrentSlide] = useState(0);
   const [animatingTo, setAnimatingTo] = useState(0);
   const [transitionState, setTransitionState] = useState('isEntering');
   const [isScrolled, setIsScrolled] = useState(false);
-  
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  
-  const handleResults = useCallback((query: string, recommendations?: RecommendationResponse | null) => {
-    navigate(`/catalogue?q=${encodeURIComponent(query)}`, { state: recommendations ? { recommendations } : undefined });
-  }, [navigate]);
   
   const autoPlayDelay = 5000;
 
@@ -94,19 +90,22 @@ export default function HeroCar() {
   };
 
   const handleWhyUsClick = () => {
-    const featuresSection = document.getElementById('features');
-    if (featuresSection) {
-      featuresSection.scrollIntoView({ behavior: 'smooth' });
-    } else {
-      window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
-    }
+    console.log("Pourquoi nous");
   };
+
+  const handleResults = useCallback((query: string, recommendations?: RecommendationResponse | null) => {
+    navigate(`/catalogue?q=${encodeURIComponent(query)}`, { state: recommendations ? { recommendations } : undefined });
+  }, [navigate]);
 
   const activeSlideData = slides[animatingTo]; // Les données du slide en cours de transition
   const activeSlideVisual = slides[currentSlide]; // L'image qui s'affiche (pour les transitions fluides)
 
   return (
     <section className={styles.heroSlider}>
+      {/* Effets ambiants */}
+      <div className={styles.grain} aria-hidden="true" />
+      <div className={styles.ambientGlow} aria-hidden="true" />
+
       {/* Track d'images en fond */}
       <div className={styles.track} aria-live="polite">
         {slides.map((slide, index) => {
@@ -134,7 +133,7 @@ export default function HeroCar() {
         })}
       </div>
 
-      {/* Contenu textuel et actions */}
+      {/* Contenu textuel, recherche et actions */}
       <div className={styles.contentWrap}>
         <div className={`${styles.content} ${styles[transitionState]}`}>
           <span className={styles.titleLine} aria-hidden="true" />
@@ -150,6 +149,11 @@ export default function HeroCar() {
           
           <p className={styles.description}>{activeSlideData.description}</p>
           
+          {/* Barre de Recherche IA du Repo */}
+          <div className={styles.searchWrapper}>
+            <SearchBar userId={user?.id} onResults={handleResults} />
+          </div>
+
           <div className={styles.actions}>
             <Link to="/catalogue" className={styles.ctaBtn}>
               Explorer les véhicules
@@ -158,12 +162,6 @@ export default function HeroCar() {
             <button type="button" className={styles.ghostBtn} onClick={handleWhyUsClick}>
               Pourquoi nous
             </button>
-          </div>
-        </div>
-        
-        <div className={styles.searchContainerRight}>
-          <div className="search-wrapper" style={{ margin: '0', maxWidth: '100%' }}>
-            <SearchBar userId={user?.id} onResults={handleResults} />
           </div>
         </div>
       </div>

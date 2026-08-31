@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import HeroCar from '../HeroCar';
-import { AuthProvider } from '../../../context/AuthContext';
 
 vi.mock('../../../services/api', () => ({
   default: {
@@ -21,44 +20,46 @@ describe('HeroCar', () => {
 
   it('renders without crashing', () => {
     const { container } = render(
-      <AuthProvider>
-        <MemoryRouter>
-          <HeroCar />
-        </MemoryRouter>
-      </AuthProvider>
+      <MemoryRouter>
+        <HeroCar />
+      </MemoryRouter>
     );
     expect(container).toBeTruthy();
   });
 
   it('renders the title elements', () => {
     render(
-      <AuthProvider>
-        <MemoryRouter>
-          <HeroCar />
-        </MemoryRouter>
-      </AuthProvider>
+      <MemoryRouter>
+        <HeroCar />
+      </MemoryRouter>
     );
     expect(screen.getByText(/WAKALA/i)).toBeInTheDocument();
   });
 
   it('renders CTA button', () => {
     render(
-      <AuthProvider>
-        <MemoryRouter>
-          <HeroCar />
-        </MemoryRouter>
-      </AuthProvider>
+      <MemoryRouter>
+        <HeroCar />
+      </MemoryRouter>
     );
     expect(screen.getByText(/Explorer les véhicules/i)).toBeInTheDocument();
   });
 
+  it('renders the search bar input and submit button', () => {
+    render(
+      <MemoryRouter>
+        <HeroCar />
+      </MemoryRouter>
+    );
+    expect(screen.getByPlaceholderText(/Décrivez vos besoins/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Rechercher/i })).toBeInTheDocument();
+  });
+
   it('renders the scroll hint initially', () => {
     render(
-      <AuthProvider>
-        <MemoryRouter>
-          <HeroCar />
-        </MemoryRouter>
-      </AuthProvider>
+      <MemoryRouter>
+        <HeroCar />
+      </MemoryRouter>
     );
     const scrollBtn = screen.queryByLabelText(/Défiler vers le bas/i);
     expect(scrollBtn).toBeInTheDocument();

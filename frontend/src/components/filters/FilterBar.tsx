@@ -10,6 +10,12 @@ import { useSearchParams } from 'react-router-dom';
 import type { VehicleFilters, FuelType, BodyType } from '../../types/vehicle';
 import './FilterBar.css';
 
+const MOROCCAN_CITIES = [
+  'Casablanca', 'Rabat', 'Marrakech', 'Tanger', 'Agadir',
+  'Fès', 'Meknès', 'Oujda', 'Kénitra', 'Tétouan',
+  'Salé', 'Témara', 'Mohammedia', 'El Jadida', 'Nador', 'Béni Mellal'
+];
+
 interface FilterBarProps {
   onFiltersChange: (filters: VehicleFilters) => void;
   total: number;
@@ -149,10 +155,16 @@ export default function FilterBar({ onFiltersChange, total }: FilterBarProps) {
         <label className="input-label">Ville</label>
         <input
           className="input"
+          list="moroccan-cities-list"
           placeholder="Ex : Casablanca"
           value={filters.city}
           onChange={(e) => handleChange('city', e.target.value)}
         />
+        <datalist id="moroccan-cities-list">
+          {MOROCCAN_CITIES.map((c) => (
+            <option key={c} value={c} />
+          ))}
+        </datalist>
       </div>
 
       {/* Carburant */}

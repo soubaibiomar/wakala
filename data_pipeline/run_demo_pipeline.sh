@@ -45,7 +45,7 @@ from confluent_kafka.admin import AdminClient
 AdminClient({'bootstrap.servers': 'localhost:9092'}).list_topics(timeout=5)
 " 2>/dev/null; then
   echo "  X Kafka non accessible sur localhost:9092"
-  echo "  Lance d'abord: docker-compose up -d kafka zookeeper"
+  echo "  Lance d'abord: docker compose up -d kafka"
   exit 1
 fi
 echo "  V Kafka OK"

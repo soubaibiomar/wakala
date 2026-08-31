@@ -1,0 +1,146 @@
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1420 920" width="1420" height="920" style="background-color: #0b0f19; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <linearGradient id="titleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#c8a96a"/>
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#3b82f6"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981"/>
+    </marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#ea580c"/>
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#8b5cf6"/>
+    </marker>
+  </defs>
+
+  <!-- Title Banner -->
+  <rect x="40" y="30" width="1340" height="95" rx="16" fill="url(#titleGrad)" stroke="#c8a96a" stroke-width="2" filter="url(#glow)"/>
+  <text x="710" y="68" fill="#c8a96a" font-size="21" font-weight="800" text-anchor="middle" letter-spacing="1">WAKALA MAROC — WORKFLOW AUTOMATISATION TEST DRIVE (n8n)</text>
+  <text x="710" y="98" fill="#94a3b8" font-size="13" text-anchor="middle">Réservation Frontend ➔ FastAPI Backend ➔ n8n Orchestration ➔ WhatsApp / Email / CRM / Google Calendar (CNDP)</text>
+
+  <!-- ─── Columns ──────────────────────────────────────── -->
+  <!-- Col 1: Frontend -->
+  <rect x="40" y="150" width="300" height="730" rx="14" fill="#0f172a" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="6,6" opacity="0.9"/>
+  <rect x="40" y="150" width="300" height="50" rx="14" fill="#3b82f6"/>
+  <text x="190" y="172" fill="#ffffff" font-size="14" font-weight="700" text-anchor="middle">1. FRONTEND / CLIENT</text>
+  <text x="190" y="190" fill="#dbeafe" font-size="11" text-anchor="middle">Application Web &amp; Mobile</text>
+
+  <!-- Col 2: Backend -->
+  <rect x="370" y="150" width="300" height="730" rx="14" fill="#0f172a" stroke="#10b981" stroke-width="1.5" stroke-dasharray="6,6" opacity="0.9"/>
+  <rect x="370" y="150" width="300" height="50" rx="14" fill="#10b981"/>
+  <text x="520" y="172" fill="#ffffff" font-size="14" font-weight="700" text-anchor="middle">2. BACKEND API</text>
+  <text x="520" y="190" fill="#d1fae5" font-size="11" text-anchor="middle">FastAPI &amp; Validation CNDP</text>
+
+  <!-- Col 3: n8n -->
+  <rect x="700" y="150" width="360" height="730" rx="14" fill="#0f172a" stroke="#ea580c" stroke-width="1.5" stroke-dasharray="6,6" opacity="0.9"/>
+  <rect x="700" y="150" width="360" height="50" rx="14" fill="#ea580c"/>
+  <text x="880" y="172" fill="#ffffff" font-size="14" font-weight="700" text-anchor="middle">3. MOTEUR n8n</text>
+  <text x="880" y="190" fill="#ffedd5" font-size="11" text-anchor="middle">Orchestration &amp; Multi-canal</text>
+
+  <!-- Col 4: Showroom -->
+  <rect x="1090" y="150" width="290" height="730" rx="14" fill="#0f172a" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="6,6" opacity="0.9"/>
+  <rect x="1090" y="150" width="290" height="50" rx="14" fill="#8b5cf6"/>
+  <text x="1235" y="172" fill="#ffffff" font-size="14" font-weight="700" text-anchor="middle">4. CONCESSIONNAIRE</text>
+  <text x="1235" y="190" fill="#ede9fe" font-size="11" text-anchor="middle">Showrooms Officiels Maroc</text>
+
+  <!-- ─── CARDS ────────────────────────────────────────── -->
+  <!-- Card 1: Click Button -->
+  <rect x="60" y="230" width="260" height="85" rx="10" fill="#1e293b" stroke="#3b82f6" stroke-width="2" filter="url(#glow)"/>
+  <text x="190" y="260" fill="#60a5fa" font-size="13" font-weight="700" text-anchor="middle">🏎️ Clic « Réserver un essai »</text>
+  <text x="190" y="282" fill="#cbd5e1" font-size="11" text-anchor="middle">Fiche Véhicule Neuf / Occasion</text>
+  <text x="190" y="298" fill="#94a3b8" font-size="10" text-anchor="middle">(VehicleDetail &amp; NewCarDetail)</text>
+
+  <!-- Card 2: Modal Form -->
+  <rect x="60" y="360" width="260" height="150" rx="10" fill="#1e293b" stroke="#3b82f6" stroke-width="2" filter="url(#glow)"/>
+  <text x="80" y="388" fill="#60a5fa" font-size="13" font-weight="700">📋 Formulaire TestDriveModal</text>
+  <text x="80" y="414" fill="#e2e8f0" font-size="11">• Nom &amp; Prénom complet</text>
+  <text x="80" y="434" fill="#e2e8f0" font-size="11">• Numéro Marocain (06... / 07...)</text>
+  <text x="80" y="454" fill="#e2e8f0" font-size="11">• Ville &amp; Showroom agréé</text>
+  <text x="80" y="474" fill="#e2e8f0" font-size="11">• Date souhaitée de l'essai</text>
+  <text x="80" y="496" fill="#c8a96a" font-size="10" font-weight="600">🔒 Consentement CNDP Loi n° 09-08</text>
+
+  <!-- Card 3: Backend API -->
+  <rect x="390" y="360" width="260" height="120" rx="10" fill="#1e293b" stroke="#10b981" stroke-width="2" filter="url(#glow)"/>
+  <text x="410" y="388" fill="#34d399" font-size="13" font-weight="700">⚡ POST /api/v1/leads/test-drive</text>
+  <text x="410" y="414" fill="#e2e8f0" font-size="11">• Validation Regex Phone (+212)</text>
+  <text x="410" y="434" fill="#e2e8f0" font-size="11">• Vérification Finition &amp; Showroom</text>
+  <text x="410" y="454" fill="#e2e8f0" font-size="11">• Horodatage légal CNDP</text>
+  <text x="410" y="470" fill="#94a3b8" font-size="10">• Dispatch async vers n8n</text>
+
+  <!-- Card 4: Postgres Lead DB -->
+  <rect x="390" y="530" width="260" height="95" rx="10" fill="#1e293b" stroke="#10b981" stroke-width="2" filter="url(#glow)"/>
+  <text x="520" y="558" fill="#34d399" font-size="13" font-weight="700" text-anchor="middle">🗄️ PostgreSQL (lead_inquiries)</text>
+  <text x="520" y="582" fill="#cbd5e1" font-size="11" text-anchor="middle">Status : VERIFIED_PENDING_DISPATCH</text>
+  <text x="520" y="604" fill="#94a3b8" font-size="10" text-anchor="middle">Stockage conforme CNDP 09-08</text>
+
+  <!-- Card 5: n8n Webhook -->
+  <rect x="720" y="360" width="320" height="90" rx="10" fill="#1e293b" stroke="#ea580c" stroke-width="2" filter="url(#glow)"/>
+  <text x="880" y="390" fill="#fb923c" font-size="13" font-weight="700" text-anchor="middle">🌐 Webhook Trigger n8n</text>
+  <text x="880" y="412" fill="#cbd5e1" font-size="11" text-anchor="middle">POST /webhook/test-drive-reservation</text>
+  <text x="880" y="432" fill="#94a3b8" font-size="10" text-anchor="middle">Réception temps réel du lead qualifié</text>
+
+  <!-- Card 6: n8n Code Enrichment -->
+  <rect x="720" y="490" width="320" height="105" rx="10" fill="#1e293b" stroke="#ea580c" stroke-width="2" filter="url(#glow)"/>
+  <text x="740" y="518" fill="#fb923c" font-size="13" font-weight="700">⚙️ Node Code : Normalisation</text>
+  <text x="740" y="542" fill="#e2e8f0" font-size="11">• Attribution Réf : TD-2026-CAS-XXXX</text>
+  <text x="740" y="562" fill="#e2e8f0" font-size="11">• Formatage standard E.164 (+212...)</text>
+  <text x="740" y="582" fill="#e2e8f0" font-size="11">• Préparation templates WhatsApp / Email</text>
+
+  <!-- Card 7: WhatsApp Notification -->
+  <rect x="720" y="635" width="320" height="95" rx="10" fill="#1e293b" stroke="#22c55e" stroke-width="2" filter="url(#glow)"/>
+  <text x="740" y="662" fill="#4ade80" font-size="13" font-weight="700">💬 WhatsApp Client (Infobip/Twilio)</text>
+  <text x="740" y="686" fill="#e2e8f0" font-size="11">• Confirmation instantanée avec Réf dossier</text>
+  <text x="740" y="706" fill="#cbd5e1" font-size="10">• Adresse du showroom &amp; date souhaitée</text>
+  <text x="740" y="722" fill="#86efac" font-size="9">✓ Délai de rappel garanti : 2 heures</text>
+
+  <!-- Card 8: Email Confirmation -->
+  <rect x="720" y="765" width="320" height="90" rx="10" fill="#1e293b" stroke="#3b82f6" stroke-width="2" filter="url(#glow)"/>
+  <text x="740" y="792" fill="#60a5fa" font-size="13" font-weight="700">📧 Email HTML Responsive Client</text>
+  <text x="740" y="816" fill="#e2e8f0" font-size="11">• Récapitulatif officiel de l'essai sur route</text>
+  <text x="740" y="836" fill="#94a3b8" font-size="10">• Coordonnées showroom &amp; mentions CNDP</text>
+
+  <!-- Card 9: Dealership Assignment -->
+  <rect x="1110" y="490" width="250" height="110" rx="10" fill="#1e293b" stroke="#8b5cf6" stroke-width="2" filter="url(#glow)"/>
+  <text x="1235" y="520" fill="#a78bfa" font-size="13" font-weight="700" text-anchor="middle">🏬 Showroom Agréé</text>
+  <text x="1235" y="544" fill="#e2e8f0" font-size="11" text-anchor="middle">Casablanca, Rabat, Tanger...</text>
+  <text x="1235" y="566" fill="#cbd5e1" font-size="11" text-anchor="middle">Attribution automatique au</text>
+  <text x="1235" y="584" fill="#cbd5e1" font-size="11" text-anchor="middle">conseiller commercial dédié</text>
+
+  <!-- Card 10: Google Calendar -->
+  <rect x="1110" y="640" width="250" height="110" rx="10" fill="#1e293b" stroke="#8b5cf6" stroke-width="2" filter="url(#glow)"/>
+  <text x="1235" y="670" fill="#a78bfa" font-size="13" font-weight="700" text-anchor="middle">📅 Google Calendar</text>
+  <text x="1235" y="694" fill="#e2e8f0" font-size="11" text-anchor="middle">Création du créneau d'essai</text>
+  <text x="1235" y="716" fill="#cbd5e1" font-size="11" text-anchor="middle">Invitation agenda au client</text>
+  <text x="1235" y="736" fill="#c4b5fd" font-size="10" text-anchor="middle">🔔 Rappel SMS automatique H-2</text>
+
+  <!-- ─── ARROWS ────────────────────────────────────────── -->
+  <!-- 1 -> 2 -->
+  <path d="M 190 315 L 190 360" stroke="#3b82f6" stroke-width="2.5" fill="none" marker-end="url(#arrow-blue)"/>
+  <!-- 2 -> 3 -->
+  <path d="M 320 420 L 390 420" stroke="#10b981" stroke-width="2.5" fill="none" marker-end="url(#arrow-green)"/>
+  <!-- 3 -> 4 -->
+  <path d="M 520 480 L 520 530" stroke="#10b981" stroke-width="2" fill="none" marker-end="url(#arrow-green)"/>
+  <!-- 3 -> 5 -->
+  <path d="M 650 410 L 720 410" stroke="#ea580c" stroke-width="2.5" fill="none" marker-end="url(#arrow-orange)"/>
+  <!-- 5 -> 6 -->
+  <path d="M 880 450 L 880 490" stroke="#ea580c" stroke-width="2.5" fill="none" marker-end="url(#arrow-orange)"/>
+  <!-- 6 -> 7 -->
+  <path d="M 880 595 L 880 635" stroke="#22c55e" stroke-width="2.5" fill="none" marker-end="url(#arrow-green)"/>
+  <!-- 7 -> 8 -->
+  <path d="M 880 730 L 880 765" stroke="#3b82f6" stroke-width="2.5" fill="none" marker-end="url(#arrow-blue)"/>
+  <!-- 6 -> 9 -->
+  <path d="M 1040 545 L 1110 545" stroke="#8b5cf6" stroke-width="2.5" fill="none" marker-end="url(#arrow-purple)"/>
+  <!-- 9 -> 10 -->
+  <path d="M 1235 600 L 1235 640" stroke="#8b5cf6" stroke-width="2.5" fill="none" marker-end="url(#arrow-purple)"/>
+</svg>
