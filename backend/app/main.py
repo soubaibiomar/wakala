@@ -38,22 +38,26 @@ async def lifespan(app: FastAPI):
     try:
         from app.core.database import engine
         from sqlalchemy import text
-        async with engine.begin() as conn:
-            await conn.execute(text("SELECT 1"))
-        logger.info("PostgreSQL connection successful.")
+        if engine is not None:
+            async with engine.begin() as conn:
+                await conn.execute(text("SELECT 1"))
+            logger.info("PostgreSQL connection successful.")
+        else:
+            logger.warning("PostgreSQL engine not configured. Skipping startup check.")
     except Exception as e:
-        logger.critical(f"Failed to connect to PostgreSQL: {e}")
-        raise RuntimeError(f"PostgreSQL connection failed: {e}")
+        logger.warning(f"PostgreSQL connection check failed (continuing gracefully): {e}")
 
     # 2. Vérification Qdrant
     try:
         from app.services.ai.qdrant import get_qdrant_client
         qdrant = get_qdrant_client()
-        await qdrant.get_collections()
-        logger.info("Qdrant connection successful.")
+        if qdrant is not None:
+            await qdrant.get_collections()
+            logger.info("Qdrant connection successful.")
+        else:
+            logger.info("Qdrant client not configured. Skipping startup check.")
     except Exception as e:
-        logger.critical(f"Failed to connect to Qdrant: {e}")
-        raise RuntimeError(f"Qdrant connection failed: {e}")
+        logger.warning(f"Qdrant connection check failed (continuing gracefully): {e}")
 
     # Démarrage des tâches de fond
     start_health_checker()

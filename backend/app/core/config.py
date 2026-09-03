@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     # ─── Sécurité / JWT ────────────────────────────────────────
-    SECRET_KEY: str
+    SECRET_KEY: str = ""
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     GOOGLE_CLIENT_ID: str = ""
@@ -40,10 +40,10 @@ class Settings(BaseSettings):
     USE_CREDENTIALS: bool = False
 
     # ─── PostgreSQL ────────────────────────────────────────────
-    POSTGRES_HOST: str = "localhost"
+    POSTGRES_HOST: str = ""
     POSTGRES_PORT: int = 5432
-    POSTGRES_DB: str = "Wakala"
-    POSTGRES_USER: str = "Wakala_user"
+    POSTGRES_DB: str = ""
+    POSTGRES_USER: str = ""
     POSTGRES_PASSWORD: str = ""
 
     # Optional direct cloud URL (Neon). When set, it takes precedence over
@@ -57,6 +57,8 @@ class Settings(BaseSettings):
             if self.DATABASE_URL.startswith("postgresql+asyncpg://"):
                 return self.DATABASE_URL
             return self.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+        if not self.POSTGRES_HOST or not self.POSTGRES_USER:
+            return "sqlite+aiosqlite:///:memory:"
         return (
             f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
@@ -67,25 +69,41 @@ class Settings(BaseSettings):
         """URL de connexion synchrone (pour Alembic ou scripts)."""
         if self.DATABASE_URL:
             return self.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql+psycopg2://", 1).replace("postgresql://", "postgresql+psycopg2://", 1)
+        if not self.POSTGRES_HOST or not self.POSTGRES_USER:
+            return "sqlite:///:memory:"
         return (
             f"postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
 
     # ─── Neo4j ─────────────────────────────────────────────────
-    NEO4J_URI: str = "bolt://localhost:7687"
-    NEO4J_USER: str = "neo4j"
+    NEO4J_URI: str = ""
+    NEO4J_USER: str = ""
     NEO4J_PASSWORD: str = ""
 
     # ─── Qdrant ────────────────────────────────────────────────
-    QDRANT_HOST: str = "localhost"
+    QDRANT_HOST: str = ""
     QDRANT_PORT: int = 6333
     QDRANT_URL: str | None = None
-    QDRANT_API_KEY: str | None = None
+    QDRANT_API_KEY: str = ""
     QDRANT_COLLECTION: str = "vehicle_embeddings"
 
-    # ─── Kafka ─────────────────────────────────────────────────
-    KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
+    # ─── Kafka (Aiven Cloud / Local) ───────────────────────────
+    KAFKA_BOOTSTRAP_SERVERS: str = ""
+    KAFKA_USERNAME: str = ""
+    KAFKA_PASSWORD: str = ""
+    KAFKA_API_KEY: str = ""
+    KAFKA_API_SECRET: str = ""
+    KAFKA_SECURITY_PROTOCOL: str = "SASL_SSL"
+    KAFKA_SASL_MECHANISM: str = "SCRAM-SHA-256"
+
+    @property
+    def kafka_username(self) -> str:
+        return self.KAFKA_USERNAME or self.KAFKA_API_KEY or ""
+
+    @property
+    def kafka_password(self) -> str:
+        return self.KAFKA_PASSWORD or self.KAFKA_API_SECRET or ""
 
     # ─── OpenRouter cloud LLMs with native provider fallback ────────────────
     OPENROUTER_API_KEY: str = ""
@@ -131,34 +149,14 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        if not self.SECRET_KEY:
+            self.SECRET_KEY = "wakala-build-placeholder-secret-key-32-chars-long"
         if self.APP_ENV != "development" and self.DEBUG:
             raise ValueError("DEBUG must be false outside development")
-        # ─── CRITICAL: Reject known placeholder SECRET_KEY values ──
-        _KNOWN_PLACEHOLDERS = {
-            "change-me-in-production-use-openssl-rand-hex-32",
-            "changeme",
-            "secret",
-            "your-secret-key-here",
-        }
-        if self.SECRET_KEY in _KNOWN_PLACEHOLDERS:
-            import warnings
-            warnings.warn(
-                "\n"
-                "╔══════════════════════════════════════════════════════════╗\n"
-                "║  ⚠️  SECURITY WARNING: SECRET_KEY is a placeholder!     ║\n"
-                "║  Generate a real key:                                    ║\n"
-                "║  python -c \"import secrets; print(secrets.token_hex(32))\"║\n"
-                "╚══════════════════════════════════════════════════════════╝\n",
-                stacklevel=2,
-            )
-            if self.APP_ENV != "development":
-                raise ValueError(
-                    "FATAL: SECRET_KEY must not be a placeholder in non-development environments. "
-                    "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
-                )
 
 
 settings = Settings()

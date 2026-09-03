@@ -45,14 +45,21 @@ async def download_image(url: str) -> str:
         print(f"Failed to download image {url}: {e}")
         return url
 
+from app.core.kafka import get_kafka_consumer
+
 async def consume_to_postgres():
-    print(f"Connecting to Kafka at {KAFKA_BOOTSTRAP}...")
-    consumer = Consumer({
-        'bootstrap.servers': KAFKA_BOOTSTRAP,
-        'group.id': 'wakala-postgres-consumer',
-        'auto.offset.reset': 'earliest'
-    })
-    consumer.subscribe(['listings.raw'])
+    if not settings.KAFKA_BOOTSTRAP_SERVERS:
+        print("KAFKA_BOOTSTRAP_SERVERS is empty. Skipping Kafka consumer.")
+        return
+
+    print(f"Connecting to Kafka at {settings.KAFKA_BOOTSTRAP_SERVERS}...")
+    consumer = get_kafka_consumer(
+        group_id="wakala-postgres-consumer",
+        topics=["listings.raw"]
+    )
+    if not consumer:
+        print("Failed to initialize Kafka consumer. Exiting.")
+        return
 
     print("Kafka consumer started! Listening for scraped listings...")
     

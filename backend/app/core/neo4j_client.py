@@ -1,21 +1,20 @@
 import logging
 from neo4j import GraphDatabase
-from app.core.config import Settings
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-settings = Settings()
 
 class Neo4jClient:
     def __init__(self, uri, user, password):
         self.driver = None
-        if not password:
+        if not uri or not password:
             logger.info("Neo4j is not configured; graph features are disabled.")
             return
         try:
             self.driver = GraphDatabase.driver(uri, auth=(user, password))
             logger.info("Connected to Neo4j successfully")
         except Exception as e:
-            logger.error(f"Failed to create Neo4j driver: {e}")
+            logger.warning(f"Could not connect to Neo4j driver (continuing gracefully): {e}")
 
     def close(self):
         if self.driver:
