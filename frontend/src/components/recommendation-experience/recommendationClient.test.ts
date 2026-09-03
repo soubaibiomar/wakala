@@ -302,4 +302,44 @@ describe('FastApiRecommendationClient recommendation logic', () => {
     expect(question?.question).toContain('power and acceleration');
     expect(question?.options).toHaveLength(2);
   });
+
+  it('provides 3 distinct options for drivetrain preference (4x4 vs 2WD vs No preference)', async () => {
+    const client = new FastApiRecommendationClient();
+    client.setLanguage('en');
+    const candidates = [
+      car({ id: '1', is_4x4: true, body_type: 'suv', engine_power_hp: 200, trunk_volume_l: 500, fuel_type: 'diesel' }),
+      car({ id: '2', is_4x4: false, body_type: 'suv', engine_power_hp: 200, trunk_volume_l: 500, fuel_type: 'diesel' }),
+    ];
+    const question = await client.getNextQuestion([
+      { role: 'user', content: 'I want a 500000 MAD SUV for highway driving with diesel fuel and an automatic gearbox, with space for 5 suitcases and high safety' },
+      { role: 'assistant', content: 'Do you prioritize power and acceleration over lower running costs?' },
+      { role: 'user', content: 'No preference' },
+    ], candidates);
+    expect(question?.question).toContain('all-wheel drive (4x4 / AWD)');
+    expect(question?.options).toHaveLength(3);
+    expect(question?.options.map((o) => o.label)).toEqual(['Yes, 4x4 / AWD', 'Standard (2WD)', 'No preference']);
+  });
+
+  it('filters strictly for 4x4 or 2WD vehicles when drivetrain preference is answered', async () => {
+    const client = new FastApiRecommendationClient();
+    const car4x4 = car({ id: 'awd-car', is_4x4: true });
+    const car2wd = car({ id: '2wd-car', is_4x4: false });
+    const candidates = [car4x4, car2wd];
+
+    const resultAwd = await client.applyAnswer('Yes, 4x4 / AWD', history('Yes, 4x4 / AWD'), candidates);
+    expect(resultAwd.map((c) => c.id)).toEqual(['awd-car']);
+
+    const result2wd = await client.applyAnswer('Standard (2WD)', history('Standard (2WD)'), candidates);
+    expect(result2wd.map((c) => c.id)).toEqual(['2wd-car']);
+  });
+
+  it('strictly excludes supercar brands like Ferrari from city car / citadine recommendations', async () => {
+    const client = new FastApiRecommendationClient();
+    const clio = car({ id: 'renault-clio', brand: 'Renault', model: 'Clio', body_type: 'citadine' });
+    const ferrari = car({ id: 'ferrari-296', brand: 'Ferrari', model: '296 GTB', body_type: 'citadine' });
+    mockGetVehicles.mockResolvedValue({ items: [clio, ferrari], pages: 1 });
+
+    const result = await client.applyAnswer('I want a city car', history('I want a city car'), [clio, ferrari]);
+    expect(result.map((c) => c.id)).toEqual(['renault-clio']);
+  });
 });

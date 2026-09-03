@@ -112,8 +112,8 @@ app = FastAPI(
         "- Analyse d'images (vision)"
     ),
     version="0.1.0",
-    docs_url="/docs" if settings.APP_ENV == "development" else None,
-    redoc_url="/redoc" if settings.APP_ENV == "development" else None,
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
 app.state.limiter = limiter

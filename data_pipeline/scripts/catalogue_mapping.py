@@ -91,7 +91,17 @@ MODEL_BODY_TYPE_OVERRIDES = {
     "exeed|et": "suv",
     "exeed|rx": "suv",
     "exeed|vx": "suv",
+    "ferrari|12cilindri": "coupe",
+    "ferrari|296 gtb": "coupe",
     "ferrari|296 gts": "cabriolet",
+    "ferrari|roma": "coupe",
+    "ferrari|roma spider": "cabriolet",
+    "ferrari|sf90": "coupe",
+    "ferrari|sf90 stradale": "coupe",
+    "ferrari|sf90 spider": "cabriolet",
+    "ferrari|812 superfast": "coupe",
+    "ferrari|f8 spider": "cabriolet",
+    "ferrari|f8 tributo": "coupe",
     "ferrari|purosangue": "suv",
     "fiat|500x": "suv",
     "fiat|600": "suv",
@@ -364,6 +374,13 @@ def infer_body_type(brand: str, model: str, version: str, length_cm: Optional[in
     model_override = MODEL_BODY_TYPE_OVERRIDES.get(_body_type_model_key(brand, model))
     if model_override:
         return model_override
+
+    if brand.lower() == "ferrari":
+        if "purosangue" in model_text:
+            return "suv"
+        if any(k in model_text or k in version_text for k in ["spider", "cabriolet", "convertible", "gts", "aperta"]):
+            return "cabriolet"
+        return "coupe"
 
     # Explicit body-style wording in a trim is authoritative. Do not use
     # broad substring checks here: "GT" is often only a trim line and "van"
