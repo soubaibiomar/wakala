@@ -32,6 +32,10 @@ export interface NextQuestion {
 export type ChatLanguage = 'fr' | 'darija' | 'ar' | 'en';
 
 const LITERS_PER_SUITCASE = 70;
+const SUPERCAR_BRANDS = new Set([
+  'ferrari', 'lamborghini', 'mclaren', 'bugatti', 'aston martin', 'bentley', 'rolls-royce', 'maserati',
+]);
+
 const FAMILY_BODY_TYPES = new Set(['monospace', 'suv', 'break', 'berline', 'citadine']);
 
 type BrandPreference = { name: string; apiValue: string };
@@ -79,11 +83,14 @@ function extractBrandPreference(text: string): BrandPreference | null {
   // Keep an explicitly requested, unknown make strict as well. This prevents
   // a request such as "I want a Lamborghini" from silently becoming a full
   // catalogue recommendation when that make is not available locally.
-  const genericVehicleTerms = new Set([
+    const genericVehicleTerms = new Set([
     'car', 'cars', 'vehicle', 'vehicles', 'suv', 'model', 'models',
     'voiture', 'voitures', 'vehicule', 'vehicules', 'véhicule', 'véhicules',
     'family', 'familiale', 'familial', 'electric', 'electrique', 'hybrid',
-    'hybride', 'diesel', 'essence', 'safe', 'safest', 'secure', 'hybride',
+    'hybride', 'diesel', 'essence', 'safe', 'safest', 'secure',
+    'city', 'citadine', 'berline', 'sedan', 'saloon', 'coupe', 'cabriolet',
+    'convertible', 'break', 'estate', 'wagon', 'pickup', 'van', 'monospace',
+    'utilitaire', 'compact', 'compacte', 'hatchback',
   ]);
   const unknownMatch = normalizedText.match(/(?:^| )(?:(?:i|je) )?(?:want|need|buy|looking for|show me|find me|cherche|recherche|acheter|veux|cherche) (?:a|an|the|une|un|une voiture|un vehicule|voiture|véhicule)? ?([a-z][a-z-]+)(?:$| )/i);
   const unknownBrand = unknownMatch?.[1];
@@ -247,7 +254,7 @@ function dynamicQuestion(language: ChatLanguage, history: ChatTurn[], remainingC
     { key: 'praticite_urbaine', covered: questionWasAnswered(/compact|easy to park|facile à garer|parking|ركن/i), values: [...bodies], priority: 3 },
     { key: 'performance', covered: /performance|power|puissance|sportif|قوية/i.test(text) || questionWasAnswered(/power and acceleration|performance|puissance|التسارع|الأداء/i), values: powerValues.map(String), priority: 4 },
     { key: 'ecologie', covered: /hybrid|hybride|electric|électrique|ecolog|écolog|co2|بيئي/i.test(text) || questionWasAnswered(/hybrid or electric|hybride ou électrique|هجين|الهجين/i), values: [...fuels], priority: 5 },
-    { key: 'motricite', covered: /4x4|awd|offroad|tout.?terrain|mountain|montagne|دفع رباعي/i.test(text) || questionWasAnswered(/four-wheel drive|off-road|transmission intégrale|الدفع الرباعي/i), values: [...bodies], priority: 6 },
+    { key: 'motricite', covered: /4x4|awd|offroad|tout.?terrain|mountain|montagne|دفع رباعي/i.test(text) || questionWasAnswered(/four-wheel drive|all-wheel drive|4x4|awd|off-road|transmission intégrale|الدفع الرباعي/i), values: remainingCars.map((car) => String(Boolean(car.is_4x4))), priority: 6 },
   ];
   const lastAssistantQuestion = [...history].reverse().find((turn) => turn.role === 'assistant')?.content || '';
   const pendingDimension = dimensionCandidates.find((candidate) => {
@@ -277,56 +284,68 @@ function dynamicQuestion(language: ChatLanguage, history: ChatTurn[], remainingC
   if (selectedDimension === 'securite') return {
     question: language === 'en' ? 'How important is certified safety and a high NCAP rating to you?' : language === 'ar' ? 'ما مدى أهمية السلامة المعتمدة ونتيجة NCAP المرتفعة؟' : language === 'darija' ? 'شحال مهمة عندك السلامة ونتيجة NCAP؟' : 'Quelle importance accordez-vous à la sécurité certifiée et à une bonne note NCAP ?',
     options: language === 'en'
-      ? [{ label: 'Highest NCAP rating' }, { label: 'Good safety' }]
+      ? [{ label: 'Highest NCAP rating (5★)' }, { label: 'Good safety (4★+)' }, { label: 'No preference' }]
       : language === 'ar'
-        ? [{ label: 'أعلى تقييم NCAP' }, { label: 'سلامة جيدة' }]
+        ? [{ label: 'أعلى تقييم NCAP (5★)' }, { label: 'سلامة جيدة (4★+)' }, { label: 'لا أفضلية' }]
         : language === 'darija'
-          ? [{ label: 'أعلى نقطة NCAP' }, { label: 'سلامة مزيانة' }]
-          : [{ label: 'Note NCAP maximale' }, { label: 'Bonne sécurité' }],
+          ? [{ label: 'أعلى نقطة NCAP (5★)' }, { label: 'سلامة مزيانة (4★+)' }, { label: 'ما عنديش تفضيل' }]
+          : [{ label: 'Note NCAP maximale (5★)' }, { label: 'Bonne sécurité (4★+)' }, { label: 'Pas de préférence' }],
   };
   if (selectedDimension === 'cout_reel') return {
     question: language === 'en' ? 'Would you prioritize lower fuel consumption and running costs?' : language === 'ar' ? 'هل تفضل استهلاكاً وتكاليف تشغيل أقل؟' : language === 'darija' ? 'كتفضل الصرف ومصاريف الاستعمال يكونو قليلين؟' : 'Souhaitez-vous privilégier une consommation et des coûts d’usage réduits ?',
-    options: [
-      { label: language === 'en' ? 'Yes, lower costs' : language === 'ar' ? 'نعم، تكاليف أقل' : language === 'darija' ? 'آه، مصاريف قليلة' : 'Oui, coûts réduits' },
-      { label: language === 'en' ? 'No preference' : language === 'ar' ? 'لا أفضلية' : language === 'darija' ? 'ما عنديش تفضيل' : 'Pas de préférence' },
-    ],
+    options: language === 'en'
+      ? [{ label: 'Economy & lower costs' }, { label: 'No preference' }]
+      : language === 'ar'
+        ? [{ label: 'توفير وتكاليف أقل' }, { label: 'لا أفضلية' }]
+        : language === 'darija'
+          ? [{ label: 'اقتصاد ومصاريف قليلة' }, { label: 'ما عنديش تفضيل' }]
+          : [{ label: 'Économie & coûts réduits' }, { label: 'Pas de préférence' }],
   };
   if (selectedDimension === 'praticite_urbaine') return {
     question: language === 'en' ? 'For city driving, do you prefer a compact car that is easy to park?' : language === 'ar' ? 'للاستعمال داخل المدينة، هل تفضل سيارة صغيرة وسهلة الركن؟' : language === 'darija' ? 'فالمدينة، كتفضل طوموبيل صغيرة وساهلة فالباركينغ؟' : 'Pour la ville, préférez-vous une voiture compacte et facile à garer ?',
     options: language === 'en'
-      ? [{ label: 'Yes, compact' }, { label: 'More space' }]
+      ? [{ label: 'Compact (easy to park)' }, { label: 'More interior space' }]
       : language === 'ar'
-        ? [{ label: 'نعم، سيارة صغيرة' }, { label: 'مساحة أكبر' }]
+        ? [{ label: 'حجم مدمج (سهل الركن)' }, { label: 'مساحة داخلية أكبر' }]
         : language === 'darija'
-          ? [{ label: 'آه، صغيرة' }, { label: 'بلاصة أكثر' }]
-          : [{ label: 'Oui, compacte' }, { label: 'Plus d’espace' }],
+          ? [{ label: 'صغيرة وساهلة فالركنة' }, { label: 'بلاصة أكثر' }]
+          : [{ label: 'Format compact (facile à garer)' }, { label: 'Plus d’espace intérieur' }],
   };
   if (selectedDimension === 'performance') return {
     question: language === 'en' ? 'Do you prioritize power and acceleration over lower running costs?' : language === 'ar' ? 'هل تفضل القوة والتسارع على انخفاض تكاليف التشغيل؟' : language === 'darija' ? 'كتفضل القوة والتسارع ولا مصاريف قليلة؟' : 'Privilégiez-vous la puissance et les reprises plutôt que les coûts d’usage réduits ?',
-    options: [
-      { label: language === 'en' ? 'Yes, performance' : language === 'ar' ? 'نعم، الأداء' : language === 'darija' ? 'آه، القوة' : 'Oui, performance' },
-      { label: language === 'en' ? 'No preference' : language === 'ar' ? 'لا أفضلية' : language === 'darija' ? 'ما عنديش تفضيل' : 'Pas de préférence' },
-    ],
+    options: language === 'en'
+      ? [{ label: 'Power and acceleration' }, { label: 'Lower running costs' }]
+      : language === 'ar'
+        ? [{ label: 'القوة والتسارع' }, { label: 'تكاليف تشغيل أقل' }]
+        : language === 'darija'
+          ? [{ label: 'القوة والتسارع' }, { label: 'مصاريف قليلة' }]
+          : [{ label: 'Puissance & reprises' }, { label: 'Coûts d’usage réduits' }],
   };
   if (selectedDimension === 'ecologie') return {
     question: language === 'en' ? 'Is hybrid or electric power a priority for you?' : language === 'ar' ? 'هل المحرك الهجين أو الكهربائي أولوية بالنسبة لك؟' : language === 'darija' ? 'واش الهجين ولا الكهربائي أولوية عندك؟' : 'La motorisation hybride ou électrique est-elle une priorité pour vous ?',
     options: language === 'en'
-      ? [{ label: 'Yes' }, { label: 'No preference' }]
+      ? [{ label: 'Hybrid or Electric' }, { label: 'Petrol / Diesel' }, { label: 'No preference' }]
       : language === 'ar'
-        ? [{ label: 'نعم' }, { label: 'لا أفضلية' }]
+        ? [{ label: 'هجين أو كهربائي' }, { label: 'بنزين / ديزل' }, { label: 'لا أفضلية' }]
         : language === 'darija'
-          ? [{ label: 'آه' }, { label: 'ما عنديش تفضيل' }]
-          : [{ label: 'Oui' }, { label: 'Pas de préférence' }],
+          ? [{ label: 'هجين ولا كهربائي' }, { label: 'ليصانص ولا مازوط' }, { label: 'ما عنديش تفضيل' }]
+          : [{ label: 'Hybride ou Électrique' }, { label: 'Essence / Diesel' }, { label: 'Pas de préférence' }],
   };
   if (selectedDimension === 'motricite') return {
-    question: language === 'en' ? 'Do you need four-wheel drive or genuine off-road capability?' : language === 'ar' ? 'هل تحتاج إلى دفع رباعي وقدرات حقيقية للطرق الوعرة؟' : language === 'darija' ? 'واش كتحتاج الدفع الرباعي ولا قدرات فالطرق الوعرة؟' : 'Avez-vous besoin d’une transmission intégrale ou de capacités tout-terrain ?',
-    options: language === 'en'
-      ? [{ label: 'Yes' }, { label: 'No preference' }]
+    question: language === 'en'
+      ? 'Do you need all-wheel drive (4x4 / AWD)?'
       : language === 'ar'
-        ? [{ label: 'نعم' }, { label: 'لا أفضلية' }]
+        ? 'هل تحتاج إلى دفع رباعي (4x4 / AWD)؟'
         : language === 'darija'
-          ? [{ label: 'آه' }, { label: 'ما عنديش تفضيل' }]
-          : [{ label: 'Oui' }, { label: 'Pas de préférence' }],
+          ? 'واش كتحتاج الدفع الرباعي (4x4)؟'
+          : 'Avez-vous besoin d’une transmission 4x4 / intégrale (AWD) ?',
+    options: language === 'en'
+      ? [{ label: 'Yes, 4x4 / AWD' }, { label: 'Standard (2WD)' }, { label: 'No preference' }]
+      : language === 'ar'
+        ? [{ label: 'دفع رباعي (4x4 / AWD)' }, { label: 'دفع ثنائي عادي (2WD)' }, { label: 'لا أفضلية' }]
+        : language === 'darija'
+          ? [{ label: 'دفع رباعي (4x4)' }, { label: 'دفع عادي (2WD)' }, { label: 'ما عنديش تفضيل' }]
+          : [{ label: '4x4 / Intégrale (AWD)' }, { label: '2 roues motrices (Standard)' }, { label: 'Pas de préférence' }],
   };
 
   if (!hasFuel && fuels.size > 1) return {
@@ -453,7 +472,7 @@ export class FastApiRecommendationClient implements RecommendationClient {
   }
 
   async applyAnswer(answer: string, history: ChatTurn[], remainingCars: Car[]): Promise<Car[]> {
-    // `history` already contains the current answer. Duplicating it made the
+        // `history` already contains the current answer. Duplicating it made the
     // recommender overweight the last criterion and prevented stable refinement.
     const query = history
       .map((turn) => `${turn.role}: ${turn.content}`)
@@ -584,8 +603,35 @@ export class FastApiRecommendationClient implements RecommendationClient {
       }), safetyRequested);
     }
 
+        // Motricite / Drivetrain constraint (4x4 vs 2WD)
+    const isAwdYes = /\b(4x4|awd|integrale|intégrale|دفع رباعي|رباعي)\b/i.test(answer)
+      && !/\b(no|non|pas|2wd|deux|ثنائي)\b/i.test(answer);
+    const isAwdNo = /\b(2wd|standard|2 roues|deux roues|دفع ثنائي|ثنائي)\b/i.test(answer)
+      || (/\b(no|non|pas besoin|لا)\b/i.test(answer) && /4x4|awd|transmission intégrale|off-road|الدفع الرباعي/i.test(previousAssistantQuestion));
+
+    if (isAwdYes) {
+      const currentMatches = scopedRemainingCars.filter((car) => Boolean(car.is_4x4));
+      if (currentMatches.length) return sortForSafety(currentMatches, safetyRequested);
+      const catalogueMatches = applyConversationConstraints(
+        await loadAllCatalogueVehicles(),
+        history.filter((turn) => turn.role === 'user').map((turn) => turn.content).join(' '),
+      ).filter((car) => Boolean(car.is_4x4));
+      return sortForSafety(catalogueMatches, safetyRequested);
+    } else if (isAwdNo) {
+      const currentMatches = scopedRemainingCars.filter((car) => !car.is_4x4);
+      if (currentMatches.length) return sortForSafety(currentMatches, safetyRequested);
+      const catalogueMatches = applyConversationConstraints(
+        await loadAllCatalogueVehicles(),
+        history.filter((turn) => turn.role === 'user').map((turn) => turn.content).join(' '),
+      ).filter((car) => !car.is_4x4);
+      return sortForSafety(catalogueMatches, safetyRequested);
+    }
+
     if (bodyPreference) {
-      const currentMatches = scopedRemainingCars.filter((car) => normalizeBodyType(car.body_type) === bodyPreference);
+      const currentMatches = scopedRemainingCars.filter((car) => {
+        if (bodyPreference === 'citadine' && SUPERCAR_BRANDS.has(normalizeBrandText(car.brand))) return false;
+        return normalizeBodyType(car.body_type) === bodyPreference;
+      });
       if (currentMatches.length) return sortForSafety(currentMatches, safetyRequested);
       const catalogueMatches = applyConversationConstraints(
         await loadAllCatalogueVehicles(),
@@ -774,6 +820,8 @@ function normalizeBodyType(bodyType?: string | null): string {
   if (/pick ?up|pickup|بيك/.test(normalized)) return 'pick_up';
   if (/monospace|mpv|van/.test(normalized)) return 'monospace';
   if (/utilitaire/.test(normalized)) return 'utilitaire';
+  if (/coupe|coupé|gt|sport|supercar|berlinetta/.test(normalized)) return 'coupe';
+  if (/cabriolet|convertible|spider|roadster/.test(normalized)) return 'cabriolet';
   return normalized.trim();
 }
 
@@ -793,7 +841,12 @@ function applyConversationConstraints(cars: Car[], userText: string): Car[] {
     constrained = constrained.filter((car) => normalizeBrandText(car.brand) === normalizeBrandText(requestedBrand.name));
   }
   if (bodyPreference) {
-    constrained = constrained.filter((car) => normalizeBodyType(car.body_type) === bodyPreference);
+    constrained = constrained.filter((car) => {
+      if (bodyPreference === 'citadine' && SUPERCAR_BRANDS.has(normalizeBrandText(car.brand))) {
+        return false;
+      }
+      return normalizeBodyType(car.body_type) === bodyPreference;
+    });
   } else if (isFamilyRequest(userText)) {
     constrained = constrained.filter((car) => FAMILY_BODY_TYPES.has(normalizeBodyType(car.body_type)));
   }

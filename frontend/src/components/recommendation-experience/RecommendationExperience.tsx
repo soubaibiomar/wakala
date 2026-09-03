@@ -110,6 +110,9 @@ export default function RecommendationExperience({ client = recommendationClient
         const isAutomotiveConsultation = /\b(what is|what does|explain|how does|why does|problem|issue|fault|warning light|maintenance|service|repair|engine|motor|dci|diesel common rail|oil change|brake|brakes|tyre|tire|battery|overheat|consumption)\b/i.test(message);
         const isRecommendation = detectedRecommendation || (recommendationActive && !isAutomotiveConsultation);
         if (!isRecommendation) {
+          // Clear any recommendation options so they don't linger under general answers
+          setOptions([]);
+          setRangeBounds(null);
           // Every automotive answer goes through the API. The complete prior
           // conversation is sent so follow-up questions retain their context.
           await answerGeneral(message, activeLanguage, messages);
@@ -353,18 +356,95 @@ function noMatchesMessage(language: ChatLanguage): string {
 
 function alignQuestionOptions(question: string, options: QuestionOption[], language: ChatLanguage): QuestionOption[] {
   const text = question.toLowerCase();
-  if (/(fuel|carburant|وقود)/i.test(text) && language === 'en') {
-    return [
-      { label: 'Petrol', value: 'essence' },
-      { label: 'Diesel', value: 'diesel' },
-      { label: 'Hybrid', value: 'hybride' },
-      { label: 'Electric', value: 'electrique' },
-    ];
+
+  // 1. Priorité Puissance vs Économie / Reprises
+  if (/(puissance.*(?:économie|conso|coût|reprises)|power.*(?:running costs|consumption|fuel economy)|(?:reprises|performance).*(?:conso|économie)|تسارع.*استهلاك|أداء.*اقتصاد|جهد.*صرف)/i.test(text)) {
+    return language === 'en'
+      ? [{ label: 'Power & performance first' }, { label: 'Fuel economy first' }, { label: 'Balanced compromise' }, { label: 'No preference' }]
+      : language === 'ar'
+        ? [{ label: 'أولوية القوة والتسارع' }, { label: 'أولوية التوفير والاقتصاد' }, { label: 'توازن معتدل' }, { label: 'لا أفضلية' }]
+        : language === 'darija'
+          ? [{ label: 'القوة والجهد أولاً' }, { label: 'الاقتصاد فالمصاريف أولاً' }, { label: 'حل متوازن' }, { label: 'ما عنديش تفضيل' }]
+          : [{ label: 'Priorité puissance & reprises' }, { label: 'Priorité économie de carburant' }, { label: 'Compromis équilibré' }, { label: 'Pas de préférence' }];
   }
-  if (/(use the car|mainly use|city driving,?\s*(highways|autoroute)|surtout en ville|ville,?\s*(sur autoroute|ou))/i.test(text) && language === 'en') {
-    return [{ label: 'Mostly city' }, { label: 'Mostly highway' }, { label: 'Both' }];
+
+  // 2. Format urbain / Compact vs Espace / Parking
+  if (/(gabarit|compact.*garer|facile à garer|voiture compacte|format de véhicule|compact car.*easy to park|صغيرة.*ركن|ساهلة فالركنة)/i.test(text)) {
+    return language === 'en'
+      ? [{ label: 'Compact (easy to park)' }, { label: 'More space' }, { label: 'No preference' }]
+      : language === 'ar'
+        ? [{ label: 'حجم مدمج (سهل الركن)' }, { label: 'مساحة أكبر' }, { label: 'لا أفضلية' }]
+        : language === 'darija'
+          ? [{ label: 'صغيرة وساهلة فالركنة' }, { label: 'بلاصة أكثر' }, { label: 'ما عنديش تفضيل' }]
+          : [{ label: 'Format compact (facile à garer)' }, { label: 'Plus d’espace' }, { label: 'Pas de préférence' }];
   }
-  return options;
+
+  // 3. Transmission / Boîte de vitesses
+  if (/(bo[îi]te|gearbox|automatique.*manuelle|manual.*automatic|ناقل الحركة|علبة السرعات|بواط)/i.test(text)) {
+    return language === 'en'
+      ? [{ label: 'Automatic' }, { label: 'Manual' }, { label: 'No preference' }]
+      : language === 'ar'
+        ? [{ label: 'أوتوماتيك' }, { label: 'يدوي' }, { label: 'لا أفضلية' }]
+        : language === 'darija'
+          ? [{ label: 'أوتوماتيك' }, { label: 'مانييل' }, { label: 'ما عنديش تفضيل' }]
+          : [{ label: 'Automatique' }, { label: 'Manuelle' }, { label: 'Pas de préférence' }];
+  }
+
+  // 4. Carburant / Énergie
+  if (/(carburant|fuel|motorisation|essence.*diesel|diesel.*essence|وقود|مازوط|ليصانص)/i.test(text)) {
+    return language === 'en'
+      ? [{ label: 'Diesel', value: 'diesel' }, { label: 'Petrol', value: 'essence' }, { label: 'Hybrid', value: 'hybride' }, { label: '100% Electric', value: 'electrique' }]
+      : language === 'ar'
+        ? [{ label: 'ديزل', value: 'diesel' }, { label: 'بنزين', value: 'essence' }, { label: 'هجين', value: 'hybride' }, { label: 'كهربائي بالكامل', value: 'electrique' }]
+        : language === 'darija'
+          ? [{ label: 'مازوط', value: 'diesel' }, { label: 'ليصانص', value: 'essence' }, { label: 'إيبريد', value: 'hybride' }, { label: 'كهربائي 100%', value: 'electrique' }]
+          : [{ label: 'Diesel', value: 'diesel' }, { label: 'Essence', value: 'essence' }, { label: 'Hybride', value: 'hybride' }, { label: '100% Électrique', value: 'electrique' }];
+  }
+
+  // 5. Transmission 4x4 / AWD
+  if (/(4x4|awd|intégrale|integrale|motricité|all-wheel drive|drivetrain|دفع رباعي)/i.test(text)) {
+    return language === 'en'
+      ? [{ label: '4x4 / All-Wheel Drive (AWD)', value: 'Yes, 4x4 / AWD' }, { label: 'Standard (2WD)', value: 'Standard (2WD)' }, { label: 'No preference', value: 'No preference' }]
+      : language === 'ar'
+        ? [{ label: 'دفع رباعي (4x4 / AWD)', value: 'دفع رباعي (4x4)' }, { label: 'دفع ثنائي عادي (2WD)', value: 'دفع ثنائي عادي' }, { label: 'لا أفضلية', value: 'لا أفضلية' }]
+        : language === 'darija'
+          ? [{ label: 'دفع رباعي (4x4)', value: '4x4' }, { label: 'دفع عادي (2WD)', value: 'دفع عادي (2WD)' }, { label: 'ما عنديش تفضيل', value: 'ما عنديش تفضيل' }]
+          : [{ label: '4x4 / Intégrale (AWD)', value: '4x4 / Intégrale' }, { label: '2 roues motrices (Standard)', value: '2 roues motrices (Standard)' }, { label: 'Pas de préférence', value: 'Pas de préférence' }];
+  }
+
+  // 6. Sécurité NCAP
+  if (/(sécurité|ncap|crash-test|safety|السلامة)/i.test(text)) {
+    return language === 'en'
+      ? [{ label: 'Highest NCAP rating (5★)', value: 'Highest NCAP rating' }, { label: 'Good safety (4★+)', value: 'Good safety' }, { label: 'No preference', value: 'no safety preference' }]
+      : language === 'ar'
+        ? [{ label: 'أعلى تقييم NCAP (5★)', value: 'أعلى تقييم NCAP' }, { label: 'سلامة جيدة (4★+)', value: 'سلامة جيدة' }, { label: 'لا أفضلية', value: 'لا أفضلية في السلامة' }]
+        : language === 'darija'
+          ? [{ label: 'أعلى نقطة NCAP (5★)', value: 'أعلى نقطة NCAP' }, { label: 'سلامة مزيانة (4★+)', value: 'سلامة مزيانة' }, { label: 'ما عنديش تفضيل', value: 'ما عنديش تفضيل فالسلامة' }]
+          : [{ label: 'Note NCAP maximale (5★)', value: 'Note NCAP maximale' }, { label: 'Bonne sécurité (4★+)', value: 'Bonne sécurité' }, { label: 'Pas de préférence', value: 'pas de préférence sécurité' }];
+  }
+
+  // 7. Usage (Ville / Autoroute / Mixte)
+  if (/(use the car|mainly use|city driving|surtout en ville|ville,?\s*(sur autoroute|ou)|usage.*principal|trajets?.*quotidiens?|فين غادي تسوق|استعمال)/i.test(text)) {
+    return language === 'en'
+      ? [{ label: 'Mostly city' }, { label: 'Mostly highway' }, { label: 'Both' }]
+      : language === 'ar'
+        ? [{ label: 'داخل المدينة' }, { label: 'في الطريق السيار' }, { label: 'الاثنين' }]
+        : language === 'darija'
+          ? [{ label: 'فالمدينة' }, { label: 'فالطريق السيار' }, { label: 'بجوج' }]
+          : [{ label: 'Ville' }, { label: 'Autoroute' }, { label: 'Mixte' }];
+  }
+
+  // 8. Nettoyage de tout préfixe "Oui, " / "Yes, " / "نعم، " résiduel pour que les options collent au sujet
+  return options.map((opt) => {
+    let cleanLabel = opt.label;
+    if (!/^(est-ce que|confirmez-vous|do you confirm|واش متأكد)/i.test(text)) {
+      cleanLabel = cleanLabel.replace(/^(?:Oui,?\s*|Yes,?\s*|نعم،?\s*|آه،?\s*)/i, '');
+      if (cleanLabel.length > 0) {
+        cleanLabel = cleanLabel.charAt(0).toUpperCase() + cleanLabel.slice(1);
+      }
+    }
+    return { ...opt, label: cleanLabel || opt.label };
+  });
 }
 
 function nextCriterion(language: ChatLanguage): string {
