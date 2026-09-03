@@ -270,8 +270,8 @@ export default function RecommendationExperience({ client = recommendationClient
   };
   return (
     <div className={`recommendation-experience recommendation-experience--${mode}${isCatalogue ? ' recommendation-experience--catalogue' : ''}`}>
-      {mode !== 'launcher' && mode !== 'immersive' && <div className="recommendation-experience__widget"><ChatPanel messages={visibleMessages} options={options} busy={busy} onSend={send} language={language} onLanguageSelect={selectLanguage} onVoiceInput={voice.toggle} voiceRecording={voice.recording} voiceBusy={voice.busy} voiceError={voice.error} catalogueMode={isCatalogue} rangeBounds={rangeBounds} onReset={resetChat} onRangeSelect={(min, max, label) => void send(label === 'Budget catalogue' ? `budget between ${min} and ${max} MAD` : `${label} between ${min} and ${max}`)} /></div>}
-      {mode === 'immersive' && <main className="recommendation-experience__immersive"><CarResultsPanel cars={cars} immersive /><ChatPanel messages={visibleMessages} options={options} busy={busy} onSend={send} language={language} onLanguageSelect={selectLanguage} onVoiceInput={voice.toggle} voiceRecording={voice.recording} voiceBusy={voice.busy} voiceError={voice.error} catalogueMode={isCatalogue} rangeBounds={rangeBounds} onReset={resetChat} onRangeSelect={(min, max, label) => void send(label === 'Budget catalogue' ? `budget between ${min} and ${max} MAD` : `${label} between ${min} and ${max}`)} /></main>}
+      {mode !== 'launcher' && mode !== 'immersive' && <div className="recommendation-experience__widget"><ChatPanel messages={visibleMessages} options={options} busy={busy} onSend={send} language={language} onLanguageSelect={selectLanguage} onVoiceInput={voice.toggle} voiceRecording={voice.recording} voiceBusy={voice.busy} voiceError={voice.error} catalogueMode={isCatalogue} rangeBounds={rangeBounds} onReset={resetChat} onRangeSelect={(min, max, label) => language && void send(formatRangeAnswer(language, min, max, label), language)} /></div>}
+      {mode === 'immersive' && <main className="recommendation-experience__immersive"><CarResultsPanel cars={cars} immersive /><ChatPanel messages={visibleMessages} options={options} busy={busy} onSend={send} language={language} onLanguageSelect={selectLanguage} onVoiceInput={voice.toggle} voiceRecording={voice.recording} voiceBusy={voice.busy} voiceError={voice.error} catalogueMode={isCatalogue} rangeBounds={rangeBounds} onReset={resetChat} onRangeSelect={(min, max, label) => language && void send(formatRangeAnswer(language, min, max, label), language)} /></main>}
       {mode !== 'immersive' && (!isCatalogue || showCatalogueBubble) && <ChatBubbleIcon open={mode === 'widget'} onClick={open} />}
     </div>
   );
@@ -346,6 +346,14 @@ function alignQuestionOptions(question: string, options: QuestionOption[], langu
 
 function nextCriterion(language: ChatLanguage): string {
   return { fr: 'Quel critère compte le plus pour vous ?', darija: 'شنو هو المعيار اللي مهم أكثر بالنسبة ليك؟', ar: 'ما هو المعيار الأهم بالنسبة لك؟', en: 'Which criterion matters most to you?' }[language];
+}
+
+function formatRangeAnswer(language: ChatLanguage, min: number, max: number, label: string): string {
+  const isBudget = /budget catalogue/i.test(label);
+  if (language === 'fr') return isBudget ? `budget entre ${min} et ${max} MAD` : `${label} entre ${min} et ${max}`;
+  if (language === 'ar') return isBudget ? `الميزانية بين ${min} و${max} درهم` : `${label} بين ${min} و${max}`;
+  if (language === 'darija') return isBudget ? `الميزانية بين ${min} و${max} درهم` : `${label} بين ${min} و${max}`;
+  return isBudget ? `budget between ${min} and ${max} MAD` : `${label} between ${min} and ${max}`;
 }
 
 function retryMessage(language: ChatLanguage): string {

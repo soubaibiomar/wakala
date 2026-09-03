@@ -81,7 +81,7 @@ Les variables sont déclarées dans `backend/app/core/config.py`. Les secrets vo
 | `QDRANT_COLLECTION` | requise | Collection vectorielle | `vehicle_embeddings` |
 | `OPENROUTER_API_KEY` | requise chatbot | Authentification LLM | Clé créée dans OpenRouter |
 | `OPENROUTER_BASE_URL` | requise | Endpoint LLM | `https://openrouter.ai/api/v1` |
-| `OPENROUTER_MODEL` | optionnelle | Modèle primaire/compatibilité LangChain | `nvidia/nemotron-3.5-lightning:free` |
+| `OPENROUTER_MODEL` | optionnelle | Modèle primaire/compatibilité LangChain | `liquid/lfm-2.5-2.6b:free` |
 | `OPENROUTER_MODELS` | optionnelle | Liste native de fallback | Liste de la Section 7 |
 | `EMBEDDING_MODEL` | optionnelle | Étiquette de l’embedder local déterministe | `hash-1024` |
 | `GOOGLE_CLIENT_ID` | optionnelle | Google Sign-In | Laisser vide si désactivé |
@@ -210,11 +210,11 @@ Après chaque modification de `VITE_API_URL`, redéployer. Pour les routes direc
 Dans `backend/app/core/config.py` :
 
 ```diff
--    OPENROUTER_MODEL: str = "nvidia/nemotron-3.5-lightning:free"
-+    OPENROUTER_MODEL: str = "nvidia/nemotron-3.5-lightning:free"
+-    OPENROUTER_MODEL: str = "liquid/lfm-2.5-2.6b:free"
++    OPENROUTER_MODEL: str = "liquid/lfm-2.5-2.6b:free"
 +    OPENROUTER_MODELS: list[str] = [
-+        "nvidia/nemotron-3.5-lightning:free",
-+        "google/gemma-4-31b-it:free",
++        "liquid/lfm-2.5-2.6b:free",
++        "minimax/minimax-m3:free",
 +        "openrouter/free",
 +    ]
 ```

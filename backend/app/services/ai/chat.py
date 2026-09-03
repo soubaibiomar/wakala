@@ -33,7 +33,7 @@ except ImportError:
 from app.core.config import settings
 from app.services.ai.qdrant import get_qdrant_client
 
-async def _stream_openrouter_direct(messages_payload: list[dict]) -> AsyncIterable[str]:
+async def _stream_openrouter_direct(messages_payload: list[dict], fallback_text: str) -> AsyncIterable[str]:
     """Stream des tokens depuis OpenRouter sans fournisseur local de secours."""
     headers = {
         "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
@@ -82,7 +82,7 @@ async def _stream_openrouter_direct(messages_payload: list[dict]) -> AsyncIterab
         should_fallback = True
 
     if should_fallback or not yielded_any:
-        yield "Le service IA est temporairement indisponible. Veuillez réessayer."
+        yield fallback_text
 
 
 def get_llm():
@@ -1134,9 +1134,33 @@ async def chat_stream(message: str, history: List[Dict[str, str]], language: Opt
             
     raw_messages.append({"role": "user", "content": remove_emojis(clean_message)})
     
+    # Keep discovery requests deterministic even when the LLM is unavailable:
+    # the UI must receive exactly one localized question to continue the flow.
+    is_discovery_request = intent == "car_search" or bool(re.search(
+        r"\b(family|famille|familiale|familial|suv|vehicle|voiture|car|acheter|budget|recommend|recommande|cherche)\b",
+        clean_message,
+        re.IGNORECASE,
+    ))
+
     # 6. Stream de génération avec filtrage systématique d'emojis et des balises de réflexion (<think>)
     if settings.OPENROUTER_API_KEY:
-        stream_source = _stream_openrouter_direct(raw_messages)
+        if is_discovery_request:
+            fallback_text = {
+                "french": "Quel est votre budget maximum pour cette voiture ?",
+                "english": "What is your maximum budget for this car?",
+                "arabic": "ما هي ميزانيتك القصوى لهذه السيارة؟",
+                "darija_ar": "شحال هي الميزانية القصوى ديالك لهاد الطوموبيل؟",
+                "darija_lat": "Ch7al hiya l-budget maximum dyalek l had tomobil?",
+            }.get(detected_lang, "What is your maximum budget for this car?")
+        else:
+            fallback_text = {
+                "french": "Je peux vous aider avec votre question automobile. Pouvez-vous préciser votre besoin ?",
+                "english": "I can help with your automotive question. Could you clarify what you need?",
+                "arabic": "يمكنني مساعدتك في سؤالك عن السيارات. هل يمكنك توضيح حاجتك؟",
+                "darija_ar": "نقدر نعاونك فالسؤال ديالك على السيارات. واش تقدر توضح ليا الحاجة ديالك؟",
+                "darija_lat": "N9der n3awnek f sou2al dyalek 3la tomobilat. Wach t9der توضح l7aja dyalek?",
+            }.get(detected_lang, "I can help with your automotive question. Could you clarify what you need?")
+        stream_source = _stream_openrouter_direct(raw_messages, fallback_text)
     else:
         messages = [
             SystemMessage(content=m["content"]) if m["role"] == "system"
@@ -1210,3 +1234,15 @@ async def chat_stream(message: str, history: List[Dict[str, str]], language: Opt
         final_clean = remove_emojis(final_clean)
         if final_clean.strip():
             yield final_clean
+
+    # Some free providers spend the entire budget on hidden reasoning even
+    # when reasoning exclusion is requested. Never leave the UI empty in that
+    # case: return one localized, useful next step.
+    if not started_yielding and is_discovery_request:
+        yield {
+            "french": "Quel est votre budget maximum pour cette voiture ?",
+            "english": "What is your maximum budget for this car?",
+            "arabic": "ما هي ميزانيتك القصوى لهذه السيارة؟",
+            "darija_ar": "شحال هي الميزانية القصوى ديالك لهاد الطوموبيل؟",
+            "darija_lat": "Ch7al hiya l-budget maximum dyalek l had tomobil?",
+        }.get(detected_lang, "What is your maximum budget for this car?")

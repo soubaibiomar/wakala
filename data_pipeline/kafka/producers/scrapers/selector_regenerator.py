@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
 OPENROUTER_MODELS = [
-    "nvidia/nemotron-3.5-lightning:free",
-    "google/gemma-4-31b-it:free",
+    "liquid/lfm-2.5-2.6b:free",
+    "minimax/minimax-m3:free",
     "openrouter/free",
 ]
 from langchain_core.messages import SystemMessage, HumanMessage

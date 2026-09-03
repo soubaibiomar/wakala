@@ -88,10 +88,10 @@ class Settings(BaseSettings):
     # ─── OpenRouter cloud LLMs with native provider fallback ────────────────
     OPENROUTER_API_KEY: str = ""
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
-    OPENROUTER_MODEL: str = "nvidia/nemotron-3.5-lightning:free"
+    OPENROUTER_MODEL: str = "liquid/lfm-2.5-2.6b:free"
     OPENROUTER_MODELS: list[str] = [
-        "nvidia/nemotron-3.5-lightning:free",
-        "google/gemma-4-31b-it:free",
+        "liquid/lfm-2.5-2.6b:free",
+        "minimax/minimax-m3:free",
         "openrouter/free",
     ]
 

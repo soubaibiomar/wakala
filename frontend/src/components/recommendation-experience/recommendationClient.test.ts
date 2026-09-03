@@ -62,6 +62,10 @@ describe('FastApiRecommendationClient recommendation logic', () => {
   it('keeps a French family-car request inside the one-question flow', async () => {
     const client = new FastApiRecommendationClient();
     client.setLanguage('fr');
+    mockGetVehicles.mockResolvedValue({
+      items: [car({ price: 200000 })],
+      pages: 1,
+    });
     await expect(client.detectRecommendationIntent('je veux une voiture familiale')).resolves.toBe(true);
     const question = await client.getNextQuestion(
       history('je veux une voiture familiale', 'question'),

@@ -10,8 +10,8 @@ OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/ap
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "")
 OPENROUTER_MODELS = [
-    "nvidia/nemotron-3.5-lightning:free",
-    "google/gemma-4-31b-it:free",
+    "liquid/lfm-2.5-2.6b:free",
+    "minimax/minimax-m3:free",
     "openrouter/free",
 ]
 
