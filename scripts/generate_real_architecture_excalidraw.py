@@ -545,7 +545,7 @@ def build_architecture_diagram():
             "Marketplaces: Avito.ma, Moteur.ma, Wandaloo, Spoticar, Otoclic, Kifal",
             "Concessionnaires Neufs: Dacia Maroc, Renault Maroc",
             "Priorité JSON-LD: Extraction structurée sans IA quand possible",
-            "Fallback LLM: Extraction Pydantic via GPT/Qwen si pas de JSON-LD",
+            "Fallback LLM: Extraction Pydantic via OpenRouter si pas de JSON-LD",
             "Service Quarantaine: Détection anomalies de prix avant injection",
             "Kafka Producer: Publication des annonces brutes dans listings.raw"
         ],

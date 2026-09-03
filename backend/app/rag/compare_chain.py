@@ -71,6 +71,7 @@ class CompareChain:
                     base_url=settings.OPENROUTER_BASE_URL,
                     api_key=settings.OPENROUTER_API_KEY,
                     model=settings.OPENROUTER_MODEL,
+                    extra_body={"models": settings.OPENROUTER_MODELS},
                     temperature=0.3,
                     max_tokens=500,
                     default_headers={
@@ -79,13 +80,7 @@ class CompareChain:
                     }
                 )
             else:
-                self._llm = ChatOpenAI(
-                    base_url=settings.OLLAMA_BASE_URL,
-                    api_key=settings.OPENAI_API_KEY,
-                    model=settings.OLLAMA_MODEL_TEXT,
-                    temperature=0.3,
-                    max_tokens=500,
-                )
+                raise RuntimeError("OPENROUTER_API_KEY is not configured")
         return self._llm
 
     async def generate_comparison(self, vehicles: list[dict]) -> str:

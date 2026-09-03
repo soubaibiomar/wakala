@@ -46,6 +46,11 @@ export interface Vehicle {
   fuel_consumption?: number;
   co2_emissions?: number;
   length_cm?: number;
+  width_cm?: number;
+  height_cm?: number;
+  official_consumption?: number;
+  real_consumption?: number;
+  electric_range_km?: number;
   is_4x4?: boolean;
   engine_type?: string;
   condition?: string;
@@ -79,6 +84,11 @@ export interface VehicleFilters {
   year_min?: number;
   year_max?: number;
   mileage_max?: number;
+  doors?: number;
+  seats?: number;
+  color?: string;
+  min_engine_power?: number;
+  is_4x4?: boolean;
   condition?: 'neuf' | 'occasion' | string;
   sort_by?: string;
   sort_order?: 'asc' | 'desc';

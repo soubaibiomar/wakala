@@ -8,12 +8,12 @@ files = [
 ]
 
 replacements = [
-    (r"(?i)\bGPT-4\b", "Qwen 3 (8B)"),
-    (r"(?i)\bGPT 4\b", "Qwen 3 (8B)"),
-    (r"(?i)\bLlama 3\.3\b", "Qwen 2.5 Coder"),
-    (r"(?i)\bLlama\b", "Qwen"),
-    (r"(?i)\bGroq\b", "Ollama"),
-    (r"(?i)\bOpenAI\b", "Ollama")
+    (r"(?i)\bGPT-4\b", "OpenRouter cloud model"),
+    (r"(?i)\bGPT 4\b", "OpenRouter cloud model"),
+    (r"(?i)\bLlama 3\.3\b", "OpenRouter fallback model"),
+    (r"(?i)\bLlama\b", "OpenRouter model"),
+    (r"(?i)\bGroq\b", "OpenRouter"),
+    (r"(?i)\bOpenAI\b", "OpenRouter")
 ]
 
 for filepath in files:

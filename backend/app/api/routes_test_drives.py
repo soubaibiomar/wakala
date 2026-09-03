@@ -26,7 +26,7 @@ class TestDriveRequest(BaseModel):
     email: Optional[str] = None
     city: str = Field(..., min_length=2, max_length=100)
     preferred_date: Optional[str] = None
-    message: Optional[str] = None
+    message: Optional[str] = Field(None, max_length=2000)
     cndp_consent_accepted: bool = Field(..., description="Consentement CNDP Loi 09-08")
 
     @field_validator("phone_number")
@@ -48,7 +48,7 @@ class QuoteProformaRequest(BaseModel):
     phone_number: str = Field(..., description="Numéro marocain")
     email: Optional[str] = None
     city: str = Field(..., min_length=2, max_length=100)
-    company_name: Optional[str] = None
+    company_name: Optional[str] = Field(None, max_length=255)
     cndp_consent_accepted: bool = True
 
     @field_validator("phone_number")

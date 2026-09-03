@@ -1,7 +1,10 @@
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException, Body, Request
 from fastapi.responses import StreamingResponse
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Literal
+import hashlib
+import json
+import time
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
@@ -11,15 +14,31 @@ from app.core.limiter import limiter
 from app.models.user import User
 
 class ChatMessagePayload(BaseModel):
-    role: str
-    content: str
+    role: Literal['user', 'assistant']
+    content: str = Field(..., min_length=1, max_length=5000)
 
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=500, description="Message utilisateur")
-    history: List[ChatMessagePayload] = Field(default_factory=list, description="Historique du chat")
-    session_id: Optional[str] = None
+    history: List[ChatMessagePayload] = Field(default_factory=list, max_length=30, description="Historique du chat")
+    session_id: Optional[str] = Field(None, max_length=64)
+    language: Optional[str] = Field(default=None, pattern="^(fr|en|ar|darija)$", description="Langue active sélectionnée (fr, en, ar, darija)")
 
 router = APIRouter()
+
+# Short-lived process cache for identical turns. The key includes the full
+# conversation and language, so a cached answer cannot leak between contexts.
+_CHAT_CACHE: dict[str, tuple[float, str]] = {}
+_CHAT_CACHE_TTL = 300
+_CHAT_CACHE_MAX = 256
+
+
+def _chat_cache_key(payload: ChatRequest) -> str:
+    raw = json.dumps({
+        "message": payload.message.strip(),
+        "history": [item.model_dump() for item in payload.history],
+        "language": payload.language,
+    }, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 @router.post("/chat")
 @limiter.limit("10/minute")
@@ -36,22 +55,36 @@ async def chat_endpoint(
     """
     message = payload.message
     history = [{"role": msg.role, "content": msg.content} for msg in payload.history]
+    language = payload.language
+    cache_key = _chat_cache_key(payload)
     
     # Define an async generator wrapper to save history
     async def stream_and_save():
         full_response = ""
+        cached = _CHAT_CACHE.get(cache_key)
+        if cached and time.monotonic() - cached[0] < _CHAT_CACHE_TTL:
+            yield cached[1]
+            full_response = cached[1]
+        else:
         # 1. Obtenir un itérateur asynchrone
-        iterator = chat_stream(message, history)
+            iterator = chat_stream(message, history, language=language)
+
         
         # 2. Renvoyer les chunks au client
-        try:
-            async for chunk in iterator:
-                full_response += chunk
-                yield chunk
-        except Exception as e:
-            import logging
-            logging.getLogger(__name__).error(f"Chat streaming error: {e}", exc_info=True)
-            yield "\n[Désolé, une difficulté technique temporaire est survenue. Veuillez réessayer.]"
+            try:
+                async for chunk in iterator:
+                    full_response += chunk
+                    yield chunk
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"Chat streaming error: {e}", exc_info=True)
+                yield "\n[Désolé, une difficulté technique temporaire est survenue. Veuillez réessayer.]"
+
+            if full_response:
+                _CHAT_CACHE[cache_key] = (time.monotonic(), full_response)
+                if len(_CHAT_CACHE) > _CHAT_CACHE_MAX:
+                    oldest_key = min(_CHAT_CACHE, key=lambda key: _CHAT_CACHE[key][0])
+                    _CHAT_CACHE.pop(oldest_key, None)
             
         # 3. Sauvegarder en DB après complétion
         if current_user:
@@ -125,4 +158,3 @@ async def get_chat_history(
         })
         
     return response
-

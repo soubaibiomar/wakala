@@ -112,7 +112,9 @@ async def upload_avatar(
     filepath = os.path.join("uploads", "avatars", filename)
     
     with open(filepath, "wb") as buffer:
-        content = await file.read()
+        content = await file.read(2 * 1024 * 1024 + 1)
+        if len(content) > 2 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="L'image est trop volumineuse (maximum 2MB).")
         buffer.write(content)
         
     current_user.avatar_url = f"/uploads/avatars/{filename}"

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import type { SourceRef } from './useChatSession';
 import styles from './chatbot.module.css';
+import { CATALOGUE_IMAGE_FALLBACK } from '../../utils/vehicleImageResolver';
 
 interface SourceVehicleCardProps {
   source: SourceRef;
@@ -22,7 +23,15 @@ export default function SourceVehicleCard({ source }: SourceVehicleCardProps) {
       title={`Voir le détail de ${source.vehicle_title || 'ce véhicule'}`}
     >
       {source.image_url ? (
-        <img src={source.image_url} alt={source.vehicle_title} className={styles.sourceCardImage} />
+        <img
+          src={source.image_url}
+          alt={source.vehicle_title}
+          className={styles.sourceCardImage}
+          onError={(event) => {
+            event.currentTarget.onerror = null;
+            event.currentTarget.src = CATALOGUE_IMAGE_FALLBACK;
+          }}
+        />
       ) : (
         <div className={styles.sourceCardIcon}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

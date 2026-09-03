@@ -15,6 +15,7 @@ import { vehicleService } from '../services/vehicleService';
 import type { Vehicle } from '../types/vehicle';
 import VehicleCard from '../components/vehicle-card/VehicleCard';
 import { POPULAR_BRANDS } from '../constants/brands';
+import { CATALOGUE_IMAGE_FALLBACK, resolveVehicleImage } from '../utils/vehicleImageResolver';
 
 import HeroCar from '../components/hero/HeroCar';
 import './Home.css';
@@ -37,6 +38,48 @@ interface CarSectionProps {
     condition?: 'neuf';  // PIVOT: occasion removed
   };
   emptyMessage: string;
+}
+
+const HOME_BUDGET_OPTIONS = [
+  { label: 'Moins de 150 000 MAD', max: 150000, brand: 'Dacia', model: 'Sandero' },
+  { label: 'Moins de 250 000 MAD', max: 250000, brand: 'Renault', model: 'Clio' },
+  { label: 'Moins de 350 000 MAD', max: 350000, brand: 'Peugeot', model: '208' },
+  { label: 'Moins de 500 000 MAD', max: 500000, brand: 'Toyota', model: 'Corolla' },
+  { label: 'Moins de 750 000 MAD', max: 750000, brand: 'BMW', model: 'X3' },
+  { label: 'Tous les budgets', max: null, brand: 'Aston Martin', model: 'DB12' },
+];
+
+function HomeBudgetBrowser() {
+  return (
+    <section className="home-budget-browser" aria-labelledby="home-budget-title">
+      <div className="home-budget-browser__heading">
+        <span>EXPLORER LE CATALOGUE</span>
+        <h2 id="home-budget-title">Parcourir par budget</h2>
+      </div>
+      <div className="home-budget-browser__grid">
+        {HOME_BUDGET_OPTIONS.map((option) => (
+          <Link
+            key={option.label}
+            className="home-budget-browser__card"
+            to={option.max ? `/catalogue?price_max=${option.max}` : '/catalogue'}
+          >
+            <span className="home-budget-browser__image">
+              <img
+                src={resolveVehicleImage(option.brand, option.model)}
+                alt=""
+                aria-hidden="true"
+                onError={(event) => {
+                  event.currentTarget.onerror = null;
+                  event.currentTarget.src = CATALOGUE_IMAGE_FALLBACK;
+                }}
+              />
+            </span>
+            <span>{option.label}</span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 function CarSection({ id, tag, title, subtitle, fetchParams, emptyMessage }: CarSectionProps) {
@@ -290,6 +333,7 @@ export default function Home() {
   return (
     <>
       <HeroCar />
+      <HomeBudgetBrowser />
 
       <BrandsSection />
       {/* PIVOT: Replaced "Véhicules d'Occasion" with "Véhicules Neufs" */}

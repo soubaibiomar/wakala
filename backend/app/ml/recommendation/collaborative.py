@@ -2,7 +2,7 @@ from functools import lru_cache
 from typing import Optional
 
 import numpy as np
-from sqlalchemy import select, text
+from sqlalchemy import bindparam, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -150,8 +150,7 @@ async def _aggregate_neighbor_scores(
     if not similar_users:
         return scores
 
-    placeholders = ", ".join(f"'{uid}'" for uid in similar_users)
-    query = text(f"""
+    query = text("""
         SELECT vehicle_id, SUM(
             CASE
                 WHEN action = 'favorite' THEN 0.5
@@ -163,11 +162,11 @@ async def _aggregate_neighbor_scores(
             END
         ) AS similarity_score
         FROM interactions
-        WHERE user_id IN ({placeholders})
+        WHERE user_id IN :user_ids
         GROUP BY vehicle_id
         ORDER BY similarity_score DESC
-    """)
-    result = await db.execute(query)
+    """).bindparams(bindparam("user_ids", expanding=True))
+    result = await db.execute(query, {"user_ids": similar_users})
     for row in result.fetchall():
         vid = str(row[0])
         score = float(row[1])

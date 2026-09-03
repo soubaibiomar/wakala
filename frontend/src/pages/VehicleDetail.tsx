@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Box, Sparkles, Compass, Scale, MapPin, CreditCard } from 'lucide-react';
+import { Box } from 'lucide-react';
 import { vehicleService, reviewService } from '../services/vehicleService';
 import { vehicleOptionsService, type VehicleConfiguratorData, type VehicleColorItem, type VehicleOptionItem } from '../services/vehicleOptionsService';
 import { pricingService } from '../services/pricingService';
@@ -24,6 +24,7 @@ import VehicleSEO from '../components/seo/VehicleSEO';
 import VehicleStructuredData from '../components/seo/VehicleStructuredData';
 import BreadcrumbStructuredData from '../components/seo/BreadcrumbStructuredData';
 import FormattedDescription from '../components/formatted-description/FormattedDescription';
+import { resolveVehicleImage } from '../utils/vehicleImageResolver';
 
 import './VehicleDetail.css';
 
@@ -169,8 +170,10 @@ function DetailedTechSpecs({ vehicle }: { vehicle: Vehicle }) {
       category: "Écologie & Sécurité",
       items: [
         { label: "Sécurité Crash-Test", value: vehicle.ncap_rating || "Non testé" },
-        { label: "Consommation mixte", value: vehicle.fuel_consumption ? `${vehicle.fuel_consumption} L/100km` : '—' },
+        { label: "Consommation officielle", value: vehicle.official_consumption ? `${vehicle.official_consumption} L/100km` : (vehicle.fuel_consumption ? `${vehicle.fuel_consumption} L/100km` : '—') },
+        { label: "Consommation réelle", value: vehicle.real_consumption ? `${vehicle.real_consumption} L/100km` : '—' },
         { label: "Émissions CO2", value: vehicle.co2_emissions ? `${vehicle.co2_emissions} g/km` : '—' },
+        { label: "Autonomie électrique", value: vehicle.electric_range_km ? `${vehicle.electric_range_km} km` : '—' },
       ]
     },
     {
@@ -179,6 +182,8 @@ function DetailedTechSpecs({ vehicle }: { vehicle: Vehicle }) {
         { label: "Type de carrosserie", value: BODY_LABELS[vehicle.body_type] || vehicle.body_type },
         { label: "Volume du coffre", value: vehicle.trunk_volume_l ? `${vehicle.trunk_volume_l} Litres` : '—' },
         { label: "Longueur hors-tout", value: vehicle.length_cm ? `${vehicle.length_cm} cm` : '—' },
+        { label: "Largeur hors-tout", value: vehicle.width_cm ? `${vehicle.width_cm} cm` : '—' },
+        { label: "Hauteur hors-tout", value: vehicle.height_cm ? `${vehicle.height_cm} cm` : '—' },
         { label: "Nombre de portes", value: String(vehicle.doors) },
         { label: "Nombre de places", value: String(vehicle.seats) },
       ]
@@ -249,14 +254,14 @@ function WakalaScoresSection({ scores }: { scores?: import('../services/vehicleO
   if (!scores || !scores.overall_score) return null;
 
   const scoreItems = [
-    { label: "Espace à bord", score: scores.space_score, icon: "💺" },
-    { label: "Sécurité", score: scores.safety_score, icon: "🛡️" },
-    { label: "Coût réel d'usage", score: scores.real_cost_score, icon: "💰" },
-    { label: "Prix d'accès", score: scores.access_price_score, icon: "🏷️" },
-    { label: "Pratique en ville", score: scores.city_practicality_score, icon: "🏙️" },
-    { label: "Performance", score: scores.performance_score, icon: "⚡" },
-    { label: "Écologie & Conso", score: scores.ecology_score, icon: "🌿" },
-    { label: "Tout terrain", score: scores.offroad_score, icon: "🏔️" },
+    { label: "Espace à bord", score: scores.space_score },
+    { label: "Sécurité", score: scores.safety_score },
+    { label: "Coût réel d'usage", score: scores.real_cost_score },
+    { label: "Prix d'accès", score: scores.access_price_score },
+    { label: "Pratique en ville", score: scores.city_practicality_score },
+    { label: "Performance", score: scores.performance_score },
+    { label: "Écologie & Conso", score: scores.ecology_score },
+    { label: "Tout terrain", score: scores.offroad_score },
   ].filter(item => item.score !== undefined && item.score !== null);
 
   return (
@@ -286,7 +291,7 @@ function WakalaScoresSection({ scores }: { scores?: import('../services/vehicleO
           background: 'var(--accent-gold)', color: '#0f1a2b',
           borderRadius: 'var(--radius-pill)', fontWeight: 800, fontSize: '1.2rem',
         }}>
-          <span>★ {scores.overall_score.toFixed(1)} / 5</span>
+          <span>{scores.overall_score.toFixed(1)} / 5</span>
         </div>
       </div>
 
@@ -303,7 +308,7 @@ function WakalaScoresSection({ scores }: { scores?: import('../services/vehicleO
             border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: 6
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-              <span style={{ color: 'var(--text-secondary)' }}>{item.icon} {item.label}</span>
+              <span style={{ color: 'var(--text-secondary)' }}>{item.label}</span>
               <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{item.score?.toFixed(1)} / 5</span>
             </div>
             <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
@@ -508,6 +513,7 @@ function VehicleConfiguratorSection({
       })}
 
       {/* 3. Récapitulatif Total du Configurateur */}
+      {totalPrice > 0 && (
       <div style={{
         marginTop: 24, padding: '16px 20px', background: 'var(--bg-elevated)',
         borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -525,6 +531,7 @@ function VehicleConfiguratorSection({
           </div>
         </div>
       </div>
+      )}
     </motion.div>
   );
 }
@@ -649,6 +656,11 @@ export default function VehicleDetail() {
   if (loading) return <DetailSkeleton />;
   if (error || !vehicle) return <DetailError message={error || fr.error.notFound} />;
 
+  const isNewCatalogueVehicle = vehicle.condition === 'new' || vehicle.mileage === 0;
+  const catalogueImage = resolveVehicleImage(vehicle.brand, vehicle.model);
+  const publishedPrice = Number(vehicle.price);
+  const hasPublishedPrice = Number.isFinite(publishedPrice) && publishedPrice > 0;
+
   return (
     <>
       <VehicleSEO vehicle={vehicle} />
@@ -677,7 +689,17 @@ export default function VehicleDetail() {
                   marginBottom: 'var(--space-lg)', overflow: 'hidden',
                 }}
               >
-                {vehicle.images && vehicle.images.length > 0 ? (
+                {isNewCatalogueVehicle ? (
+                  <img
+                    src={catalogueImage}
+                    alt={`${vehicle.brand} ${vehicle.model}`}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 24 }}
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : vehicle.images && vehicle.images.length > 0 ? (
                   <>
                     <img src={vehicle.images[currentImageIndex].file_path} alt={vehicle.model} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     {vehicle.images.length > 1 && (
@@ -691,28 +713,16 @@ export default function VehicleDetail() {
                     </div>
                   </>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.4 }}>
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" />
-                      <circle cx="7" cy="17" r="2" />
-                      <path d="M9 17h6" />
-                      <circle cx="17" cy="17" r="2" />
-                    </svg>
-                    <span style={{ marginTop: 12, fontWeight: 600, fontSize: '0.9rem' }}>Image non disponible</span>
-                  </div>
+                  <img
+                    src={resolveVehicleImage(vehicle.brand, vehicle.model)}
+                    alt={`${vehicle.brand} ${vehicle.model}`}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 24 }}
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.style.display = 'none';
+                    }}
+                  />
                 )}
-
-                <div style={{ position: 'absolute', top: 16, left: 16, display: 'flex' }}>
-                    <span style={{
-                      padding: '8px 14px', borderRadius: 'var(--radius-pill)',
-                      fontSize: '0.8rem', fontWeight: 600,
-                      background: 'rgba(217, 119, 6, 0.1)', color: '#d97706',
-                      border: '1px solid rgba(217, 119, 6, 0.3)',
-                      boxShadow: 'var(--shadow-sm)',
-                    }}>
-                      ✨ Neuf Maroc 2026 (0 km)
-                    </span>
-                </div>
 
                 {canConfigure3D && (
                   <button
@@ -807,11 +817,13 @@ export default function VehicleDetail() {
                   </p>
                 )}
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: 4 }}>
-                  <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-gold)' }}>
-                    {vehicle.price.toLocaleString('fr-FR')} {fr.vehicle.mad}
+                {hasPublishedPrice && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: 4 }}>
+                    <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--accent-gold)' }}>
+                      {publishedPrice.toLocaleString('fr-FR')} {fr.vehicle.mad}
+                    </div>
                   </div>
-                </div>
+                )}
 
 
 
@@ -886,15 +898,14 @@ export default function VehicleDetail() {
 
           {/* ─── CONTEXTUAL SEMANTIC MESH (SEO & GEO) ────────── */}
           <div style={{ marginTop: '40px', padding: '24px', background: 'var(--bg-surface)', borderRadius: 'var(--radius-card)', border: '1px solid var(--border-subtle)' }}>
-            <h3 style={{ fontSize: '1.15rem', color: 'var(--text-primary)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Compass size={18} color="var(--accent-gold)" /> Maillage Sémantique &amp; Univers {vehicle.brand}
+            <h3 style={{ fontSize: '1.15rem', color: 'var(--text-primary)', marginBottom: '16px' }}>
+              Maillage Sémantique &amp; Univers {vehicle.brand}
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
               <Link
                 to={`/marque/${vehicle.brand.toLowerCase()}`}
                 style={{ padding: '12px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid var(--border-subtle)', textDecoration: 'none', color: 'var(--text-primary)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}
               >
-                <Sparkles size={15} color="var(--accent-gold)" />
                 <span>Tous les modèles <strong>{vehicle.brand}</strong></span>
               </Link>
 
@@ -902,7 +913,6 @@ export default function VehicleDetail() {
                 to="/comparateur"
                 style={{ padding: '12px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid var(--border-subtle)', textDecoration: 'none', color: 'var(--text-primary)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}
               >
-                <Scale size={15} color="#60a5fa" />
                 <span>Comparer ce véhicule</span>
               </Link>
 
@@ -910,7 +920,6 @@ export default function VehicleDetail() {
                 to={`/voitures-neuves/${(vehicle.city || 'casablanca').toLowerCase()}`}
                 style={{ padding: '12px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid var(--border-subtle)', textDecoration: 'none', color: 'var(--text-primary)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}
               >
-                <MapPin size={15} color="#ef4444" />
                 <span>Concessions à {vehicle.city || 'Maroc'}</span>
               </Link>
 
@@ -918,7 +927,6 @@ export default function VehicleDetail() {
                 to="/financement-auto-maroc"
                 style={{ padding: '12px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid var(--border-subtle)', textDecoration: 'none', color: 'var(--text-primary)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}
               >
-                <CreditCard size={15} color="#a855f7" />
                 <span>Calculer vos mensualités</span>
               </Link>
             </div>

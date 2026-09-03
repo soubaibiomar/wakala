@@ -18,7 +18,7 @@ class VehicleGraphService:
     """Service de requêtes sur le graphe Neo4j."""
 
     def __init__(self):
-        if NEO4J_AVAILABLE and AsyncGraphDatabase is not None:
+        if NEO4J_AVAILABLE and AsyncGraphDatabase is not None and settings.NEO4J_PASSWORD:
             self.driver = AsyncGraphDatabase.driver(
                 settings.NEO4J_URI,
                 auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD),
@@ -27,7 +27,8 @@ class VehicleGraphService:
             self.driver = None
 
     async def close(self):
-        await self.driver.close()
+        if self.driver is not None:
+            await self.driver.close()
 
     async def get_similar_vehicles(self, vehicle_id: str, limit: int = 5) -> list[dict]:
         """Trouve les véhicules similaires via le graphe (voisinage + PageRank)."""

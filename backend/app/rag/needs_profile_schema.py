@@ -26,23 +26,24 @@ VALID_DIMENSIONS = frozenset({
 # Mapping des expressions utilisateur courantes vers les dimensions
 PRIORITY_ALIASES: dict[str, str] = {
     # Espace
-    "espace": "espace", "coffre": "espace", "place": "espace",
-    "grand": "espace", "spacieux": "espace", "famille": "espace",
+    "espace": "espace", "space": "espace", "coffre": "espace", "luggage": "espace",
+    "place": "espace", "grand": "espace", "spacieux": "espace", "famille": "espace",
     "bagages": "espace",
     # Sécurité
-    "securite": "securite", "sécurité": "securite", "airbag": "securite",
+    "securite": "securite", "sécurité": "securite", "safety": "securite", "airbag": "securite",
     "ncap": "securite", "sûr": "securite", "safe": "securite",
     "enfant": "securite", "bebe": "securite", "bébé": "securite",
     # Coût réel
     "economique": "cout_reel", "économique": "cout_reel",
-    "consommation": "cout_reel", "conso": "cout_reel",
+    "consommation": "cout_reel", "consumption": "cout_reel", "conso": "cout_reel",
+    "low consumption": "cout_reel", "fuel economy": "cout_reel",
     "pas cher à l'usage": "cout_reel", "entretien": "cout_reel",
     "économie": "cout_reel",
     # Prix d'accès
     "prix": "prix_acces", "budget": "prix_acces", "abordable": "prix_acces",
     "rkhis": "prix_acces", "pas cher": "prix_acces",
     # Praticité urbaine
-    "ville": "praticite_urbaine", "urbain": "praticite_urbaine",
+    "ville": "praticite_urbaine", "city": "praticite_urbaine", "urban": "praticite_urbaine", "urbain": "praticite_urbaine",
     "parking": "praticite_urbaine", "manoeuvre": "praticite_urbaine",
     "mdina": "praticite_urbaine", "citadine": "praticite_urbaine",
     # Performance
@@ -51,7 +52,7 @@ PRIORITY_ALIASES: dict[str, str] = {
     "chevaux": "performance", "moteur": "performance",
     # Écologie
     "ecologique": "ecologie", "écologique": "ecologie",
-    "electrique": "ecologie", "électrique": "ecologie",
+    "electrique": "ecologie", "électrique": "ecologie", "electric": "ecologie",
     "vert": "ecologie", "co2": "ecologie", "hybride": "ecologie",
     "environnement": "ecologie",
     # Motricité
@@ -97,6 +98,45 @@ class NeedsProfile(BaseModel):
         None,
         description="Préférence marque si exprimée",
     )
+    # État explicite de la boucle de découverte. Ces champs ne sont jamais
+    # inventés par le LLM : ils sont alimentés par l'extraction déterministe
+    # et par le flow qui enregistre la question effectivement envoyée.
+    covered_dimensions: list[str] = Field(
+        default_factory=list,
+        description="Dimensions 8D explicitement couvertes par le client",
+    )
+    asked_dimensions: list[str] = Field(
+        default_factory=list,
+        description="Dimensions déjà demandées dans une question précédente",
+    )
+    pending_dimensions: list[str] = Field(
+        default_factory=list,
+        description="Dimensions de la dernière question encore en attente de réponse",
+    )
+    weight_deltas: dict[str, float] = Field(
+        default_factory=dict,
+        description="Ajustements de poids issus des arbitrages explicites",
+    )
+
+    @property
+    def missing_dimensions(self) -> list[str]:
+        """Dimensions 8D non encore couvertes, dans l'ordre contractuel."""
+        covered = set(self.covered_dimensions)
+        return [dimension for dimension in DIMENSION_ORDER if dimension not in covered]
+
+    @property
+    def ready_for_recommendation(self) -> bool:
+        """Indique si les filtres durs et un minimum de préférences sont connus.
+
+        Budget + usage restent nécessaires pour interroger le catalogue. Trois
+        dimensions couvertes suffisent ensuite pour éviter de bloquer le client
+        dans un questionnaire sans fin ; les filtres durs (marque, carburant,
+        carrosserie) peuvent également déclencher la restitution.
+        """
+        return self.is_complete and (
+            len(self.covered_dimensions) >= 3
+            or bool(self.brand_preference and self.body_type_preference)
+        )
 
     @property
     def is_complete(self) -> bool:
@@ -140,14 +180,22 @@ class NeedsProfile(BaseModel):
         for key, value in partial.items():
             if value is None:
                 continue
-            if key == "priorities" and isinstance(value, list):
+            if key in {"priorities", "covered_dimensions", "asked_dimensions", "pending_dimensions"} and isinstance(value, list):
                 existing = set(data.get("priorities", []))
-                # Normalise les priorités via les alias
+                if key != "priorities":
+                    existing = set(data.get(key, []))
                 for p in value:
                     normalized = PRIORITY_ALIASES.get(p.lower().strip(), p.lower().strip())
                     if normalized in VALID_DIMENSIONS:
                         existing.add(normalized)
-                data["priorities"] = list(existing)
+                data[key] = [dimension for dimension in DIMENSION_ORDER if dimension in existing]
+            elif key == "weight_deltas" and isinstance(value, dict):
+                deltas = dict(data.get("weight_deltas", {}))
+                for dimension, delta in value.items():
+                    normalized = PRIORITY_ALIASES.get(str(dimension).lower().strip(), str(dimension).lower().strip())
+                    if normalized in VALID_DIMENSIONS:
+                        deltas[normalized] = float(delta)
+                data[key] = deltas
             elif key == "constraints" and isinstance(value, list):
                 existing = set(data.get("constraints", []))
                 existing.update(value)
@@ -156,3 +204,18 @@ class NeedsProfile(BaseModel):
                 # Ne pas écraser une valeur existante
                 data[key] = value
         return NeedsProfile(**data)
+
+
+# Keep the canonical order in one place for serialization and deterministic
+# missing-dimension calculation. It is deliberately defined after the model so
+# existing imports remain backward compatible.
+DIMENSION_ORDER = (
+    "espace",
+    "securite",
+    "cout_reel",
+    "prix_acces",
+    "praticite_urbaine",
+    "performance",
+    "ecologie",
+    "motricite",
+)

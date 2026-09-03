@@ -20,7 +20,7 @@ from app.core.config import settings
 # ─── Engine ────────────────────────────────────────────────────
 try:
     engine = create_async_engine(
-        settings.DATABASE_URL,
+        settings.database_url,
         echo=settings.DEBUG,
         pool_size=20,
         max_overflow=10,

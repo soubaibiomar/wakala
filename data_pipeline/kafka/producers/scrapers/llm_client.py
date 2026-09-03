@@ -6,18 +6,25 @@ from typing import Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
 
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://ollama:11434/v1")
-OLLAMA_MODEL_CODE = os.getenv("OLLAMA_MODEL_CODE", "qwen2.5-coder:7b")
+OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "")
+OPENROUTER_MODELS = [
+    "nvidia/nemotron-3.5-lightning:free",
+    "google/gemma-4-31b-it:free",
+    "openrouter/free",
+]
 
-def ask_ollama(prompt: str, temperature: float = 0.2) -> Optional[str]:
+def ask_cloud_llm(prompt: str, temperature: float = 0.2) -> Optional[str]:
     """
-    Sends a prompt to the Ollama model (specifically qwen2.5-coder:7b)
-    to ask for code/selector generation.
+    Sends a prompt to the configured cloud model for selector generation.
     """
-    url = f"{OLLAMA_BASE_URL}/chat/completions"
+    if not OPENROUTER_API_KEY or not OPENROUTER_MODEL:
+        return None
+    url = f"{OPENROUTER_BASE_URL.rstrip('/')}/chat/completions"
     
     payload = {
-        "model": OLLAMA_MODEL_CODE,
+        "models": OPENROUTER_MODELS,
         "messages": [
             {"role": "system", "content": "You are an expert data engineer and web scraping specialist. Your task is to output ONLY a valid CSS selector string or JSON object. Do not include markdown formatting or explanations."},
             {"role": "user", "content": prompt}
@@ -32,5 +39,5 @@ def ask_ollama(prompt: str, temperature: float = 0.2) -> Optional[str]:
         data = response.json()
         return data["choices"][0]["message"]["content"].strip().strip('`').strip()
     except Exception as e:
-        logger.error(f"Failed to query Ollama at {url}: {e}")
+        logger.error(f"Failed to query cloud model at {url}: {e}")
         return None

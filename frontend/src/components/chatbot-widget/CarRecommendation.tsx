@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styles from './chatbot.module.css';
 import { PriceGauge } from '../pricing/PriceGauge';
 import api from '../../services/api';
-import { getStudioImageForModel } from '../../utils/vehicleImageCatalogData';
+import { resolveVehicleImage, CATALOGUE_IMAGE_FALLBACK } from '../../utils/vehicleImageResolver';
 
 interface CarRecommendationProps {
   id: string;
@@ -21,8 +21,7 @@ export default function CarRecommendation({ id, brand, model, year, price, image
   const [backendImage, setBackendImage] = useState<string | undefined>(image);
 
   const displayImage = useMemo(() => {
-    if (backendImage) return backendImage;
-    return getStudioImageForModel(brand, model);
+    return resolveVehicleImage(brand, model, backendImage ? [{ file_path: backendImage }] : undefined);
   }, [backendImage, brand, model]);
 
   useEffect(() => {
@@ -96,6 +95,10 @@ export default function CarRecommendation({ id, brand, model, year, price, image
             alt={`${brand} ${model}`}
             style={{ width: '100%', height: '100%', objectFit: 'contain' }}
             loading="lazy"
+            onError={(event) => {
+              event.currentTarget.onerror = null;
+              event.currentTarget.src = CATALOGUE_IMAGE_FALLBACK;
+            }}
           />
         ) : (
           <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94A3B8' }}>{brand}</span>

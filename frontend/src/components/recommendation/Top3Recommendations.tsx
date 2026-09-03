@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Trophy, ShieldCheck, Sparkles, AlertCircle, ChevronDown, ChevronUp, CheckCircle, Info } from 'lucide-react';
 import type { Top3Response, Top3VehicleItem } from '../../services/recommendationService';
 import './Top3Recommendations.css';
+import { CATALOGUE_IMAGE_FALLBACK, resolveVehicleImage } from '../../utils/vehicleImageResolver';
 
 interface Top3RecommendationsProps {
   data: Top3Response;
@@ -79,10 +80,14 @@ export const Top3Recommendations: React.FC<Top3RecommendationsProps> = ({ data, 
               {/* Vehicle Image */}
               <div className="top3-image-wrap">
                 <img
-                  src={item.image_url || '/assets/clio5.jpg'}
+                  src={item.image_url || resolveVehicleImage(item.brand, item.model)}
                   alt={`${item.brand} ${item.model}`}
                   className="top3-image"
                   loading="lazy"
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = CATALOGUE_IMAGE_FALLBACK;
+                  }}
                 />
                 <div className="top3-score-bubble">
                   <div className="score-val">{Math.round(item.match_score)}%</div>

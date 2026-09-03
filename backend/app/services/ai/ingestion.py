@@ -2,13 +2,13 @@ import asyncio
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from langchain_community.embeddings import OllamaEmbeddings
 from qdrant_client.http import models as qmodels
 
 from app.core.database import async_session_factory
 from app.core.config import settings
 from app.models.vehicle import Vehicle
 from app.services.ai.qdrant import get_qdrant_client, ensure_collection_exists
+from app.rag.embeddings import EmbeddingService, EMBEDDING_DIMENSION
 
 logger = logging.getLogger(__name__)
 
@@ -36,15 +36,10 @@ async def ingest_vehicles():
     """
     logger.info("Début de l'ingestion des véhicules vers Qdrant...")
     
-    # Assurez-vous que la collection existe (dimension 1024 pour bge-m3)
-    await ensure_collection_exists(settings.QDRANT_COLLECTION, vector_size=1024)
+    await ensure_collection_exists(settings.QDRANT_COLLECTION, vector_size=EMBEDDING_DIMENSION)
     qdrant = get_qdrant_client()
     
-    _ollama_base = settings.OLLAMA_BASE_URL.replace("/v1", "") if settings.OLLAMA_BASE_URL else "http://localhost:11434"
-    embeddings_model = OllamaEmbeddings(
-        base_url=_ollama_base,
-        model="bge-m3"
-    )
+    embeddings_model = EmbeddingService()
 
     async with async_session_factory() as session:
         result = await session.execute(select(Vehicle))
@@ -62,7 +57,7 @@ async def ingest_vehicles():
                 text_content = await generate_vehicle_description(v)
                 
                 # Génération de l'embedding
-                vector = await embeddings_model.aembed_query(text_content)
+                vector = embeddings_model.embed_text(text_content)
                 
                 # Préparation du Point Struct pour Qdrant
                 payload = {

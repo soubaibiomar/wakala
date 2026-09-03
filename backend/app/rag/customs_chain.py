@@ -36,6 +36,7 @@ class CustomsChain:
                     base_url=settings.OPENROUTER_BASE_URL,
                     api_key=settings.OPENROUTER_API_KEY,
                     model=settings.OPENROUTER_MODEL,
+                    extra_body={"models": settings.OPENROUTER_MODELS},
                     temperature=0.2,
                     max_tokens=350,
                     default_headers={
@@ -44,13 +45,7 @@ class CustomsChain:
                     }
                 )
             else:
-                self.llm = ChatOpenAI(
-                    base_url=settings.OLLAMA_BASE_URL,
-                    api_key=settings.OPENAI_API_KEY,
-                    model=settings.OLLAMA_MODEL_TEXT,
-                    temperature=0.2,
-                    max_tokens=350,
-                )
+                raise RuntimeError("OPENROUTER_API_KEY is not configured")
             
 
             self.prompt = PromptTemplate(

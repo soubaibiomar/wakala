@@ -78,7 +78,8 @@ export default function ChatbotPage() {
   const hasPreferences = dynamicPriorities.length > 0 || !!query || !!budget;
 
   const [messages, setMessages] = useState<Message[]>([]);
-  const [selectedVoiceLang, setSelectedVoiceLang] = useState('ar-MA');
+  const [currentLanguage, setCurrentLanguage] = useState<string>('fr');
+  const [selectedVoiceLang, setSelectedVoiceLang] = useState('fr-FR');
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
@@ -86,7 +87,9 @@ export default function ChatbotPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const sessionId = 'session-' + Date.now();
+  // Keep one conversation identifier for the lifetime of this page. Creating
+  // it during render made every state update look like a new CRM session.
+  const sessionIdRef = useRef('session-' + Date.now());
 
   const voice = useVoiceInput({
     defaultLang: selectedVoiceLang,
@@ -161,8 +164,9 @@ export default function ChatbotPage() {
             prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + chunk } : m))
           );
         },
-        sessionId,
-        controller.signal
+        sessionIdRef.current,
+        controller.signal,
+        currentLanguage
       );
     } catch {
       setMessages((prev) =>
@@ -201,6 +205,7 @@ export default function ChatbotPage() {
 
   const handleSelectLanguage = (lang: LanguageOption) => {
     setSelectedVoiceLang(lang.voiceLang);
+    setCurrentLanguage(lang.code);
     const welcomeMsg: Message = {
       id: 'welcome-' + Date.now(),
       role: 'assistant',
@@ -211,9 +216,10 @@ export default function ChatbotPage() {
   };
 
   const lastAssistantMsg = [...messages].reverse().find((m) => m.role === 'assistant')?.content;
+  const isRtl = currentLanguage === 'ar' || (currentLanguage === 'darija' && /[\u0600-\u06ff]/.test(lastAssistantMsg || ''));
 
   return (
-    <div className="chat-container">
+    <div className="chat-container" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="chat-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -349,7 +355,8 @@ export default function ChatbotPage() {
       {/* Barre de critères contextuels */}
       <PreferenceBar
         lastAssistantMessage={lastAssistantMsg}
-        onSelectOption={(optionText) => {
+        currentLanguage={currentLanguage}
+        onSelectOption={(optionText: string) => {
           handleSend(optionText);
         }}
         disabled={isLoading}

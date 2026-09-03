@@ -2,32 +2,29 @@
 Embeddings — Génération et gestion des embeddings véhicules.
 """
 
-from langchain_community.embeddings import OllamaEmbeddings
-from app.core.config import settings
+import hashlib
+
+EMBEDDING_DIMENSION = 1024
 
 class EmbeddingService:
-    """Génère des embeddings pour les descriptions de véhicules via Ollama (bge-m3)."""
+    """Generate dependency-free vectors for the catalogue text."""
 
     def __init__(self):
         self._model = None
 
-    @property
-    def model(self) -> OllamaEmbeddings:
-        if self._model is None:
-            _ollama_base = settings.OLLAMA_BASE_URL.replace("/v1", "") if settings.OLLAMA_BASE_URL else "http://localhost:11434"
-            self._model = OllamaEmbeddings(
-                base_url=_ollama_base,
-                model="bge-m3"
-            )
-        return self._model
-
     def embed_text(self, text: str) -> list[float]:
-        """Encode un texte en vecteur d'embedding."""
-        return self.model.embed_query(text)
+        """Encode un texte en vecteur normalisé de dimension fixe."""
+        vector = [0.0] * EMBEDDING_DIMENSION
+        for token in text.lower().split():
+            digest = hashlib.sha256(token.encode("utf-8")).digest()
+            index = int.from_bytes(digest[:4], "big") % EMBEDDING_DIMENSION
+            vector[index] += 1.0 if digest[4] % 2 else -1.0
+        norm = sum(value * value for value in vector) ** 0.5 or 1.0
+        return [value / norm for value in vector]
 
     def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """Encode un batch de textes."""
-        return self.model.embed_documents(texts)
+        return [self.embed_text(text) for text in texts]
 
     def embed_vehicle(self, vehicle: dict) -> list[float]:
         """

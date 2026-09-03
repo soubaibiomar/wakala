@@ -69,7 +69,7 @@ export default function CompareDrawer() {
             className="btn btn--primary" 
             style={{ flex: 2, padding: '6px 0', fontSize: '0.85rem' }}
           >
-            Comparer l'IA
+            Comparer les véhicules
           </button>
         </div>
       </div>

@@ -8,6 +8,9 @@ settings = Settings()
 class Neo4jClient:
     def __init__(self, uri, user, password):
         self.driver = None
+        if not password:
+            logger.info("Neo4j is not configured; graph features are disabled.")
+            return
         try:
             self.driver = GraphDatabase.driver(uri, auth=(user, password))
             logger.info("Connected to Neo4j successfully")

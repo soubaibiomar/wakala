@@ -8,6 +8,7 @@ Aucun mapping implicite ou masqué n'est autorisé.
 
 from typing import Any, Dict, Optional, Tuple
 import re
+import unicodedata
 
 # ═══════════════════════════════════════════════════════════════════════════
 # 1. TABLE DE CORRESPONDANCE DES COLONNES EXCEL (Feuille 'Catalogue')
@@ -44,6 +45,177 @@ EXCEL_COLUMN_HEADERS = {
     "official_options_raw": "Options & Packs Équipements",
     "official_website": "Site Web Officiel Marque",
 }
+
+# Model-level body styles verified against manufacturer product pages and
+# worldwide model nomenclature.  This is intentionally keyed by make + model:
+# a trim can say "Fastback" or "SUV Coupé" without changing the vehicle's
+# catalogue class, and a generic dealer page can contain several body styles.
+# Keep the values restricted to the PostgreSQL body_type enum.
+MODEL_BODY_TYPE_OVERRIDES = {
+    # Alfa Romeo / Alpine / Aston Martin / Bentley
+    "alfa romeo|junior": "suv",
+    "alfa romeo|junior elettrica": "suv",
+    "abarth|595": "citadine",
+    "abarth|695": "citadine",
+    "alpine|a390": "coupe",
+    "alpine|a290": "citadine",
+    "aston martin|dbx": "suv",
+    "aston martin|valhalla": "coupe",
+    "aston martin|valiant": "coupe",
+    "aston martin|valkyrie": "coupe",
+    "aston martin|vanquish": "coupe",
+    "bentley|bentayga": "suv",
+    "bmw|m4": "coupe",
+
+    # Changan / Citroën / Dacia / DFSK / DS
+    "changan|alsvin": "berline",
+    "chery|himla": "pick_up",
+    "citroen|c4 x": "berline",
+    "citroen|e-c4": "berline",
+    "citroen|ami": "citadine",
+    "dacia|bigster": "suv",
+    "dacia|jogger": "monospace",
+    "dfsk|glory 580": "suv",
+    "dfsk|k01h": "pick_up",
+    "dfsk|k01s": "pick_up",
+    "dfsk|c31": "utilitaire",
+    "dfsk|c35": "utilitaire",
+    "ds automobiles|ds 7": "suv",
+
+    # Deepal / Dongfeng / Exeed / Fiat / Ford / GAC / GWM
+    "deepal|s05": "suv",
+    "deepal|s07": "suv",
+    "dongfeng|huge": "suv",
+    "dongfeng|mage": "suv",
+    "dongfeng|box": "citadine",
+    "exeed|et": "suv",
+    "exeed|rx": "suv",
+    "exeed|vx": "suv",
+    "ferrari|296 gts": "cabriolet",
+    "ferrari|purosangue": "suv",
+    "fiat|500x": "suv",
+    "fiat|600": "suv",
+    "fiat|doblo": "utilitaire",
+    "fiat|doblo 7 places": "utilitaire",
+    "fiat|doblo cargo": "utilitaire",
+    "fiat|scudo": "utilitaire",
+    "fiat|topolino": "citadine",
+    "ford|territory": "suv",
+    "ford|tourneo custom": "utilitaire",
+    "gac|emkoo hybride": "suv",
+    "gac|emzoom": "suv",
+    "gwm|jolion pro": "suv",
+    "gwm|ora 03": "citadine",
+    "gwm|wey 05": "suv",
+
+    # Geely / Hyundai / JAC / Jaguar / Jetour / Kia
+    "geely|geometry c": "suv",
+    "hyundai|creta": "suv",
+    "hyundai|kona": "suv",
+    "hyundai|staria": "monospace",
+    "jac|m3 ev": "utilitaire",
+    "jac|t8": "pick_up",
+    "jac|t8 pro": "pick_up",
+    "jaguar|i-pace": "suv",
+    "jetour|dashing": "suv",
+    "jetour|t1": "suv",
+    "kia|carnival": "monospace",
+    "kia|ev3": "suv",
+    "kia|ev5": "suv",
+    "kia|seltos": "suv",
+    "kia|sonet": "suv",
+    "honda|hr-v": "suv",
+    "honda|jazz": "citadine",
+    "jac|e30x": "citadine",
+    "mahindra|xuv 3xo": "suv",
+    "mahindra|xuv300": "suv",
+    "mahindra|kuv100": "citadine",
+    "maserati|gt2 stradale": "coupe",
+    "maserati|granturismo": "coupe",
+    "maserati|grancabrio": "cabriolet",
+    "nissan|magnite": "suv",
+    "suzuki|jimny": "suv",
+
+    # Lexus / Lotus / Mercedes-Benz / Nissan / Omoda / Opel / Peugeot
+    "lexus|lm": "monospace",
+    "lexus|rx": "suv",
+    "lexus|ux": "suv",
+    "lotus|eletre": "suv",
+    "lexus|lc": "coupe",
+    "mercedes-benz|classe g": "suv",
+    "mercedes-benz|classe v": "utilitaire",
+    "mercedes-benz|eqa": "suv",
+    "mercedes-benz|eqb": "suv",
+    "mercedes-benz|vle electric": "utilitaire",
+    "mercedes-benz|glc coupe": "suv",
+    "mercedes-benz|gle coupe": "suv",
+    "mercedes-benz|cla": "coupe",
+    "mercedes-benz|cle": "coupe",
+    "mercedes-benz|mercedes-amg gt": "coupe",
+    "mercedes-benz|mercedes-amg sl": "cabriolet",
+    "nissan|patrol": "suv",
+    "omoda|omoda 3": "suv",
+    "omoda|omoda e5": "suv",
+    "opel|frontera": "suv",
+    "opel|grandland": "suv",
+    "opel|mokka": "suv",
+    "peugeot|3008": "suv",
+    "peugeot|408": "berline",
+    "peugeot|rifter": "utilitaire",
+    "leapmotor|t03": "citadine",
+    "mg|mg 3": "citadine",
+    "mg|mg 3 hybrid+": "citadine",
+    "mg|mg cyberster": "cabriolet",
+    "mini|cooper": "citadine",
+    "mini|cooper 5 portes": "citadine",
+    "opel|rocks electric": "citadine",
+
+    # Porsche / Renault / Seat / Seres / Smart / Soueast / Tesla / Toyota
+    "porsche|cayenne coupe": "suv",
+    "porsche|cayenne coupe electric": "suv",
+    "porsche|panamera": "berline",
+    "porsche|taycan": "berline",
+    "porsche|taycan cross turismo": "break",
+    "porsche|718 boxster": "cabriolet",
+    "renault|arkana": "suv",
+    "renault|austral": "suv",
+    "renault|captur": "suv",
+    "renault|express": "utilitaire",
+    "renault|kardian": "suv",
+    "renault|kangoo": "utilitaire",
+    "renault|megane e-tech": "suv",
+    "renault|rafale": "suv",
+    "renault|5 e-tech": "citadine",
+    "seat|arona": "suv",
+    "seat|tarraco": "suv",
+    "seres|3": "suv",
+    "seres|5": "suv",
+    "smart|#1": "suv",
+    "smart|#3": "suv",
+    "smart|#5": "suv",
+    "soueast|s05": "suv",
+    "soueast|s06": "suv",
+    "soueast|s07": "suv",
+    "soueast|s08": "suv",
+    "soueast|s09": "suv",
+    "tesla|cybertruck": "pick_up",
+    "tesla|model x": "suv",
+    "toyota|bz4x": "suv",
+    "toyota|c-hr": "suv",
+    "toyota|corolla x suv": "suv",
+    "volvo|ec40": "suv",
+    "volvo|ex90": "suv",
+    "volkswagen|taigo": "suv",
+    "xpeng|g6": "suv",
+    "zeekr|001": "break",
+}
+
+
+def _body_type_model_key(brand: str, model: str) -> str:
+    """Build an accent-insensitive key for stable model-level overrides."""
+    value = unicodedata.normalize("NFKD", f"{brand}|{model}")
+    value = "".join(ch for ch in value if not unicodedata.combining(ch))
+    return re.sub(r"\s+", " ", value.casefold().strip())
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -181,48 +353,66 @@ def infer_body_type(brand: str, model: str, version: str, length_cm: Optional[in
     'citadine', 'berline', 'suv', 'break', 'coupe', 'cabriolet', 'monospace', 'utilitaire', 'pick_up'
     """
     combined = f"{brand} {model} {version}".lower()
+    model_text = f"{brand} {model}".lower()
+    version_text = str(version or "").lower()
     length = length_cm or 420
     tt = offroad_score or 1
+
+    # Prefer an explicit model classification over marketing/trim words such
+    # as "GT", "Fastback" or "SUV Coupé". They describe styling or a grade,
+    # not necessarily a different catalogue body type.
+    model_override = MODEL_BODY_TYPE_OVERRIDES.get(_body_type_model_key(brand, model))
+    if model_override:
+        return model_override
+
+    # Explicit body-style wording in a trim is authoritative. Do not use
+    # broad substring checks here: "GT" is often only a trim line and "van"
+    # is part of words such as "avant".
+    if re.search(r"\b(cabriolet|convertible|spider|roadster)\b", version_text):
+        return "cabriolet"
+    if re.search(r"\b(coupe|coupé|fastback)\b", version_text):
+        return "coupe"
     
     # Pick-up
-    if any(k in combined for k in ["pick-up", "pickup", "hilux", "ranger", "d-max", "l200", "navara", "gladiator"]):
+    if any(k in model_text for k in ["pick-up", "pickup", "pik-up", "hilux", "ranger", "d-max", "l200", "navara", "gladiator", "landtrek", "titano", "himla", "hunter", "poer", "tasman", "musso", "scorpio pik", "t8 pro"]):
         return "pick_up"
         
     # Utilitaire / Van
-    if any(k in combined for k in ["utilitaire", "van", "transit", "berlingo", "partner", "kangoo", "caddy", "combo", "dokker", "express", "proace", "expert", "jumpy"]):
+    if any(k in model_text for k in ["utilitaire", "transit", "berlingo", "partner", "kangoo", "caddy", "combo", "dokker", "express", "proace", "expert", "jumpy"]):
         return "utilitaire"
         
     # Cabriolet / Spider
-    if any(k in combined for k in ["cabriolet", "spider", "convertible", "roadster"]):
+    if any(k in model_text for k in ["cabriolet", "spider", "convertible", "roadster"]):
         return "cabriolet"
         
     # Coupé
-    if any(k in combined for k in ["coupe", "coupé", "4-door coupe", "grancoupe", "gran coupe", "taycan", "panamera", "gt"]):
-        if not any(k in combined for k in ["suv", "cross", "stepway"]):
+    if any(k in model_text for k in ["coupe", "coupé", "4-door coupe", "grancoupe", "gran coupe", "taycan", "panamera", "a110", "911", "f-type", "mcpura", "db12", "vantage", "continental gt", "408"]):
+        if not any(k in model_text for k in ["suv", "cross", "stepway"]):
             return "coupe"
             
     # Break
-    if any(k in combined for k in ["break", "touring", "avant", "estate", "sw", "variant", "sportwagon", "shooting brake"]):
+    if any(k in model_text for k in ["break", "touring", "estate", "sportwagon", "shooting brake"]):
         return "break"
         
     # Monospace
-    if any(k in combined for k in ["monospace", "touran", "scenic", "espace", "zafira", "carens", "altea", "sharan"]):
+    if any(k in model_text for k in ["monospace", "touran", "scenic", "espace", "spacetourer", "space tourer", "zafira", "carens", "altea", "sharan"]):
         return "monospace"
         
     # SUV / Crossover
     suv_keywords = [
         "suv", "crossover", "stepway", "duster", "austral", "qashqai", "tucson", "sportage", "tiguan",
         "karoq", "ateca", "3008", "2008", "5008", "xc40", "xc60", "xc90", "t-roc", "t-cross", "touareg",
-        "x1", "x2", "x3", "x4", "x5", "x6", "x7", "q2", "q3", "q4", "q5", "q7", "q8", "gla", "glb", "glc",
+        "x1", "x2", "x3", "x4", "x5", "x6", "x7", "ix", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "gla", "glb", "glc",
         "gle", "gls", "cr-v", "hr-v", "rav4", "yaris cross", "korando", "rexton", "tivoli", "defender",
-        "discovery", "evoque", "velar", "range rover", "cayenne", "macan", "urus", "levante", "grecale",
+        "discovery", "evoque", "velar", "range rover", "cayenne", "macan", "urus", "levante", "grecale", "avenger", "bayon", "f-pace", "e-pace", "fortuner", "land cruiser", "pajero", "vitara", "cityray", "coolray", "starray", "t2", "traveller", "g318", "g9", "txl", "vx", "c11", "seres 7", "uni-k", "cs15", "cs35", "cs55", "uni-t", "uni-k", "s7", "santa fe", "ev6", "ev9", "dfsk e5", "marvel-r", "marvel r", "jaecoo", "omoda c5", "tank", "grand vitara", "grandland", "frontera", "okavango", "seal u", "seal-u", "yaris cross", "ioniq 5", "zeekr 001", "zeekr x", "zeekr 7x",
         "gv70", "gv80", "tang", "song", "yuan", "atto", "sealion", "seal u", "haval", "tiggo", "coolray",
         "monjaro", "stonic", "niro", "sorento", "santa fe", "kuga", "puma", "explorer", "capri", "c3 aircross",
         "c5 aircross", "arkana", "kadjar", "captur", "kamiq", "kodiaq", "mokka", "grandland", "crossland",
-        "compass", "renegade", "wrangler", "cherokee", "cx-30", "cx-5", "cx-60", "outlander", "asx",
+        "compass", "renegade", "wrangler", "cherokee", "cx-30", "cx-5", "cx-60", "outlander", "asx", "xm", "aceman", "rocks-e",
         "eclipse cross", "juke", "x-trail", "ariya", "formentor", "terramar", "tavascan", "countryman"
+        , "stelvio", "tonale", "bj30", "ev6", "ioniq 5", "nx", "model y", "rav-4"
     ]
-    if any(k in combined for k in suv_keywords) or is_4x4 or tt >= 3:
+    if any(k in model_text for k in suv_keywords):
         return "suv"
         
     # Citadine
@@ -231,7 +421,7 @@ def infer_body_type(brand: str, model: str, version: str, length_cm: Optional[in
         "rio", "swift", "micra", "fiesta", "fabia", "ibiza", "corsa", "spring", "zoe", "500",
         "panda", "twingo", "aygo", "dolphin", "seagull", "mini 3"
     ]
-    if length <= 415 or any(k in combined for k in citadine_keywords):
+    if length <= 415 or any(k in model_text for k in citadine_keywords):
         return "citadine"
         
     # Berline par défaut pour les routières

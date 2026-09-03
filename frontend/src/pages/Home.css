@@ -506,3 +506,86 @@
     max-height: 400px;
   }
 }
+/* ─── Budget browser directly below the hero ──────────────── */
+.home-budget-browser {
+  margin: 0 auto;
+  padding: 28px clamp(16px, 5vw, 64px) 34px;
+  background: #f3f1f6;
+}
+
+.home-budget-browser__heading {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.home-budget-browser__heading span {
+  color: var(--color-accent-gold);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.home-budget-browser__heading h2 {
+  margin: 5px 0 0;
+  color: var(--color-text-primary);
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 4vw, 3rem);
+  text-transform: uppercase;
+}
+
+.home-budget-browser__grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.home-budget-browser__card {
+  overflow: hidden;
+  border-radius: 12px;
+  background: #deddda;
+  color: var(--color-text-primary);
+  text-decoration: none;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.home-budget-browser__card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 18px rgba(18, 33, 53, 0.14);
+}
+
+.home-budget-browser__image {
+  display: block;
+  height: 150px;
+  overflow: hidden;
+}
+
+.home-budget-browser__image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.home-budget-browser__card > span:last-child {
+  display: block;
+  min-height: 52px;
+  padding: 14px 10px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+}
+
+@media (max-width: 1100px) {
+  .home-budget-browser__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 620px) {
+  .home-budget-browser { padding: 22px 12px 26px; }
+  .home-budget-browser__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .home-budget-browser__image { height: 105px; }
+  .home-budget-browser__card > span:last-child { min-height: 46px; padding: 10px 7px; font-size: 0.72rem; }
+}

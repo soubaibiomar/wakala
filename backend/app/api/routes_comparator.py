@@ -127,7 +127,7 @@ async def compare_vehicles_matrix(
 
         # Lookup vehicle & scores for NCAP and Conso source links
         from app.models.vehicle import Vehicle
-        from app.models.catalog import VehicleWakalaScore
+        from app.models.vehicle_option import VehicleWakalaScore
         stmt_veh = (
             select(Vehicle)
             .where((Vehicle.brand == brand.name) & (Vehicle.model == model.name))

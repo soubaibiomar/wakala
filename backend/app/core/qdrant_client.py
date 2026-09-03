@@ -7,14 +7,13 @@ logger = logging.getLogger(__name__)
 settings = Settings()
 
 class VectorDBClient:
-    def __init__(self, host, port, collection_name):
+    def __init__(self, host, port, collection_name, url=None, api_key=None):
         self.collection_name = collection_name
         try:
-            self.client = QdrantClient(host=host, port=port)
+            self.client = QdrantClient(url=url, api_key=api_key) if url else QdrantClient(host=host, port=port)
             logger.info("Connected to Qdrant successfully")
             
             # Check if collection exists, if not create it
-            # The ollama model `bge-m3:latest` has dimension 1024
             dim = 1024 
             if not self.client.collection_exists(collection_name=self.collection_name):
                 self.client.create_collection(
@@ -30,7 +29,9 @@ class VectorDBClient:
 qdrant_client = VectorDBClient(
     host=settings.QDRANT_HOST, 
     port=settings.QDRANT_PORT, 
-    collection_name=settings.QDRANT_COLLECTION
+    collection_name=settings.QDRANT_COLLECTION,
+    url=settings.QDRANT_URL,
+    api_key=settings.QDRANT_API_KEY,
 )
 
 def get_qdrant_client():

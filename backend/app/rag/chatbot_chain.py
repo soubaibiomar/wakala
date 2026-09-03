@@ -76,16 +76,16 @@ DIRECTIVES DE STYLE :
 """
 
 DISCOVERY_INSTRUCTIONS = """PHASE DÉCOUVERTE CONVERSATIONNELLE :
-🎯 RÈGLE STRICTE ET ABSOLUE : Pose UNIQUEMENT UNE SEULE QUESTION À LA FOIS.
+🎯 RÈGLE STRICTE ET ABSOLUE : Pose UNE OU DEUX QUESTIONS AU MAXIMUM.
 ⛔ INTERDICTIONS FORMELLES :
 - N'écris JAMAIS de liste de questions, de questionnaire ou de guide d'accompagnement.
 - N'utilise JAMAIS de puces Markdown (- Budget: ..., - Usage: ...).
-- Ne pose JAMAIS plusieurs questions dans le même message.
+- Ne pose JAMAIS plus de deux questions dans le même message.
 - Ne propose AUCUN véhicule tant que le profil n'est pas complet.
 
 STRUCTURE EXIGÉE (2 phrases courtes maximum) :
 1. Une courte phrase pour valider ce que l'utilisateur vient de dire.
-2. EXACTEMENT UNE question simple et amicale pour obtenir l'information manquante ciblée.
+2. Une ou deux questions simples et amicales pour obtenir les informations manquantes ciblées.
 
 👉 INFORMATION CIBLÉE À DEMANDER :
 {target_instruction}"""
@@ -233,6 +233,7 @@ class ChatbotChain:
                         base_url=settings.OPENROUTER_BASE_URL,
                         api_key=settings.OPENROUTER_API_KEY,
                         model=model,
+                        extra_body={"models": settings.OPENROUTER_MODELS},
                         temperature=0.3,
                         max_tokens=250,
                         request_timeout=30.0,
@@ -246,6 +247,7 @@ class ChatbotChain:
                         base_url=settings.OPENROUTER_BASE_URL,
                         api_key=settings.OPENROUTER_API_KEY,
                         model=model,
+                        extra_body={"models": settings.OPENROUTER_MODELS},
                         temperature=0.3,
                         max_tokens=350,
                         request_timeout=30.0,
@@ -254,36 +256,7 @@ class ChatbotChain:
                     )
                 return self._llm_restitution
 
-        api_key = settings.OPENAI_API_KEY if settings.OPENAI_API_KEY else "ollama"
-
-        if phase == "discovery":
-            if self._llm_discovery is None:
-                self._llm_discovery = ChatOpenAI(
-                    base_url=settings.OLLAMA_BASE_URL,
-                    api_key=api_key,
-                    model=self.DISCOVERY_MODEL,
-                    temperature=0.3,
-                    max_tokens=200,
-                    frequency_penalty=1.2,
-                    presence_penalty=0.5,
-                    request_timeout=30.0,
-                    timeout=30.0,
-                )
-            return self._llm_discovery
-        else:
-            if self._llm_restitution is None:
-                self._llm_restitution = ChatOpenAI(
-                    base_url=settings.OLLAMA_BASE_URL,
-                    api_key=api_key,
-                    model=self.RESTITUTION_MODEL,
-                    temperature=0.3,
-                    max_tokens=250,
-                    frequency_penalty=1.2,
-                    presence_penalty=0.5,
-                    request_timeout=30.0,
-                    timeout=30.0,
-                )
-            return self._llm_restitution
+        raise RuntimeError("OPENROUTER_API_KEY is not configured")
 
     async def answer(
         self,
@@ -295,7 +268,7 @@ class ChatbotChain:
 
         # ── Consultative Flow: update profile and determine phase ──
         profile = consultative_flow.update_profile(session_id, message)
-        phase = consultative_flow.get_phase(session_id)
+        phase = consultative_flow.get_dialogue_phase(session_id)
         needs_profile_context = consultative_flow.get_discovery_context(session_id)
 
         detected_lang = _detect_language(message, history=history)
@@ -311,7 +284,12 @@ class ChatbotChain:
         logger.info("[perf] embedding: %.2fs", time.perf_counter() - t_emb)
 
         t_qdrant = time.perf_counter()
-        vehicles = search_vehicles(query, limit=3, precomputed_embedding=query_embedding)[:3]
+        # Garder un pool suffisamment large pour estimer le pouvoir discriminant
+        # des dimensions. Seuls les trois premiers véhicules sont exposés au
+        # client lorsqu'une restitution est effectivement autorisée.
+        candidate_pool = search_vehicles(query, limit=50, precomputed_embedding=query_embedding)
+        candidate_pool = self._apply_hard_profile_filters(candidate_pool, profile)
+        vehicles = candidate_pool[:3]
         reviews = search_reviews(query, limit=1, precomputed_embedding=query_embedding)[:1]
         logger.info("[perf] qdrant searches: %.2fs", time.perf_counter() - t_qdrant)
 
@@ -336,8 +314,11 @@ class ChatbotChain:
         review_context = "AVIS CLIENTS :\n" + _format_review_context(reviews)
 
         if phase == "discovery":
-            # ── DISCOVERY: Focus on EXACTLY ONE question at a time ──
-            target_field, target_instruction = consultative_flow.get_next_question_target(session_id)
+            # ── DISCOVERY: Analyze → Select → Formulate ──
+            question_plan = consultative_flow.get_next_question_plan(session_id, candidate_pool)
+            consultative_flow.record_question_plan(session_id, question_plan)
+            target_field = question_plan["target"]
+            target_instruction = " ".join(question_plan["questions"])
             phase_instructions = DISCOVERY_INSTRUCTIONS.format(target_instruction=target_instruction)
             recommendation_results = ""
         else:
@@ -353,7 +334,8 @@ class ChatbotChain:
             phase_guidance = (
                 f"\n\nDIRECTIVES DE PHASE (DÉCOUVERTE) :\n"
                 f"- Réponds en 1 ou 2 phrases courtes maximum.\n"
-                f"- Valide brièvement ce que le client dit et pose STRICTEMENT cette question : {target_instruction}\n"
+                f"- Analyse l'état du profil, puis pose uniquement les questions prévues : {target_instruction}\n"
+                f"- Pose au maximum deux questions et ne répète aucune dimension déjà couverte.\n"
                 f"- Ne propose aucun véhicule tant que le profil n'est pas complet."
             )
         else:
@@ -404,7 +386,7 @@ class ChatbotChain:
                     "Content-Type": "application/json",
                 }
                 payload_data = {
-                    "model": settings.OPENROUTER_MODEL,
+                    "models": settings.OPENROUTER_MODELS,
                     "messages": raw_payload,
                     "temperature": 0.3,
                     "max_tokens": 300,
@@ -417,11 +399,18 @@ class ChatbotChain:
                     )
                     if resp.status_code == 200:
                         data = resp.json()
-                        reply = data["choices"][0]["message"]["content"].strip()
+                        content = data.get("choices", [{}])[0].get("message", {}).get("content")
+                        if isinstance(content, str) and content.strip():
+                            reply = content.strip()
+                        else:
+                            logger.warning("OpenRouter returned an empty assistant message")
                     else:
                         logger.error(f"OpenRouter error {resp.status_code}: {resp.text}")
             
-            if not reply and LANGCHAIN_AVAILABLE:
+            # Use the configured/local chain as a fallback whenever the
+            # OpenRouter response is empty. This also keeps the provider
+            # boundary testable when LangChain is loaded lazily.
+            if not reply:
                 try:
                     llm = self._get_llm(phase=phase)
                 except TypeError:
@@ -476,6 +465,36 @@ class ChatbotChain:
             session_id=session_id,
             style_profile=style_profile,
         )
+
+    @staticmethod
+    def _apply_hard_profile_filters(vehicles: list[dict], profile: Any) -> list[dict]:
+        """Applique les contraintes explicites sans les relâcher silencieusement."""
+        if not vehicles:
+            return []
+
+        def metadata(vehicle: dict) -> dict:
+            return vehicle.get("metadata", {}) or {}
+
+        def norm(value: Any) -> str:
+            return str(value or "").strip().lower()
+
+        filtered = vehicles
+        if profile.brand_preference:
+            requested = norm(profile.brand_preference)
+            filtered = [v for v in filtered if norm(metadata(v).get("brand")) == requested]
+        if profile.fuel_preference:
+            requested = norm(profile.fuel_preference)
+            filtered = [v for v in filtered if requested in norm(metadata(v).get("fuel_type"))]
+        if profile.body_type_preference:
+            requested = norm(profile.body_type_preference)
+            filtered = [v for v in filtered if requested in norm(metadata(v).get("body_type"))]
+        if profile.budget_max:
+            filtered = [
+                v for v in filtered
+                if metadata(v).get("price") is not None
+                and float(metadata(v).get("price")) <= float(profile.budget_max)
+            ]
+        return filtered
 
 
 chatbot_chain = ChatbotChain()

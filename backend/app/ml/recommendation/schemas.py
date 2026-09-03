@@ -60,3 +60,18 @@ class RecommendationResponse(BaseModel):
         ...,
         description="Méthode utilisée : 'content-based', 'hybrid', ou 'cold-start'",
     )
+
+
+class EightDimensionScoreRequest(BaseModel):
+    """Demande de score 8D pour les véhicules d'une shortlist finale."""
+
+    vehicle_ids: list[str] = Field(..., min_length=1, max_length=3)
+    profile: dict = Field(default_factory=dict)
+
+
+class EightDimensionScoreResult(BaseModel):
+    vehicle_id: str
+    scores: dict[str, float]
+    weighted_total: float = Field(..., ge=1, le=5)
+    weighted_total_percent: float = Field(..., ge=0, le=100)
+    source: str

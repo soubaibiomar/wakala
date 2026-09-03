@@ -2,6 +2,10 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
+let webSessionToken: string | null = null;
+export const setWebSessionToken = (token: string | null) => { webSessionToken = token; };
+export const getWebSessionToken = () => webSessionToken;
+
 const DEFAULT_API_URL = process.env.EXPO_PUBLIC_API_URL || 
   (Platform.OS === 'android' 
     ? 'http://10.0.2.2:8000/api' 
@@ -19,7 +23,7 @@ api.interceptors.request.use(async (config) => {
   try {
     let token: string | null = null;
     if (Platform.OS === 'web') {
-      token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      token = webSessionToken;
     } else {
       token = await SecureStore.getItemAsync('token');
     }
@@ -38,7 +42,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       try {
         if (Platform.OS === 'web') {
-          if (typeof window !== 'undefined') localStorage.removeItem('token');
+          webSessionToken = null;
         } else {
           await SecureStore.deleteItemAsync('token');
         }

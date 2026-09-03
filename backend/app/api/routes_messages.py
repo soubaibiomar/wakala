@@ -17,9 +17,9 @@ router = APIRouter(prefix="/messages", tags=["Messagerie"])
 # --- Schemas ---
 
 class MessageCreate(BaseModel):
-    recipient_id: str
+    recipient_id: str = Field(..., min_length=1, max_length=64)
     listing_id: Optional[str] = None
-    content: str = Field(..., min_length=1)
+    content: str = Field(..., min_length=1, max_length=5000)
 
 class UserBasic(BaseModel):
     id: str
@@ -92,8 +92,8 @@ async def get_messages(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
     listing_id: Optional[str] = None,
-    limit: int = 50,
-    offset: int = 0
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0)
 ):
     query = select(Message).where(
         or_(

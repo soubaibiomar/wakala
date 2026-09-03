@@ -61,6 +61,19 @@ class VehicleRead(BaseModel):
     body_type: str
     transmission: str
     engine_power_hp: Optional[int] = None
+    engine_type: Optional[str] = None
+    trunk_volume_l: Optional[int] = None
+    fuel_consumption: Optional[float] = None
+    co2_emissions: Optional[float] = None
+    length_cm: Optional[int] = None
+    width_cm: Optional[int] = None
+    height_cm: Optional[int] = None
+    official_consumption: Optional[float] = None
+    real_consumption: Optional[float] = None
+    electric_range_km: Optional[int] = None
+    ncap_rating: Optional[str] = None
+    is_4x4: bool = False
+    source_url: Optional[str] = None
     color: Optional[str] = None
     doors: int
     seats: int

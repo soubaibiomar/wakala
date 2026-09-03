@@ -65,7 +65,10 @@ export default function MarquesPage() {
       }
     });
 
-    return POPULAR_BRANDS.map((b) => {
+    // The API catalogue is the source of truth. The static list only supplies
+    // presentation metadata, so aliases or brands outside the imported Excel
+    // catalogue must never create extra cards.
+    return POPULAR_BRANDS.filter((b) => modelStatsByBrand[b.name.toLowerCase().trim()]).map((b) => {
       const bLower = b.name.toLowerCase().trim();
       const stats = modelStatsByBrand[bLower] || { count: 0, minPrice: 0 };
       return {
@@ -73,7 +76,8 @@ export default function MarquesPage() {
         modelsCount: stats.count,
         startingPrice: stats.minPrice === 999999999 ? 0 : stats.minPrice,
       };
-    }).sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+    }).filter((brand, index, brands) => brands.findIndex((candidate) => candidate.name.toLowerCase().trim() === brand.name.toLowerCase().trim()) === index)
+      .sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
   }, [models]);
 
   // Available letters in the dataset

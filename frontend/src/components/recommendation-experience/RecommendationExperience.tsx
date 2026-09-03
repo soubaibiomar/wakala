@@ -1,0 +1,370 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useVoiceAssistant } from '../../hooks/useVoiceAssistant';
+import { chatbotService } from '../../services/chatbotService';
+import { ChatBubbleIcon } from './ChatBubbleIcon';
+import { ChatPanel } from './ChatPanel';
+import { CarResultsPanel } from './CarResultsPanel';
+import { recommendationService } from '../../services/recommendationService';
+import { recommendationClient, type Car, type ChatLanguage, type ChatTurn, type RecommendationClient, type QuestionOption } from './recommendationClient';
+import './recommendation-experience.css';
+
+type ExperienceMode = 'launcher' | 'widget' | 'immersive';
+
+interface RecommendationExperienceProps {
+  client?: RecommendationClient;
+  initialCars?: Car[];
+}
+
+export default function RecommendationExperience({ client = recommendationClient, initialCars = [] }: RecommendationExperienceProps) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isCatalogue = location.pathname === '/catalogue' || location.pathname === '/admin/catalogue';
+  const [mode, setMode] = useState<ExperienceMode>('launcher');
+  const [cars, setCars] = useState<Car[]>(initialCars);
+  // Keep the complete candidate pool for subsequent answers. `cars` is only
+  // the small set rendered in the catalogue, otherwise valid family cars can
+  // disappear after the first three semantic-search results.
+  const [candidateCars, setCandidateCars] = useState<Car[]>(initialCars);
+  const [messages, setMessages] = useState<ChatTurn[]>([]);
+  const [language, setLanguage] = useState<ChatLanguage | null>(null);
+  const [options, setOptions] = useState<QuestionOption[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [pendingSearch, setPendingSearch] = useState<string | null>(null);
+  const [rangeBounds, setRangeBounds] = useState<{ min: number; max: number; step?: number; label: string } | null>(null);
+  const [recommendationActive, setRecommendationActive] = useState(false);
+  const [showCatalogueBubble, setShowCatalogueBubble] = useState(!isCatalogue);
+  const resetVersionRef = useRef(0);
+  const visibleMessages = deduplicateAssistantQuestions(messages);
+
+  const resetChat = useCallback(() => {
+    resetVersionRef.current += 1;
+    setMessages([]);
+    setLanguage(null);
+    setOptions([]);
+    setRangeBounds(null);
+    setPendingSearch(null);
+    setRecommendationActive(false);
+    setCandidateCars(initialCars);
+    setCars(initialCars);
+    window.dispatchEvent(new CustomEvent('wakala:recommendation-results', { detail: { reset: true } }));
+
+    // Remove only the assistant's search query. Keep any filters the client
+    // may have chosen manually in the catalogue.
+    const params = new URLSearchParams(location.search);
+    params.delete('q');
+    params.delete('query');
+    const search = params.toString();
+    navigate({ pathname: location.pathname, search: search ? `?${search}` : '' }, { replace: true });
+  }, [initialCars, location.pathname, location.search, navigate]);
+
+  const answerGeneral = useCallback(async (message: string, selectedLanguage: ChatLanguage, history: ChatTurn[]) => {
+    let response = '';
+    try {
+      await chatbotService.streamMessage(message, history, (chunk) => { response += chunk; }, undefined, undefined, selectedLanguage);
+      setMessages((current) => [...current, { role: 'assistant', content: response || fallbackHelp(selectedLanguage) }]);
+    } catch {
+      setMessages((current) => [...current, { role: 'assistant', content: fallbackHelp(selectedLanguage) }]);
+    }
+  }, [messages]);
+
+  const selectLanguage = useCallback((nextLanguage: ChatLanguage) => {
+    setLanguage(nextLanguage);
+    const awareClient = client as RecommendationClient & { setLanguage?: (value: ChatLanguage) => void };
+    awareClient.setLanguage?.(nextLanguage);
+    const greetings: Record<ChatLanguage, string> = isCatalogue ? {
+      fr: 'Parfait, vous êtes dans le catalogue. Je vais vous poser quelques questions pour réduire la liste aux voitures les plus adaptées.',
+      darija: 'مزيان، نتا دابا فالكتالوغ. غادي نسولك شي أسئلة باش نوصلو للطوموبيلات اللي كيناسبوك أكثر.',
+      ar: 'ممتاز، أنت الآن في الكتالوج. سأطرح عليك بعض الأسئلة لتقليص القائمة إلى السيارات الأنسب لك.',
+      en: 'Great, you’re in the catalogue. I’ll ask a few questions and narrow the list down to the cars that fit you best.',
+    } : {
+      fr: 'Bonjour ! Je peux répondre à vos questions et vous aider à trouver la voiture idéale.',
+      darija: 'سلام! نقدر نعاونك تلقى الطوموبيل اللي كتناسبك.',
+      ar: 'مرحباً! يمكنني الإجابة عن أسئلتك ومساعدتك في العثور على السيارة المناسبة.',
+      en: 'Hello! I can answer your questions and help you find the right car.',
+    };
+    setMessages((current) => current.length ? [...current, { role: 'assistant', content: greetings[nextLanguage] }] : [{ role: 'assistant', content: greetings[nextLanguage] }]);
+  }, [client, isCatalogue]);
+
+  const send = useCallback(async (message: string, languageOverride?: ChatLanguage, userMessageAlreadyShown = false) => {
+    const detectedLanguage = detectLanguage(message);
+    const activeLanguage = languageOverride || detectedLanguage || language;
+    if (!activeLanguage) return;
+    if (activeLanguage !== language) {
+      setLanguage(activeLanguage);
+      const awareClient = client as RecommendationClient & { setLanguage?: (value: ChatLanguage) => void };
+      awareClient.setLanguage?.(activeLanguage);
+    }
+    const nextHistory = userMessageAlreadyShown
+      ? messages
+      : [...messages, { role: 'user' as const, content: message }];
+    if (!userMessageAlreadyShown) setMessages(nextHistory);
+    setBusy(true);
+    try {
+      if (mode === 'widget') {
+        const detectedRecommendation = await client.detectRecommendationIntent(message);
+        const isAutomotiveConsultation = /\b(what is|what does|explain|how does|why does|problem|issue|fault|warning light|maintenance|service|repair|engine|motor|dci|diesel common rail|oil change|brake|brakes|tyre|tire|battery|overheat|consumption)\b/i.test(message);
+        const isRecommendation = detectedRecommendation || (recommendationActive && !isAutomotiveConsultation);
+        if (!isRecommendation) {
+          // Every automotive answer goes through the API. The complete prior
+          // conversation is sent so follow-up questions retain their context.
+          await answerGeneral(message, activeLanguage, messages);
+          return;
+        }
+        if (detectedRecommendation) setRecommendationActive(true);
+        // A recommendation started from the assistant belongs in the full
+        // catalogue view, where the matching vehicles can be browsed.
+        if (!isCatalogue) {
+          navigate(`/catalogue?q=${encodeURIComponent(message)}`);
+        }
+        // Keep the catalogue layout visible: filters remain on the left and
+        // catalogue vehicles remain in the center while chat sits top-right.
+        setMode('widget');
+      }
+      const isContinuation = /\b(back to|continue|resume|go back|return to|recommendation|recommandation|recommenc|reprendre|retour|نكمل|نرجعو|نعاودو|التوصية)\b/i.test(message);
+      const filtered = isContinuation ? candidateCars : await client.applyAnswer(message, nextHistory, candidateCars);
+      if (!filtered.length) {
+        // Do not turn an empty filter result into a fake final recommendation.
+        // Keep the last visible cars so the client can widen the range.
+        setOptions([]);
+        window.dispatchEvent(new CustomEvent('wakala:recommendation-results', {
+          detail: { cars: [], total: 0, empty: true },
+        }));
+        setMessages((current) => [...deduplicateAssistantQuestions(current), { role: 'assistant', content: noMatchesMessage(activeLanguage) }]);
+        return;
+      }
+      // The number of remaining cars does not mean qualification is complete.
+      // A catalogue can legitimately have three matches before the client has
+      // answered every preference question, so ask for the next criterion
+      // first and only create the final three-car shortlist when there is no
+      // question left.
+      const question = await client.getNextQuestion(nextHistory, filtered);
+      const isFinalRound = !question;
+      let finalCars = filtered.slice(0, 3);
+      if (isFinalRound) {
+        try {
+          const scores = await recommendationService.scoreVehicles8d({
+            vehicle_ids: finalCars.map((car) => car.id),
+            profile: scoringProfile(nextHistory),
+          });
+          const scoreById = new Map(scores.map((score) => [score.vehicle_id, score]));
+          finalCars = finalCars.map((car) => {
+            const score = scoreById.get(car.id);
+            return score
+              ? {
+                  ...car,
+                  eight_dimension_scores: score.scores,
+                  total_8d_score: score.weighted_total,
+                  total_8d_percent: score.weighted_total_percent,
+                }
+              : car;
+          });
+        } catch {
+          // A scoring outage must not discard an otherwise valid shortlist.
+        }
+      }
+      // During discovery, expose the broader compatible set so valid family
+      // alternatives are visible while the client answers questions. Once
+      // qualification is complete, reduce it to the definitive top three.
+      const visibleCars = isFinalRound ? finalCars : filtered.slice(0, 20);
+      setCandidateCars(filtered);
+      setCars(visibleCars);
+      window.dispatchEvent(new CustomEvent('wakala:recommendation-results', {
+        detail: { cars: isFinalRound ? finalCars : filtered, total: filtered.length, final: isFinalRound },
+      }));
+      if (isFinalRound) {
+        setOptions([]);
+        setRangeBounds(null);
+        setMessages((current) => [...deduplicateAssistantQuestions(current), { role: 'assistant', content: finalMatches(activeLanguage, finalCars.length) }]);
+      } else {
+        setOptions(alignQuestionOptions(question?.question || '', question?.options ?? [], activeLanguage));
+        const questionText = question?.question || nextCriterion(activeLanguage);
+        const candidatePrices = filtered
+          .map((car) => Number(car.price))
+          .filter((price) => Number.isFinite(price) && price > 0);
+        const fallbackBudgetRange = /budget|prix|ميزانية/i.test(questionText)
+          ? {
+              min: candidatePrices.length > 1 ? Math.min(...candidatePrices) : 89000,
+              max: candidatePrices.length > 1 ? Math.max(...candidatePrices) : 3278000,
+              step: 5000,
+              label: 'Budget catalogue',
+            }
+          : null;
+        setRangeBounds(question?.rangeBounds || fallbackBudgetRange);
+        setMessages((current) => appendAssistantQuestion(current, questionText));
+      }
+    } catch {
+      setMessages((current) => [...current, { role: 'assistant', content: retryMessage(activeLanguage) }]);
+    } finally {
+      setBusy(false);
+    }
+  }, [answerGeneral, candidateCars, client, isCatalogue, language, messages, mode, navigate, recommendationActive]);
+
+  // The hero search bar and the floating chatbot enter the same conversation.
+  // Keep the message pending until the user selects a language first.
+  useEffect(() => {
+    const handleSearch = (event: Event) => {
+      const message = (event as CustomEvent<{ message?: string }>).detail?.message?.trim();
+      if (!message) return;
+      setMode((current) => current === 'immersive' ? current : 'widget');
+        setMessages([{ role: 'user', content: message }]);
+        setCandidateCars(initialCars);
+        setCars(initialCars.slice(0, 3));
+        setOptions([]);
+        setPendingSearch(message);
+        const detected = detectLanguage(message) || 'fr';
+        setLanguage(detected);
+        (client as RecommendationClient & { setLanguage?: (value: ChatLanguage) => void }).setLanguage?.(detected);
+    };
+    window.addEventListener('wakala:recommendation-search', handleSearch);
+    return () => window.removeEventListener('wakala:recommendation-search', handleSearch);
+  }, [initialCars, language, send]);
+
+  useEffect(() => {
+    setShowCatalogueBubble(!isCatalogue);
+  }, [isCatalogue]);
+
+  useEffect(() => {
+    const handleOpenChat = () => setMode((current) => current === 'immersive' ? current : 'widget');
+    const handleOpenFromHint = () => {
+      setShowCatalogueBubble(true);
+      setMode('widget');
+    };
+    window.addEventListener('wakala:open-chat', handleOpenChat);
+    window.addEventListener('wakala:open-chat-from-hint', handleOpenFromHint);
+    return () => {
+      window.removeEventListener('wakala:open-chat', handleOpenChat);
+      window.removeEventListener('wakala:open-chat-from-hint', handleOpenFromHint);
+    };
+  }, []);
+
+  useEffect(() => {
+    const shouldReserveCatalogueSpace = isCatalogue && mode === 'widget';
+    document.body.classList.toggle('catalogue-chat-open', shouldReserveCatalogueSpace);
+    return () => document.body.classList.remove('catalogue-chat-open');
+  }, [isCatalogue, mode]);
+
+  useEffect(() => {
+    if (!language || !pendingSearch) return;
+    const message = pendingSearch;
+    setPendingSearch(null);
+    void send(message, language, true);
+  }, [language, pendingSearch, send]);
+
+  const handleVoiceResult = useCallback(async (result: { transcript: string; reply: string; language: ChatLanguage }) => {
+    setLanguage(result.language);
+    (client as RecommendationClient & { setLanguage?: (value: ChatLanguage) => void }).setLanguage?.(result.language);
+    if (!result.transcript) return;
+    const isRecommendation = await client.detectRecommendationIntent(result.transcript);
+    if (mode === 'widget' && !isRecommendation && result.reply) {
+      setMessages((current) => [...current, { role: 'user', content: result.transcript }, { role: 'assistant', content: result.reply }]);
+    } else {
+      void send(result.transcript);
+    }
+  }, [client, mode, send]);
+  const voice = useVoiceAssistant({ language: language || 'fr', history: messages, onResult: handleVoiceResult });
+
+  const open = () => {
+    setMode((current) => current === 'launcher' ? 'widget' : 'launcher');
+    window.dispatchEvent(new CustomEvent('wakala:assistant-visibility', { detail: { open: mode === 'launcher' } }));
+  };
+  return (
+    <div className={`recommendation-experience recommendation-experience--${mode}${isCatalogue ? ' recommendation-experience--catalogue' : ''}`}>
+      {mode !== 'launcher' && mode !== 'immersive' && <div className="recommendation-experience__widget"><ChatPanel messages={visibleMessages} options={options} busy={busy} onSend={send} language={language} onLanguageSelect={selectLanguage} onVoiceInput={voice.toggle} voiceRecording={voice.recording} voiceBusy={voice.busy} voiceError={voice.error} catalogueMode={isCatalogue} rangeBounds={rangeBounds} onReset={resetChat} onRangeSelect={(min, max, label) => void send(label === 'Budget catalogue' ? `budget between ${min} and ${max} MAD` : `${label} between ${min} and ${max}`)} /></div>}
+      {mode === 'immersive' && <main className="recommendation-experience__immersive"><CarResultsPanel cars={cars} immersive /><ChatPanel messages={visibleMessages} options={options} busy={busy} onSend={send} language={language} onLanguageSelect={selectLanguage} onVoiceInput={voice.toggle} voiceRecording={voice.recording} voiceBusy={voice.busy} voiceError={voice.error} catalogueMode={isCatalogue} rangeBounds={rangeBounds} onReset={resetChat} onRangeSelect={(min, max, label) => void send(label === 'Budget catalogue' ? `budget between ${min} and ${max} MAD` : `${label} between ${min} and ${max}`)} /></main>}
+      {mode !== 'immersive' && (!isCatalogue || showCatalogueBubble) && <ChatBubbleIcon open={mode === 'widget'} onClick={open} />}
+    </div>
+  );
+}
+
+function detectLanguage(message: string): ChatLanguage | null {
+  if (/[؀-ۿ]/.test(message)) return /(?:شنو|بغيت|واش|tomobil|سيارة)/i.test(message) ? 'darija' : 'ar';
+  if (/\b(the|what|which|want|need|car|budget|recommend)\b/i.test(message)) return 'en';
+  if (/[àâçéèêëîïôùûüÿœ]|\b(je|cherche|voiture|budget|bonjour|merci|quel)\b/i.test(message)) return 'fr';
+  return null;
+}
+
+function scoringProfile(history: ChatTurn[]): { usage?: string; priorities: string[] } {
+  const text = history
+    .filter((turn) => turn.role === 'user')
+    .map((turn) => turn.content)
+    .join(' ')
+    .toLowerCase();
+  const priorities: string[] = [];
+  if (/safe|safety|security|sécurité|ncap|السلامة|آمن/i.test(text)) priorities.push('securite');
+  if (/space|trunk|boot|luggage|suitcase|coffre|bagages|family|famille|حقائب|العائلة/i.test(text)) priorities.push('espace');
+  if (/econom|consumption|consommation|cost|coût|conso|استهلاك/i.test(text)) priorities.push('cout_reel');
+  if (/performance|power|puissance|acceleration|sport|قوية/i.test(text)) priorities.push('performance');
+  if (/hybrid|electric|électrique|ecolog|co2|بيئي/i.test(text)) priorities.push('ecologie');
+  if (/4x4|awd|off.?road|terrain|motricité|دفع رباعي/i.test(text)) priorities.push('motricite');
+
+  let usage: string | undefined;
+  if (/mostly city|city driving|ville|urbain|commut|مدينة/i.test(text)) usage = 'ville';
+  else if (/mostly highway|highway|autoroute|motorway|long trip|طريق/i.test(text)) usage = 'route';
+  else if (/both|mixed|mixte|بجوج|مخلط/i.test(text)) usage = 'mixte';
+
+  return { usage, priorities: [...new Set(priorities)] };
+}
+
+function fallbackHelp(language: ChatLanguage): string {
+  return { fr: 'Je peux vous aider à choisir une voiture, comparer des modèles ou estimer un budget.', darija: 'نقدر نعاونك تختار طوموبيل، تقارن الموديلات، ولا نحسب ليك الميزانية.', ar: 'يمكنني مساعدتك في اختيار سيارة أو مقارنة الطرازات أو تقدير الميزانية.', en: 'I can help you choose a car, compare models, or estimate a budget.' }[language];
+}
+
+function finalMatches(language: ChatLanguage, count: number): string {
+  return {
+    fr: `Voici vos ${count} meilleurs matchs. Je les ai classés selon vos priorités.`,
+    darija: `هادو هما أحسن ${count} اختيارات ليك، مرتبين على حساب الأولويات ديالك.`,
+    ar: `هذه أفضل ${count} سيارات مناسبة لك، مرتبة حسب أولوياتك.`,
+    en: `Here are your ${count} best matches, ranked by your priorities.`,
+  }[language];
+}
+
+function noMatchesMessage(language: ChatLanguage): string {
+  return {
+    fr: 'Aucun véhicule ne correspond à tous ces critères. Élargissez la fourchette pour continuer.',
+    darija: 'Ma kayna 7ta tomobil katnasab m3a had les critères كاملين. Wesse3 chwiya l-fourchette bach nkemlo.',
+    ar: 'لا توجد سيارة تطابق جميع هذه المعايير. وسّع النطاق قليلاً للمتابعة.',
+    en: 'No vehicles match all of these criteria. Widen the range slightly to continue.',
+  }[language];
+}
+
+function alignQuestionOptions(question: string, options: QuestionOption[], language: ChatLanguage): QuestionOption[] {
+  const text = question.toLowerCase();
+  if (/(fuel|carburant|وقود)/i.test(text) && language === 'en') {
+    return [
+      { label: 'Petrol', value: 'essence' },
+      { label: 'Diesel', value: 'diesel' },
+      { label: 'Hybrid', value: 'hybride' },
+      { label: 'Electric', value: 'electrique' },
+    ];
+  }
+  if (/(use the car|mainly use|city driving,?\s*(highways|autoroute)|surtout en ville|ville,?\s*(sur autoroute|ou))/i.test(text) && language === 'en') {
+    return [{ label: 'Mostly city' }, { label: 'Mostly highway' }, { label: 'Both' }];
+  }
+  return options;
+}
+
+function nextCriterion(language: ChatLanguage): string {
+  return { fr: 'Quel critère compte le plus pour vous ?', darija: 'شنو هو المعيار اللي مهم أكثر بالنسبة ليك؟', ar: 'ما هو المعيار الأهم بالنسبة لك؟', en: 'Which criterion matters most to you?' }[language];
+}
+
+function retryMessage(language: ChatLanguage): string {
+  return { fr: 'Je n’ai pas pu actualiser la sélection. Réessayez dans un instant.', darija: 'ماقدرتش نحدّث ليك الاختيارات. عاود جرّب من بعد شوية.', ar: 'تعذر تحديث الاختيارات. حاول مرة أخرى بعد قليل.', en: 'I could not refresh the selection. Please try again shortly.' }[language];
+}
+
+function deduplicateAssistantQuestions(messages: ChatTurn[]): ChatTurn[] {
+  const seen = new Set<string>();
+  return messages.filter((message) => {
+    if (message.role !== 'assistant' || !/[?؟]\s*$/.test(message.content.trim())) return true;
+    const key = message.content.trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function appendAssistantQuestion(messages: ChatTurn[], question: string): ChatTurn[] {
+  const deduplicated = deduplicateAssistantQuestions(messages);
+  const alreadyShown = deduplicated.some((message) => message.role === 'assistant' && message.content.trim() === question.trim());
+  return alreadyShown ? deduplicated : [...deduplicated, { role: 'assistant', content: question }];
+}

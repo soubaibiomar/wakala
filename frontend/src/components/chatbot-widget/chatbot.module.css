@@ -80,6 +80,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
   animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: auto;
 }
@@ -214,6 +215,7 @@
 /* ─── Messages area ─────────────────────────────────── */
 .windowMessages {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 16px;
@@ -1058,4 +1060,3 @@
     transform: scaleY(0.85);
   }
 }
-

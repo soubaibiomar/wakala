@@ -40,6 +40,7 @@ logger = logging.getLogger("WakalaMasterImporter")
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
+from data_pipeline.scripts.catalogue_mapping import infer_body_type
 
 # Namespaces & Defaults
 WAKALA_NAMESPACE = uuid.UUID("e743a18e-42c2-4876-9051-b841e4eb4192")
@@ -303,9 +304,27 @@ def main():
         existing_brands = {row[1].lower(): row[0] for row in conn.execute(text("SELECT id, name FROM car_brands")).fetchall()}
         existing_brands_slug = {row[1]: row[0] for row in conn.execute(text("SELECT id, slug FROM car_brands")).fetchall()}
 
-        existing_models = {row[1]: row[0] for row in conn.execute(text("SELECT id, slug FROM car_models")).fetchall()}
+        existing_models = {
+            (row[1], row[2]): row[0]
+            for row in conn.execute(text("SELECT id, brand_id, slug FROM car_models")).fetchall()
+        }
         existing_trims = {row[1]: row[0] for row in conn.execute(text("SELECT id, slug FROM car_trims")).fetchall()}
-        existing_vehicles = {row[1]: row[0] for row in conn.execute(text("SELECT id, version FROM vehicles WHERE source = 'wakala_catalogue'")).fetchall()}
+        existing_vehicles = {
+            (str(row[1]).strip().lower(), str(row[2]).strip().lower(), str(row[3]).strip().lower()): row[0]
+            for row in conn.execute(text("SELECT id, brand, model, version FROM vehicles WHERE source = 'wakala_catalogue'")).fetchall()
+        }
+
+        target_brands = {
+            slugify(str(sheet_val.cell(r, 1).value).strip())
+            for r in range(2, sheet_val.max_row + 1)
+            if sheet_val.cell(r, 1).value
+        }
+        # Hide the previous import while preserving listings and interaction history.
+        conn.execute(text("UPDATE vehicles SET status = 'deleted' WHERE source = 'wakala_catalogue'"))
+        conn.execute(text("UPDATE car_trims SET is_available_in_morocco = false"))
+        for brand_row in conn.execute(text("SELECT slug FROM car_brands")).fetchall():
+            if brand_row[0] not in target_brands:
+                conn.execute(text("UPDATE car_brands SET is_active = false, updated_at = :now WHERE slug = :slug"), {"slug": brand_row[0], "now": now})
 
         # Assurer que le vendeur système existe
         conn.execute(
@@ -393,6 +412,12 @@ def main():
             conso_real_val = parse_float(conso_real_raw)
             autonomie_val = parse_int(sheet_val.cell(r, 22).value)
 
+            # Initial model-level value; the vehicle-level value is refined
+            # below with brand, trim, dimensions, and 4x4 information.
+            # Use the same explicit classifier for both tables so catalogue
+            # cards cannot disagree with their underlying vehicle versions.
+            body_norm = infer_body_type(brand_name, model_name, "", length_cm, False, None)
+
             # Scores 8D Wakala (1-5)
             score_espace = parse_score_5(sheet_val.cell(r, 24).value)
             score_securite = parse_score_5(sheet_val.cell(r, 25).value)
@@ -406,8 +431,6 @@ def main():
 
             fuel_norm = normalize_fuel_type(engine_type_raw)
             trans_norm = normalize_transmission(transmission_raw)
-            body_norm = normalize_body_type(model_name)
-
             real_image = resolve_real_image(brand_name, model_name)
 
             fiscal_cv = 6
@@ -467,7 +490,7 @@ def main():
             model_slug = slugify(f"{brand_name}-{model_name}")
             model_key = (brand_slug, model_slug)
             if model_key not in models_map:
-                m_id = existing_models.get(model_slug)
+                m_id = existing_models.get((brand_id, model_slug))
                 if not m_id:
                     m_id = uuid.uuid5(WAKALA_NAMESPACE, f"model:{model_slug}")
 
@@ -552,10 +575,13 @@ def main():
                         :euro_ncap_stars, :image_url, true, :now, :now
                     )
                     ON CONFLICT (id) DO UPDATE SET
+                        model_id = EXCLUDED.model_id,
+                        powertrain_id = EXCLUDED.powertrain_id,
                         price_new_mad = EXCLUDED.price_new_mad,
                         trunk_capacity_l = EXCLUDED.trunk_capacity_l,
                         euro_ncap_stars = EXCLUDED.euro_ncap_stars,
                         image_url = EXCLUDED.image_url,
+                        is_available_in_morocco = true,
                         updated_at = :now;
                 """),
                 {
@@ -574,11 +600,20 @@ def main():
             )
 
             # ── 5. Table `vehicles` (Catalogue Showroom Neuf) ─────────────────
-            veh_id = existing_vehicles.get(trim_name)
+            vehicle_key = (brand_name.lower(), model_name.lower(), trim_name.lower())
+            veh_id = existing_vehicles.get(vehicle_key)
             if not veh_id:
                 veh_id = uuid.uuid5(WAKALA_NAMESPACE, f"vehicle:neuf:{trim_slug}")
 
             is_4x4_val = "4x4" in f"{model_name} {trim_name}".lower() or "awd" in f"{model_name} {trim_name}".lower()
+            body_norm = infer_body_type(
+                brand_name,
+                model_name,
+                trim_name,
+                length_cm,
+                is_4x4_val,
+                None,
+            )
 
             conn.execute(
                 text("""
@@ -586,14 +621,16 @@ def main():
                         id, seller_id, brand, model, version, year, mileage, fuel_type, body_type,
                         transmission, engine_power_hp, color, doors, seats, city, price,
                         description, status, source_url, trunk_volume_l, ncap_rating, fuel_consumption,
-                        co2_emissions, length_cm, is_4x4, engine_type, condition, source,
+                        co2_emissions, length_cm, width_cm, height_cm, official_consumption,
+                        real_consumption, electric_range_km, is_4x4, engine_type, condition, source,
                         created_at, updated_at
                     )
                     VALUES (
                         :id, :seller_id, :brand, :model, :version, 2026, 0, :fuel_type, :body_type,
                         :transmission, :engine_power_hp, 'Blanc Glacier', 5, 5, 'Casablanca', :price,
                         :description, 'available', :source_url, :trunk_volume_l, :ncap_rating, :fuel_consumption,
-                        :co2_emissions, :length_cm, :is_4x4, :engine_type, 'neuf', 'wakala_catalogue',
+                        :co2_emissions, :length_cm, :width_cm, :height_cm, :official_consumption,
+                        :real_consumption, :electric_range_km, :is_4x4, :engine_type, 'new', 'wakala_catalogue',
                         :now, :now
                     )
                     ON CONFLICT (id) DO UPDATE SET
@@ -602,8 +639,16 @@ def main():
                         fuel_consumption = EXCLUDED.fuel_consumption,
                         co2_emissions = EXCLUDED.co2_emissions,
                         length_cm = EXCLUDED.length_cm,
+                        width_cm = EXCLUDED.width_cm,
+                        height_cm = EXCLUDED.height_cm,
+                        official_consumption = EXCLUDED.official_consumption,
+                        real_consumption = EXCLUDED.real_consumption,
+                        electric_range_km = EXCLUDED.electric_range_km,
                         engine_power_hp = EXCLUDED.engine_power_hp,
+                        body_type = EXCLUDED.body_type,
                         source_url = EXCLUDED.source_url,
+                        status = 'available',
+                        condition = 'new',
                         updated_at = :now;
                 """),
                 {
@@ -624,6 +669,11 @@ def main():
                     "fuel_consumption": conso_val,
                     "co2_emissions": co2_val,
                     "length_cm": length_cm,
+                    "width_cm": width_cm,
+                    "height_cm": height_cm,
+                    "official_consumption": conso_val,
+                    "real_consumption": conso_real_val,
+                    "electric_range_km": autonomie_val,
                     "is_4x4": is_4x4_val,
                     "engine_type": engine_type_raw,
                     "now": now,
@@ -678,21 +728,55 @@ def main():
                 }
             )
 
-            # ── 7. Couleurs de base par défaut ───────────────────────────────
-            conn.execute(
-                text("""
-                    INSERT INTO vehicle_colors (id, vehicle_id, color_name, hex_code, price_delta, is_default, created_at, updated_at)
-                    VALUES (:id, :vehicle_id, 'Blanc Nacré', '#F8FAFC', 0, true, :now, :now)
-                    ON CONFLICT (id) DO NOTHING;
-                """),
-                {
-                    "id": uuid.uuid5(WAKALA_NAMESPACE, f"color:{veh_id}:blanc"),
-                    "vehicle_id": veh_id,
-                    "now": now
-                }
-            )
-
             imported_trims += 1
+
+        # Reconcile every stored vehicle, including legacy rows imported from
+        # external fiche-technique sources. Without this pass, a corrected
+        # master model could still display an old `berline` value on a card.
+        all_vehicles = conn.execute(
+            text("""
+                SELECT id, brand, model, version, length_cm, is_4x4
+                FROM vehicles
+            """)
+        ).mappings().all()
+        reconciled = 0
+        for vehicle in all_vehicles:
+            corrected_body = infer_body_type(
+                vehicle["brand"],
+                vehicle["model"],
+                vehicle["version"],
+                vehicle["length_cm"],
+                bool(vehicle["is_4x4"]),
+                None,
+            )
+            conn.execute(
+                text("UPDATE vehicles SET body_type = :body_type, updated_at = :now WHERE id = :id"),
+                {"body_type": corrected_body, "now": now, "id": vehicle["id"]},
+            )
+            reconciled += 1
+
+        logger.info(f"   • Carrosseries réconciliées : {reconciled}")
+
+        # Keep model cards synchronized as well. Some legacy fiche-technique
+        # imports created model rows with a default `berline` value even when
+        # all their catalogue vehicles are SUVs or pick-ups.
+        all_models = conn.execute(
+            text("""
+                SELECT m.id, b.name AS brand, m.name
+                FROM car_models m
+                JOIN car_brands b ON b.id = m.brand_id
+            """)
+        ).mappings().all()
+        reconciled_models = 0
+        for model in all_models:
+            corrected_body = infer_body_type(model["brand"], model["name"], "", None, False, None)
+            conn.execute(
+                text("UPDATE car_models SET body_type = :body_type, updated_at = :now WHERE id = :id"),
+                {"body_type": corrected_body, "now": now, "id": model["id"]},
+            )
+            reconciled_models += 1
+
+        logger.info(f"   • Modèles réconciliés : {reconciled_models}")
 
         logger.info("✅ Importation terminée avec succès !")
         logger.info(f"📊 Statistiques :")

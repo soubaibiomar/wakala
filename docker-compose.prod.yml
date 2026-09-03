@@ -48,10 +48,25 @@ services:
       sh -c "python scripts/seed_morocco_new_cars.py &&
              uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-wakala_db}
+      - APP_ENV=production
+      - DEBUG=false
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set in .env}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:?POSTGRES_USER must be set in .env}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+      - POSTGRES_DB=${POSTGRES_DB:-wakala_db}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:?NEO4J_PASSWORD must be set in .env}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET:?WEBHOOK_SECRET must be set in .env}
+      - CORS_ORIGINS=${CORS_ORIGINS:?CORS_ORIGINS must be set in .env}
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-}
+      - TTS_VOICE_FR=${TTS_VOICE_FR:-}
+      - TTS_VOICE_DARIJA=${TTS_VOICE_DARIJA:-}
+      - TTS_VOICE_AR=${TTS_VOICE_AR:-}
+      - TTS_VOICE_EN=${TTS_VOICE_EN:-}
+      - VOICE_MAX_SECONDS=${VOICE_MAX_SECONDS:-90}
       - REDIS_URL=redis://redis:6379/0
       - QDRANT_URL=http://qdrant:6333
-      - ENVIRONMENT=production
     depends_on:
       postgres:
         condition: service_healthy

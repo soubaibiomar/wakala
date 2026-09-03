@@ -41,7 +41,7 @@ import ComparatifPage from './pages/ComparatifPage';
 import VilleCataloguePage from './pages/VilleCataloguePage';
 import FinancementPage from './pages/FinancementPage';
 import OrganizationStructuredData from './components/seo/OrganizationStructuredData';
-import ChatbotWidget from './components/chatbot-widget/ChatbotWidget';
+import RecommendationExperience from './components/recommendation-experience/RecommendationExperience';
 import CompareDrawer from './components/compare/CompareDrawer';
 import DashboardLayout from './components/dashboard/DashboardLayout';
 import DashboardIndex from './pages/Dashboard';
@@ -70,46 +70,46 @@ function Footer() {
         <div>
           <div className="footer__brand">Wakala</div>
           <p className="footer__desc">
-            Le tiers de confiance automobile au Maroc.
-            Catalogue officiel certifié 100% véhicules neufs, Scoring Déterministe 8D,
-            simulateur de dédouanement (Diwana) et Conseiller IA multilingue.
+            Votre partenaire de confiance pour l’achat automobile au Maroc.
+            Comparez les véhicules neufs, consultez des fiches techniques fiables,
+            estimez les frais d’importation et trouvez le modèle adapté à vos besoins.
           </p>
         </div>
         <div>
-          <div className="footer__title">Plateforme &amp; Guides</div>
+          <div className="footer__title">Nos services</div>
           <ul className="footer__list">
-            <li><Link to="/guide-achat-voiture-maroc">Guide d'Achat Maroc (Pilier)</Link></li>
-            <li><Link to="/catalogue">Catalogue Véhicules Neufs</Link></li>
-            <li><Link to="/financement-auto-maroc">Financement &amp; Mourabaha</Link></li>
-            <li><Link to="/comparateur">Comparateur Radar 8D</Link></li>
-            <li><Link to="/dedouanement">Simulateur Dédouanement</Link></li>
-            <li><Link to="/chat">Conseiller IA Multilingue</Link></li>
+            <li><Link to="/guide-achat-voiture-maroc">Guide d’achat automobile</Link></li>
+            <li><Link to="/catalogue">Catalogue de voitures neuves</Link></li>
+            <li><Link to="/financement-auto-maroc">Financement et Mourabaha</Link></li>
+            <li><Link to="/comparateur">Comparateur de véhicules</Link></li>
+            <li><Link to="/dedouanement">Simulateur de dédouanement</Link></li>
+            <li><Link to="/chat">Assistant automobile multilingue</Link></li>
           </ul>
         </div>
         <div>
-          <div className="footer__title">Villes &amp; Réseau</div>
+          <div className="footer__title">Villes et réseau</div>
           <ul className="footer__list">
             <li><Link to="/voitures-neuves/casablanca">Casablanca</Link></li>
             <li><Link to="/voitures-neuves/rabat">Rabat</Link></li>
             <li><Link to="/voitures-neuves/marrakech">Marrakech</Link></li>
             <li><Link to="/voitures-neuves/tanger">Tanger</Link></li>
             <li><Link to="/voitures-neuves/agadir">Agadir</Link></li>
-            <li><Link to="/marque">Toutes les Marques</Link></li>
+            <li><Link to="/marque">Toutes les marques</Link></li>
           </ul>
         </div>
         <div>
-          <div className="footer__title">Technologie &amp; Légal</div>
+          <div className="footer__title">Wakala</div>
           <ul className="footer__list">
-            <li><Link to="/score-de-confiance">Scoring Déterministe 8D</Link></li>
-            <li><Link to="/technologie">IA &amp; Big Data</Link></li>
+            <li><Link to="/score-de-confiance">Score de confiance Wakala</Link></li>
+            <li><Link to="/technologie">Technologie et données</Link></li>
             <li><Link to="/a-propos">À propos de Wakala</Link></li>
-            <li><Link to="/contact">Contact &amp; Réseau</Link></li>
+            <li><Link to="/contact">Nous contacter</Link></li>
             <li><Link to="/mentions-legales">Mentions légales</Link></li>
           </ul>
         </div>
       </div>
       <div className="footer__bottom">
-        © {new Date().getFullYear()} Wakala — Tiers de Confiance Automobile au Maroc
+        © {new Date().getFullYear()} Wakala — L’automobile en toute confiance au Maroc
       </div>
     </footer>
   );
@@ -126,7 +126,7 @@ function MainLayout() {
         <Outlet />
       </main>
       <Footer />
-      <ChatbotWidget />
+      <RecommendationExperience />
       <CompareDrawer />
     </>
   );

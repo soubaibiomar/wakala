@@ -11,7 +11,11 @@ from app.models.user import User
 from app.ml.fraud.broker_detector import broker_detector
 from app.services.kpi_sentinel_service import kpi_sentinel
 
-router = APIRouter(prefix="/admin", tags=["Admin & Modération"])
+router = APIRouter(
+    prefix="/admin",
+    tags=["Admin & Modération"],
+    dependencies=[Depends(require_role("admin"))],
+)
 
 @router.post("/detect-brokers", summary="Lancer la détection de courtiers (Neo4j)")
 async def run_broker_detection(
@@ -731,6 +735,5 @@ async def delete_admin_vehicle(
         "status": "success",
         "message": f"Véhicule {vehicle.brand} {vehicle.model} supprimé du catalogue avec succès."
     }
-
 
 

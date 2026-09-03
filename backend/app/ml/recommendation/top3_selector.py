@@ -179,6 +179,11 @@ def _apply_hard_filters(
 
     # Try strict filtering
     candidates = [v for v in available if passes(v, active_filters)]
+    # A requested brand is an immutable hard constraint. Returning one or two
+    # matching vehicles is correct; replacing them with another brand is not.
+    if brand and len(candidates) < 3:
+        return candidates, None
+
     if len(candidates) >= 3:
         return candidates, None
 
@@ -193,8 +198,8 @@ def _apply_hard_filters(
             if len(candidates) >= 3:
                 return candidates, relaxed
 
-    # Last resort: all available vehicles
-    if not candidates:
+    # Last resort is only valid when no identity constraint was supplied.
+    if not candidates and not brand:
         candidates = available
 
     return candidates, relaxed

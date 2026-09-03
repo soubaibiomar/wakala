@@ -20,6 +20,7 @@ class HybridEngine:
         page_size: int = 20,
         cold_start: bool = False,
         user_id: Optional[str] = None,
+        diversity_types: Optional[dict[str, str]] = None,
     ) -> RecommendationResponse:
         score_map: dict[str, dict] = {}
 
@@ -93,6 +94,25 @@ class HybridEngine:
             )
 
         results.sort(key=lambda x: x.match_score, reverse=True)
+
+        # A family recommendation should not be monopolized by the most
+        # common body style in the catalogue (currently SUVs). Promote the
+        # strongest candidate from each practical family shape first, then
+        # preserve the normal score order for the remaining vehicles.
+        if diversity_types:
+            preferred_types = ["monospace", "suv", "break", "berline", "citadine"]
+            selected_ids: set[str] = set()
+            diversified: list[RecommendationResult] = []
+            for body_type in preferred_types:
+                for result in results:
+                    if result.vehicle_id in selected_ids:
+                        continue
+                    if (diversity_types.get(result.vehicle_id) or "").lower() == body_type:
+                        diversified.append(result)
+                        selected_ids.add(result.vehicle_id)
+                        break
+            diversified.extend(result for result in results if result.vehicle_id not in selected_ids)
+            results = diversified
 
         total = len(results)
         start = (page - 1) * page_size

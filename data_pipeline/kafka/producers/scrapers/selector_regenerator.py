@@ -8,6 +8,12 @@ from bs4 import BeautifulSoup
 
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
+
+OPENROUTER_MODELS = [
+    "nvidia/nemotron-3.5-lightning:free",
+    "google/gemma-4-31b-it:free",
+    "openrouter/free",
+]
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from .selector_review_queue import SelectorReviewQueue
@@ -21,11 +27,11 @@ logger = logging.getLogger(__name__)
 
 class SelectorRegenerator:
     def __init__(self):
-        # We use the Ollama code model for reasoning capabilities
         self.llm = ChatOpenAI(
-            base_url="http://localhost:11434/v1",
-            api_key=os.getenv("OLLAMA_API_KEY", "ollama"),
-            model="qwen2.5-coder:7b",
+            base_url=os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
+            api_key=os.getenv("OPENROUTER_API_KEY", ""),
+            model=os.getenv("OPENROUTER_MODEL", ""),
+            extra_body={"models": OPENROUTER_MODELS},
             temperature=0.1
         )
         self.review_queue = SelectorReviewQueue()

@@ -13,7 +13,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Initialize Qdrant client asynchronously
-qdrant_client = AsyncQdrantClient(host=settings.QDRANT_HOST, port=settings.QDRANT_PORT) if QDRANT_AVAILABLE else None
+qdrant_client = (
+    AsyncQdrantClient(url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY)
+    if settings.QDRANT_URL
+    else AsyncQdrantClient(host=settings.QDRANT_HOST, port=settings.QDRANT_PORT)
+) if QDRANT_AVAILABLE else None
 
 async def ensure_collection_exists(collection_name: str, vector_size: int = 1024):
     """

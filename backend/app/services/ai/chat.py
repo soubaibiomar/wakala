@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import re
 import json
 import asyncio
@@ -5,7 +6,6 @@ import httpx
 from typing import AsyncIterable, List, Dict, Any, Optional
 try:
     from langchain_openai import ChatOpenAI
-    from langchain_community.embeddings import OllamaEmbeddings
     from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
     from langchain_core.prompts import ChatPromptTemplate
     LANGCHAIN_AVAILABLE = True
@@ -14,10 +14,6 @@ except ImportError:
     class ChatOpenAI:  # type: ignore[no-redef]
         def __init__(self, *args: Any, **kwargs: Any) -> None: pass
         def bind(self, *args: Any, **kwargs: Any) -> Any: return self
-    class OllamaEmbeddings:  # type: ignore[no-redef]
-        def __init__(self, *args: Any, **kwargs: Any) -> None: pass
-        async def aembed_query(self, text: str) -> list[float]: return []
-        def embed_query(self, text: str) -> list[float]: return []
     class SystemMessage:  # type: ignore[no-redef]
         def __init__(self, content: str): self.content = content
     class HumanMessage(SystemMessage): pass  # type: ignore[no-redef]
@@ -37,61 +33,8 @@ except ImportError:
 from app.core.config import settings
 from app.services.ai.qdrant import get_qdrant_client
 
-async def _stream_ollama_direct(messages_payload: list[dict]) -> AsyncIterable[str]:
-    """Stream des tokens en direct depuis Ollama local via API native avec haute résilience."""
-    ollama_base = (settings.OLLAMA_BASE_URL or "http://localhost:11434").replace("/v1", "").rstrip("/")
-    url = f"{ollama_base}/api/chat"
-    payload = {
-        "model": settings.OLLAMA_MODEL_TEXT or "qwen3:8b",
-        "messages": messages_payload,
-        "stream": True,
-        "options": {
-            "temperature": 0.2,
-            "num_predict": 450,
-        }
-    }
-    try:
-        async with httpx.AsyncClient(timeout=45.0) as client:
-            async with client.stream("POST", url, json=payload) as response:
-                if response.status_code == 200:
-                    async for line in response.aiter_lines():
-                        if line:
-                            try:
-                                data = json.loads(line)
-                                delta = data.get("message", {}).get("content", "")
-                                if delta:
-                                    yield delta
-                            except Exception:
-                                pass
-                else:
-                    # Fallback OpenAI-compatible endpoint on Ollama
-                    openai_url = f"{ollama_base}/v1/chat/completions"
-                    openai_payload = {
-                        "model": settings.OLLAMA_MODEL_TEXT or "llama3.2:1b",
-                        "messages": messages_payload,
-                        "stream": True,
-                        "temperature": 0.2,
-                        "max_tokens": 450,
-                    }
-                    async with client.stream("POST", openai_url, json=openai_payload) as resp2:
-                        async for line2 in resp2.aiter_lines():
-                            if line2.startswith("data: "):
-                                data_str2 = line2[6:].strip()
-                                if data_str2 == "[DONE]":
-                                    break
-                                try:
-                                    d2 = json.loads(data_str2)
-                                    delta2 = d2["choices"][0].get("delta", {}).get("content", "")
-                                    if delta2:
-                                        yield delta2
-                                except Exception:
-                                    pass
-    except Exception as e:
-        print(f"[Ollama Direct Stream Fallback Error] {e}")
-
-
 async def _stream_openrouter_direct(messages_payload: list[dict]) -> AsyncIterable[str]:
-    """Stream des tokens depuis OpenRouter avec basculement automatique et transparent sur Ollama en cas de quota épuisé (429/402), erreur réseau ou timeout."""
+    """Stream des tokens depuis OpenRouter sans fournisseur local de secours."""
     headers = {
         "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
         "HTTP-Referer": "https://wakala.ma",
@@ -99,11 +42,15 @@ async def _stream_openrouter_direct(messages_payload: list[dict]) -> AsyncIterab
         "Content-Type": "application/json",
     }
     payload = {
-        "model": settings.OPENROUTER_MODEL,
+        "models": settings.OPENROUTER_MODELS,
         "messages": messages_payload,
         "stream": True,
         "temperature": 0.2,
-        "max_tokens": 650,
+        "max_tokens": 360,
+        # The selected OpenRouter model can spend the complete token budget
+        # emitting hidden reasoning and leave the user with an empty stream.
+        # Exclude reasoning so every request produces an actual answer.
+        "reasoning": {"exclude": True},
     }
     url = f"{settings.OPENROUTER_BASE_URL.rstrip('/')}/chat/completions"
     
@@ -111,11 +58,10 @@ async def _stream_openrouter_direct(messages_payload: list[dict]) -> AsyncIterab
     should_fallback = False
     
     try:
-        async with httpx.AsyncClient(timeout=25.0) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(8.0, connect=4.0)) as client:
             async with client.stream("POST", url, json=payload, headers=headers) as response:
-                # Si quota épuisé (402, 429), erreur serveur (5xx) ou auth (401)
                 if response.status_code != 200:
-                    print(f"[OpenRouter Status {response.status_code}] Basculement automatique transparent vers Ollama local...")
+                    print(f"[OpenRouter Status {response.status_code}] Cloud provider request failed")
                     should_fallback = True
                 else:
                     async for line in response.aiter_lines():
@@ -132,21 +78,19 @@ async def _stream_openrouter_direct(messages_payload: list[dict]) -> AsyncIterab
                             except Exception:
                                 pass
     except Exception as e:
-        print(f"[OpenRouter Stream Exception: {e}] Basculement automatique transparent vers Ollama local...")
+        print(f"[OpenRouter Stream Exception: {e}] Cloud provider request failed")
         should_fallback = True
 
-    # Si OpenRouter a échoué ou n'a renvoyé aucun token, on relaie immédiatement vers Ollama
     if should_fallback or not yielded_any:
-        async for chunk in _stream_ollama_direct(messages_payload):
-            yield chunk
+        yield "Le service IA est temporairement indisponible. Veuillez réessayer."
 
 
-# Define the models
 def get_llm():
     if settings.OPENROUTER_API_KEY:
         return ChatOpenAI(
             base_url=settings.OPENROUTER_BASE_URL,
             model=settings.OPENROUTER_MODEL,
+            extra_body={"models": settings.OPENROUTER_MODELS},
             api_key=settings.OPENROUTER_API_KEY,
             temperature=0.2,
             max_tokens=450,
@@ -157,43 +101,52 @@ def get_llm():
                 "X-Title": "Wakala Platform",
             }
         )
-    api_key = settings.OPENAI_API_KEY or "ollama"
-    return ChatOpenAI(
-        base_url=settings.OLLAMA_BASE_URL,
-        model=settings.OLLAMA_MODEL_TEXT,
-        api_key=api_key,
-        temperature=0.2,
-        max_tokens=380,
-        request_timeout=25.0,
-        timeout=25.0,
-        extra_body={
-            "options": {
-                "num_ctx": 4096,
-                "num_predict": 380,
-                "repeat_penalty": 1.15,
-            }
-        }
-    )
+    raise RuntimeError("OPENROUTER_API_KEY is not configured")
 
-_ollama_base = settings.OLLAMA_BASE_URL.replace("/v1", "") if settings.OLLAMA_BASE_URL else "http://localhost:11434"
-embeddings_model = OllamaEmbeddings(base_url=_ollama_base, model="bge-m3")
-
-# ─── Filtre strict d'emojis ──────────────────────────────────
 EMOJI_PATTERN = re.compile(
-    r'[\U00010000-\U0010ffff]|[\u2600-\u27BF]|[\uD83C-\uDBFF\uDC00-\uDFFF]|[\u2300-\u23FF]|[\u2B50\u2B55\u2934\u2935\u25AA\u25AB\u25FE\u25FD\u25FB\u25FC\u25B6\u25C0\u3030\u303D\u3297\u3299\uFE0F]'
+    r'[\U00010000-\U0010ffff]|[\u2600-\u27BF]|[\u2300-\u23FF]|[\u2B50\u2B55\u2934\u2935\u25AA\u25AB\u25FE\u25FD\u25FB\u25FC\u25B6\u25C0\u3030\u303D\u3297\u3299\uFE0F]'
 )
 
-
 def remove_emojis(text: str) -> str:
-    """Supprime impérativement tous les emojis du texte."""
     if not text:
         return ""
     cleaned = EMOJI_PATTERN.sub('', text)
     cleaned = re.sub(r' {2,}', ' ', cleaned)
     return cleaned
 
+def scrub_thinking(text: str) -> str:
+    if not text:
+        return ""
+    if "<think>" in text:
+        text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
+        if "<think>" in text:
+            text = text.split("<think>")[0]
 
-# ─── Dictionnaires de détection de langue ─────────────────────
+    thinking_markers = [
+        "Here's a thinking process:",
+        "Here is a thinking process:",
+        "Thinking Process:",
+        "Thinking process:",
+        "Thought process:",
+        "Thought:",
+        "Reasoning Process:"
+    ]
+    for marker in thinking_markers:
+        if marker in text:
+            after = text.split(marker, 1)[1]
+            parts = re.split(r'\n\n(?=[A-Z\*\#\-\u0600-\u06FF])', after)
+            real_parts = []
+            for p in parts:
+                p_str = p.strip()
+                if not p_str:
+                    continue
+                if re.match(r'^\d+\.\s*(?:\*\*)?(?:Analyze|Determine|Formulate|Identify|Review|Understand|Draft|Recall|Check|Acknowledge)', p_str, re.I):
+                    continue
+                real_parts.append(p_str)
+            text = '\n\n'.join(real_parts)
+
+    return text.strip()
+
 DARIJA_LATIN_KEYWORDS = {
     'salam', 'slm', 'labas', 'kidayr', 'ki', 'dayr', 'kidayra', 'chno', 'chnou',
     'ashno', 'ashnou', 'achno', 'achnou', 'ach', 'ash', 'chmen', 'ashmen', 'achmen',
@@ -213,9 +166,9 @@ DARIJA_LATIN_KEYWORDS = {
 
 DARIJA_ARABIC_KEYWORDS = [
     'واش', 'بغيت', 'بْغيت', 'كاين', 'كاينة', 'كاينين', 'ديال', 'ديالي', 'ديالها', 'ديالهم',
-    'طوموبيل', 'طوموبيلا', 'طوموبيلات', 'سيارات', 'شحال', 'بشحال', 'مزيان', 'مزيانة',
-    'لاباس', 'كي داير', 'خويا', 'أشمن', 'فين', 'بلاصة', 'فلوس', 'مليون', 'سنتيم',
-    'ديك', 'هاد', 'هادو', 'عفاك', 'شكرا', 'زوينة', 'زوين', 'شنو', 'هما', 'فيهم', 'مشاكل', 'مشكل'
+    'طوموبيل', 'طوموبيلا', 'طوموبيلات', 'شحال', 'بشحال', 'مزيان', 'مزيانة',
+    'لاباس', 'كي داير', 'خويا', 'أشمن', 'فين', 'بلاصة', 'فلوس', 'سنتيم',
+    'ديك', 'هاد', 'هادو', 'عفاك', 'زوينة', 'زوين', 'شنو', 'فاليز', 'فاليزات'
 ]
 
 FRENCH_KEYWORDS = {
@@ -236,7 +189,7 @@ ENGLISH_KEYWORDS = {
     'reliable', 'reliability', 'problem', 'problems', 'issue', 'issues', 'maintenance',
     'oil', 'change', 'service', 'brake', 'brakes', 'customs', 'duty', 'import', 'tax',
     'hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening', 'thank you', 'thanks',
-    'looking for', 'want to buy', 'i want', 'i need', 'please'
+    'looking for', 'want to buy', 'i want', 'i need', 'please', 'budget'
 }
 
 SPANISH_KEYWORDS = {
@@ -279,24 +232,61 @@ RUSSIAN_KEYWORDS = {
     'обслуживание', 'масло', 'таможня', 'привет', 'здравствуйте', 'спасибо'
 }
 
-
-def detect_language(text: str, history: Optional[List[Dict[str, str]]] = None) -> str:
-    """Détecte avec précision la langue de la requête utilisateur avec mémoire de contexte."""
-    t = text.lower().strip()
+def detect_language(text: str, history: Optional[List[Dict[str, str]]] = None, explicit_language: Optional[str] = None) -> str:
+    lang_code_map = {
+        "en": "english",
+        "english": "english",
+        "fr": "french",
+        "french": "french",
+        "ar": "arabic",
+        "arabic": "arabic",
+        "darija": "darija_ar",
+        "darija_ar": "darija_ar",
+        "darija_lat": "darija_lat",
+        "es": "spanish",
+        "de": "german",
+        "it": "italian",
+        "pt": "portuguese",
+        "tr": "turkish",
+        "ru": "russian",
+        "zh": "chinese",
+        "ja": "japanese",
+    }
     
-    # 1. Caractères arabes
+    t = text.lower().strip()
+    words = set(re.findall(r'\b[a-zA-Z0-9_\-а-яА-ЯёЁüäößçğışñáéíóúàèìòùâêîôûãõ]+\b', t))
+
+    # 1. Priorité absolue à la langue explicite du sélecteur si fournie
+    if explicit_language:
+        normalized_explicit = lang_code_map.get(explicit_language.lower(), explicit_language.lower())
+        if normalized_explicit == "arabic":
+            return "arabic"
+        if normalized_explicit in ["darija_ar", "darija"]:
+            if re.search(r'[\u0600-\u06FF]', text):
+                return "darija_ar"
+            return "darija_lat"
+        if normalized_explicit == "darija_lat":
+            return "darija_lat"
+        if normalized_explicit == "english":
+            if len(words.intersection(FRENCH_KEYWORDS)) >= 3 and not words.intersection(ENGLISH_KEYWORDS):
+                return "french"
+            return "english"
+        if normalized_explicit == "french":
+            if len(words.intersection(ENGLISH_KEYWORDS)) >= 3 and not words.intersection(FRENCH_KEYWORDS):
+                return "english"
+            return "french"
+        if normalized_explicit in LANGUAGE_NAMES:
+            return normalized_explicit
+
+    # 2. Détection automatique par script et lexique
     if re.search(r'[\u0600-\u06FF]', text):
         if any(kw in text for kw in DARIJA_ARABIC_KEYWORDS):
             return "darija_ar"
         return "arabic"
 
-    # 2. Chiffres Arabizi ou Darija Latin
     if re.search(r'[a-zA-Z]+[3795]|[3795][a-zA-Z]+', t):
         return "darija_lat"
-
-    words = set(re.findall(r'\b[a-zA-Z0-9_\-а-яА-ЯёЁüäößçğışñáéíóúàèìòùâêîôûãõ]+\b', t))
     
-    # Darija Latin
     if words.intersection(DARIJA_LATIN_KEYWORDS):
         return "darija_lat"
     darija_patterns = [
@@ -306,47 +296,36 @@ def detect_language(text: str, history: Optional[List[Dict[str, str]]] = None) -
     if any(p in t for p in darija_patterns):
         return "darija_lat"
 
-    # Français (prioritaire dans l'écosystème marocain)
     if words.intersection(FRENCH_KEYWORDS) or any(t.startswith(kw) for kw in ['bonjour', 'salut', 'coucou', 'bonsoir', 'je cherche', 'quels sont', 'quel est', 'combien', 'comment', 'pourquoi', 'est-ce']):
         return "french"
 
-    # Anglais
     if len(words.intersection(ENGLISH_KEYWORDS)) >= 2 or any(t.startswith(kw) for kw in ['hello', 'hi ', 'hey ', 'how ', 'what ', 'where ', 'which ', 'i want', 'i need', 'looking for', 'tell me']):
         return "english"
 
-    # Russe
     if re.search(r'[\u0400-\u04FF]', text) or words.intersection(RUSSIAN_KEYWORDS):
         return "russian"
 
-    # Chinois
     if re.search(r'[\u4e00-\u9fff]', text):
         return "chinese"
 
-    # Japonais
     if re.search(r'[\u3040-\u30ff]', text):
         return "japanese"
 
-    # Espagnol (exige 2 mots distincts ou salutation explicite)
     if len(words.intersection(SPANISH_KEYWORDS)) >= 2 or any(t.startswith(kw) for kw in ['hola', 'buenos días', 'buenas tardes', 'qué ', 'cómo ', 'cuánto ']):
         return "spanish"
 
-    # Allemand
     if len(words.intersection(GERMAN_KEYWORDS)) >= 2 or any(t.startswith(kw) for kw in ['hallo', 'guten tag', 'guten morgen', 'wie ', 'was ']):
         return "german"
 
-    # Italien
     if len(words.intersection(ITALIAN_KEYWORDS)) >= 2 or any(t.startswith(kw) for kw in ['ciao', 'buongiorno', 'buonasera', 'come ', 'cosa ']):
         return "italian"
 
-    # Portugais
     if len(words.intersection(PORTUGUESE_KEYWORDS)) >= 2 or any(t.startswith(kw) for kw in ['olá', 'ola', 'bom dia', 'boa tarde', 'como ']):
         return "portuguese"
 
-    # Turc
     if len(words.intersection(TURKISH_KEYWORDS)) >= 2 or any(t.startswith(kw) for kw in ['merhaba', 'selam', 'nasılsınız']):
         return "turkish"
 
-    # 3. Mémoire de contexte sur les réponses courtes (chiffres, noms de modèles, oui/non)
     if history:
         for prev in reversed(history):
             if prev.get("role") == "user":
@@ -355,11 +334,8 @@ def detect_language(text: str, history: Optional[List[Dict[str, str]]] = None) -
                 if prev_lang != "french":
                     return prev_lang
 
-    # Français par défaut
     return "french"
 
-
-# ─── Générateur de System Prompt ─────────────────────────────
 LANGUAGE_NAMES = {
     "darija_lat": "Moroccan Darija (written in Latin script)",
     "darija_ar": "Moroccan Darija (in Arabic script)",
@@ -376,17 +352,13 @@ LANGUAGE_NAMES = {
     "japanese": "Japanese (日本語)"
 }
 
-
-# ─── Marques et modèles connus pour détection de précision ───
 KNOWN_BRANDS_MODELS = [
-    # Marques
     'dacia', 'renault', 'peugeot', 'hyundai', 'volkswagen', 'vw', 'fiat', 'citroen', 'citroën',
     'ford', 'kia', 'toyota', 'audi', 'bmw', 'mercedes', 'mercedes-benz', 'jeep', 'nissan',
     'skoda', 'seat', 'opel', 'honda', 'volvo', 'land rover', 'range rover', 'alfa romeo',
     'porsche', 'suzuki', 'byd', 'mg', 'chery', 'geely', 'changan', 'dongfeng', 'haval',
     'jac', 'mazda', 'mitsubishi', 'mini', 'lexus', 'jaguar', 'maserati', 'cupra', 'ds',
     'omoda', 'jaecoo', 'baic', 'seres', 'dfsk', 'tesla',
-    # Modèles populaires
     'sandero', 'logan', 'duster', 'jogger', 'spring', 'bigster',
     'clio', 'megane', 'mégane', 'captur', 'kadjar', 'arkana', 'austral', 'scenic', 'twingo',
     '208', '308', '2008', '3008', '5008', 'rifter', 'partner',
@@ -408,41 +380,51 @@ KNOWN_BRANDS_MODELS = [
     'civic', 'cr-v', 'hr-v'
 ]
 
-
 def is_specific_search_request(message: str, max_price: Optional[int], history: List[Dict[str, str]] = None) -> bool:
-    """Détermine si la demande de véhicule est suffisamment qualifiée pour recommander des modèles précis.
-    
-    Requires at least 3 qualifying signals (budget + 2 descriptors, or brand/model + budget, etc.)
-    to avoid premature vehicle search during consultative discovery.
-    """
-    msg = message.lower()
-    score = 0
-    
-    # Combine current message with history for context
+    msg = message.lower().strip()
     all_user_text = msg
     if history:
         all_user_text = " ".join(m.get("content", "").lower() for m in history if m.get("role") == "user") + " " + msg
     
-    # 1. Budget spécifié (current message or history)
-    if max_price is not None:
-        score += 1
-    elif re.search(r'\b\d+\s*(?:k|000|mad|dh|dirham|درهم|mlyon|melyon|million|مليون|الف|ألف)\b', all_user_text):
-        score += 1
+    # 1. Direct Search with Specific Brand or Model
+    has_brand_model = any(b in all_user_text for b in KNOWN_BRANDS_MODELS)
+    
+    # 2. Key Criteria Extraction across Multi-Turn Conversation
+    has_budget = bool(
+        max_price is not None
+        or re.search(r'\b\d+\s*(?:k|000|mad|dh|dirham|درهم|mlyon|melyon|million|مليون|الف|ألف)\b', all_user_text)
+    )
+    
+    fuel_keywords = ['diesel', 'essence', 'hybride', 'hybrid', 'electrique', 'électrique', 'petrol', 'gasoline', 'مازوط', 'بنزين', 'هجين', 'ايبريد', 'كهربائي', 'mazot', 'lisans']
+    has_fuel = any(k in all_user_text for k in fuel_keywords)
+    
+    trans_keywords = ['automatique', 'automatic', 'manuelle', 'manual', 'bva', 'bvm', 'أوتوماتيك', 'اوتوماتيك', 'يدوي', 'مانييل']
+    has_transmission = any(k in all_user_text for k in trans_keywords)
+    
+    body_keywords = ['suv', 'crossover', 'citadine', 'berline', 'sedan', 'hatchback', 'break', 'compacte', '7 places', 'familiale', 'سيتادين', 'سيدان', 'دفع رباعي']
+    has_body = any(k in all_user_text for k in body_keywords)
+    
+    explicit_rec_triggers = [
+        'montre-moi', 'recommande', 'propose', 'quelles voitures', 'voici mes critères', 'show me', 'what cars', 'recommend',
+        'وريني', 'اقترح', 'شنو كترشح', 'أعطني الترشيحات', 'ما هي السيارات'
+    ]
+    has_explicit_rec = any(trig in msg for trig in explicit_rec_triggers)
 
-    # 2. Marque ou modèle précis → counts as 2 (strong qualifier)
-    if any(b in all_user_text for b in KNOWN_BRANDS_MODELS):
-        score += 2
+    # Condition A: Specific model searched with any qualifier or budget
+    if has_brand_model and (has_budget or has_fuel or has_transmission or has_body or has_explicit_rec):
+        return True
         
-    # 3. Descripteurs clés (fuel, transmission, body style, etc.)
-    descriptors = ['diesel', 'essence', 'hybride', 'hybrid', 'electrique', 'électrique', 'automatique', 'manuelle', 'suv', 'citadine', 'berline', '7 places', 'familiale', 'break', 'pick-up', 'pickup', 'urbain', 'ville', 'autoroute', 'route', 'mixte']
-    score += sum(1 for d in descriptors if d in all_user_text)
+    # Condition B: Full Consultative Discovery Cycle completed (Budget + Body + Fuel/Transmission)
+    if has_budget and has_body and (has_fuel or has_transmission):
+        return True
 
-    # Need at least 3 qualifying signals to trigger vehicle search
-    return score >= 3
-
+    # Condition C: User explicitly demands final recommendations after providing at least budget or body style
+    if has_explicit_rec and (has_budget or has_body or has_fuel):
+        return True
+        
+    return False
 
 def build_system_prompt(detected_lang: str, context: str, is_car_search: bool = False) -> str:
-    """Construit un prompt système d'expert automobile mondial adapté à la langue demandée."""
     target_lang_name = LANGUAGE_NAMES.get(detected_lang, "the exact same language as the user's query")
     
     rec_rule_darija_lat = """4. CATALOGUE VEHICLES: When recommending specific cars from the CONTEXT, include the JSON block:
@@ -455,13 +437,13 @@ def build_system_prompt(detected_lang: str, context: str, is_car_search: bool = 
   "year": 2022,
   "price": 140000
 }
-```""" if is_car_search else "4. CONSULTATIVE DISCOVERY: When the user is exploring buying a car without enough details, do NOT output fake JSON blocks or recommend random cars. Ask ONLY ONE question per message. Follow this order across multiple turns: 1st turn → Budget, 2nd turn → Usage (city/highway), 3rd turn → Fuel type, 4th turn → Transmission, 5th turn → Body style. Wait for the client's answer before asking the next question."
+```""" if is_car_search else "4. CONSULTATIVE DISCOVERY: When the user is exploring buying a car without enough details, do NOT output fake JSON blocks or recommend random cars. First inspect the structured profile and its covered/missing dimensions. Select the single missing dimension by how much they distinguish the remaining vehicles, never by a fixed question order. Ask exactly one concise question per message and never repeat a covered dimension."
 
-    rec_rule_darija_ar = "4. عند التوصية بسيارات من السياق أرفق كود JSON الخاص بكل سيارة." if is_car_search else "4. الاستشارة والاكتشاف قبل التوصية: عندما يرغب المستخدم في شراء سيارة دون تحديد معاييره، لا تصدر أي كتل JSON أو ترشيحات عشوائية. اطرح سؤالاً واحداً فقط في كل رسالة. الترتيب: الرسالة الأولى ← الميزانية، الثانية ← نوع الاستعمال، الثالثة ← الوقود، الرابعة ← ناقل الحركة، الخامسة ← نوع الهيكل. انتظر جواب العميل قبل طرح السؤال التالي."
+    rec_rule_darija_ar = "4. عند التوصية بسيارات من السياق أرفق كود JSON الخاص بكل سيارة." if is_car_search else "4. الاستشارة والاكتشاف قبل التوصية: لا تصدر كتل JSON أو ترشيحات عشوائية. حلل ملف الاحتياجات والأبعاد المغطاة والناقصة، ثم اختر بُعداً واحداً ناقصاً حسب قدرتهما على التمييز بين السيارات المتبقية، وليس حسب ترتيب ثابت. اطرح سؤالاً واحداً فقط ولا تكرر بُعداً تمت الإجابة عنه."
 
-    rec_rule_ar = "4. عند التوصية بسيارات من السياق أرفق كود JSON الخاص بها." if is_car_search else "4. الاستشارة والتشخيص قبل التوصية: عند رغبة العميل في شراء سيارة دون معايير واضحة، لا تدرج أي كتل JSON أو اقتراحات عشوائية. اطرح سؤالاً تشخيصياً واحداً فقط في كل رسالة. الترتيب عبر الرسائل: 1← الميزانية، 2← طبيعة القيادة، 3← نوع الوقود، 4← ناقل الحركة، 5← فئة السيارة. انتظر رد العميل قبل الانتقال للسؤال الموالي."
+    rec_rule_ar = "4. عند التوصية بسيارات من السياق أرفق كود JSON الخاص بها." if is_car_search else "4. الاستشارة والتشخيص قبل التوصية: لا تدرج كتل JSON أو اقتراحات عشوائية. حلل الحالة المنظمة، اختر بُعداً أو بُعدين ناقصين الأكثر تمييزاً للسيارات المتبقية، ثم صغ سؤالاً واحداً فقط. لا تكرر بُعداً تمت الإجابة عنه ولا تتبع ترتيباً ثابتاً."
 
-    rec_rule_gen = """5. CATALOGUE VEHICLES: When recommending specific vehicles from the CONTEXT, insert the standard JSON block:
+    rec_rule_fr = """4. VÉHICULES DU CATALOGUE : Lorsque tu recommandes des véhicules spécifiques à partir du CONTEXTE, insère le bloc JSON standard :
 ```json
 {
   "type": "CAR_RECOMMENDATION",
@@ -471,7 +453,19 @@ def build_system_prompt(detected_lang: str, context: str, is_car_search: bool = 
   "year": 2022,
   "price": 140000
 }
-```""" if is_car_search else f"5. CONSULTATIVE DIAGNOSIS: When a user inquires about buying or finding a car without specific parameters, do NOT output any JSON blocks or random vehicle picks. Ask ONLY ONE qualifying question per message in {target_lang_name}. Follow this strict turn-by-turn order: 1st message → Budget in MAD, 2nd → Daily usage (city/highway), 3rd → Fuel type (Diesel/Petrol/Hybrid), 4th → Transmission (Manual/Automatic), 5th → Body style. Always wait for the client's answer before moving to the next question."
+```""" if is_car_search else "4. CONSULTATION ET QUALIFICATION DU PROJET : Lorsqu'un utilisateur souhaite acheter un véhicule sans avoir précisé ses critères complets, N'ÉMETS AUCUN bloc JSON et ne suggère aucun véhicule au hasard. Analyse le profil structuré, sélectionne une seule dimension manquante selon leur pouvoir discriminant dans le stock restant, puis formule exactement une question. Ne répète jamais une dimension déjà couverte et ne suis pas un ordre chronologique fixe."
+
+    rec_rule_en = """4. CATALOGUE VEHICLES: When recommending specific vehicles from the CONTEXT, insert the standard JSON block:
+```json
+{
+  "type": "CAR_RECOMMENDATION",
+  "id": "VEHICLE_ID",
+  "brand": "BRAND",
+  "model": "MODEL",
+  "year": 2022,
+  "price": 140000
+}
+```""" if is_car_search else "4. CONSULTATIVE DIAGNOSIS: When a user inquires about buying or finding a car without specific parameters, do NOT output any JSON blocks or random vehicle picks. Inspect the structured profile and its covered/missing dimensions, select one missing dimension by discriminating power in the remaining pool, then ask exactly one concise question. Never repeat a covered dimension and never follow a fixed turn-by-turn order."
 
     if detected_lang == "darija_lat":
         return f"""You are the expert automotive consultant for the Wakala platform in Morocco.
@@ -483,10 +477,13 @@ CRITICAL RULES:
    - DO NOT invent bizarre words, repeated tokens, or random numbers.
    - NEVER repeat words or phrases in a loop. Keep sentences crisp and meaningful.
 2. ZERO EMOJIS: Never use any emojis or icons.
-3. COFFRE ET VALISES : Dès que tu parles de la taille du coffre d'un véhicule (en Litres), donne TOUJOURS son équivalence en nombre de valises (ex: 'Coffre fih 440 L, yhez lik 3 tal 4 d les valises').
+3. COFFRE ET VALISES : Pour qualifier le besoin du client, demande toujours la capacité en nombre de valises, jamais en litres. Pour une fiche technique, tu peux mentionner les litres uniquement avec leur équivalence en valises (ex: 'Coffre fih 440 L, yhez lik 3 tal 4 d les valises').
 4. DOMAIN EXPERTISE: Answer the user's specific automotive question directly with full technical clarity based on the CONTEXT.
 {rec_rule_darija_lat}
-5. STRICT ONE QUESTION AT A TIME (Soul wahed b rasso) : Pose STRICTEMENT UNE SEULE QUESTION À LA FOIS pour découvrir les besoins du client (d'abord le budget, puis l'usage, etc.). N'écris JAMAIS de liste de questions ni de questionnaire.
+5. DISCOVERY LOOP (Analyse → Sélection → Formulation) : Pose STRICTEMENT UNE question ciblée à partir des dimensions manquantes du profil. Ne répète jamais une dimension couverte et ne suis pas un ordre fixe. N'écris JAMAIS de questionnaire.
+6. CRITICAL OUTPUT CONSTRAINT:
+   - Output ONLY the direct final response to the user in Moroccan Darija.
+   - NEVER output internal reasoning, thinking tags (<think>...</think>), or chain-of-thought steps.
 
 --- CONTEXT ---
 {context}
@@ -499,10 +496,12 @@ CRITICAL RULES:
 قواعد صارمة:
 1. قاعدة اللغة: أجب بنسبة 100% بالدارجة المغربية المكتوبة بالحرف العربي بشكل واضح واحترافي ودقيق.
 2. بدون إيموجي: ممنوع استخدام أي رمز تعبيري (Emoji) نهائياً.
-3. سعة الصندوق وحقائب السفر: كلما ذكرت سعة أو حجم صندوق السيارة (باللتر)، اذكر دائماً المعادل العملي بعدد حقائب السفر (مثال: 'صندوق بسعة 440 لتر، يهز ليك من 3 حتى 4 ديال الفاليزات').
+3. سعة الصندوق وحقائب السفر: عند تأهيل العميل، اسأل عن مساحة الأمتعة بعدد حقائب السفر وليس باللتر. وفي المواصفات التقنية، لا تذكر اللترات إلا مع المعادل العملي بعدد الحقائب (مثال: 'صندوق بسعة 440 لتر، يهز ليك من 3 حتى 4 ديال الفاليزات').
 4. خبرة شاملة: أجب بدقة وعمق عن أي سؤال يخص قطاع السيارات اعتماداً على المعلومات في السياق.
 {rec_rule_darija_ar}
-5. سؤال واحد فقط في كل مرة: اطرح دائماً سؤالاً واحداً فقط محدداً وبسيطاً (الميزانية أولاً، ثم طبيعة الاستعمال، ثم الوقود). ممنوع طرح قائمة أسئلة متعددة في نفس الرسالة.
+5. حلقة الاكتشاف: حلل الأبعاد المغطاة والناقصة، اختر بُعداً واحداً فقط الأكثر تمييزاً، ثم اطرح سؤالاً واحداً فقط. لا تكرر بُعداً تمت الإجابة عنه ولا تستخدم ترتيباً ثابتاً.
+6. الالتزام بالمخرجات المباشرة:
+   - أخرج فقط النص النهائي الموجه للعميل دون أي مسودة تفكير أو وسوم <think>.
 
 --- سياق المعلومات ---
 {context}
@@ -515,14 +514,62 @@ CRITICAL RULES:
 قواعد صارمة:
 1. قاعدة اللغة: يجب أن تجيب بنسبة 100% باللغة العربية الفصحى السليمة والواضحة والمهنية.
 2. بدون إيموجي: لا تستخدم أي رموز تعبيرية (Emojis) إطلاقاً.
-3. سعة الصندوق وحقائب السفر: عند الحديث عن حجم أو سعة الصندوق (باللتر)، اذكر دائماً المعادل العملي بعدد حقائب السفر (مثال: 'صندوق بسعة 450 لتر، يتسع لحوالي 3 إلى 4 حقائب سفر').
+3. سعة الصندوق وحقائب السفر: عند تأهيل العميل، اسأل عن مساحة الأمتعة بعدد حقائب السفر وليس باللتر. وعند الحديث عن المواصفات التقنية، اذكر اللترات فقط مع المعادل العملي بعدد الحقائب (مثال: 'صندوق بسعة 450 لتر، يتسع لحوالي 3 إلى 4 حقائب سفر').
 4. موسوعية قطاع السيارات: أجب بمعلومات تقنية واقتصادية دقيقة ومفصلة حول أي موضوع في عالم السيارات بناءً على السياق.
 {rec_rule_ar}
-5. سؤال تشخيصي واحد فقط: اطرح دائماً سؤالاً واحداً فقط في كل رسالة (الميزانية أولاً، ثم طبيعة التنقل، ثم نوع الوقود). تجنب تماماً طرح قوائم أسئلة متعددة دفعة واحدة.
+5. حلقة التشخيص: حلل الأبعاد المغطاة والناقصة، اختر بُعداً واحداً فقط الأكثر تمييزاً، ثم اطرح سؤالاً واحداً فقط. لا تكرر بُعداً تمت الإجابة عنه ولا تستخدم ترتيباً ثابتاً.
+6. الالتزام بالمخرجات النهائية المباشرة:
+   - أخرج فقط النص النهائي الموجه للعميل دون أي مسودة تفكير أو وسوم تفكير.
 
 --- سياق المعلومات ---
 {context}
 ----------------------
+"""
+
+    if detected_lang == "french":
+        return f"""Tu es l'expert consultant automobile et ingénieur de référence pour la plateforme d'intelligence automobile Wakala au Maroc.
+
+RÈGLES STRICTES ET OBLIGATOIRES :
+1. RÈGLE DE LANGUE : Tu DOIS répondre à 100% en français fluide, naturel, technique et professionnel.
+   - Ne mélange JAMAIS d'autres langues.
+2. ZÉRO ÉMOJI : N'utilise STRICTEMENT AUCUN émoji ni symbole graphique dans tes réponses.
+3. COFFRE ET VALISES : Pour qualifier le besoin du client, demande la capacité en nombre de valises, jamais en litres. Dans une fiche technique, indique les litres uniquement avec leur équivalence concrète en valises (ex: 'Coffre de 440 L, soit environ 3 à 4 valises').
+4. EXPERTISE AUTOMOBILE DE HAUT NIVEAU :
+   - Fournis des réponses techniques, fiables, précises et autoritaires sur l'ensemble du secteur automobile et du marché marocain basées sur le CONTEXTE ci-dessous.
+5. STRUCTURE : Rédige des réponses claires, structurées et aérées avec titres en gras et puces si nécessaire.
+{rec_rule_fr}
+6. BOUCLE DE DÉCOUVERTE : Analyse les dimensions couvertes et manquantes, sélectionne une seule dimension selon leur pouvoir discriminant dans le stock restant, puis formule exactement une question. Ne répète aucune dimension couverte et ne suis pas un ordre fixe. Ne présente JAMAIS de questionnaire multiple.
+7. CONTRAINTE DE SORTIE :
+   - Rédige UNIQUEMENT ta réponse finale directement adressée à l'utilisateur.
+   - Ne divulgue JAMAIS tes réflexions internes, listes d'analyse ou balises <think>...</think>.
+   - Démarre IMMÉDIATEMENT par le texte de réponse.
+
+--- CONTEXTE ---
+{context}
+----------------
+"""
+
+    if detected_lang == "english":
+        return f"""You are the world-class automotive consultant and engineering expert for the Wakala automotive intelligence platform.
+
+MANDATORY RULES:
+1. LANGUAGE RULE: You MUST respond 100% in English.
+   - Maintain total linguistic purity and fluency in English. Do NOT mix other languages.
+2. ZERO EMOJIS: Do NOT use any emojis, icons, or graphical symbols under any circumstances.
+3. TRUNK CAPACITY & SUITCASES: When qualifying the client's luggage needs, ask for a number of suitcases, never liters. In technical specifications, mention liters only together with the practical suitcase equivalence (e.g. '440 L trunk, fitting approximately 3 to 4 suitcases').
+4. AUTOMOTIVE SECTOR AUTHORITY:
+   - Provide highly accurate, authoritative, technical, and practical insights on ANY question concerning the automotive sector globally and in Morocco based on the CONTEXT below.
+5. STRUCTURE: Use well-formatted bullet points, numbered lists, and bold titles for clarity.
+{rec_rule_en}
+6. DISCOVERY LOOP: Analyze covered and missing dimensions, select one missing dimension by its discriminating power in the remaining pool, and formulate exactly one concise question. Never repeat a covered dimension and never follow a fixed order. Never present a multi-question questionnaire.
+7. CRITICAL OUTPUT CONSTRAINT:
+   - Output ONLY your direct, final response for the user in English.
+   - NEVER output internal thinking, reasoning steps, checklists, chain-of-thought, or <think> tags.
+   - Begin your response IMMEDIATELY with the answer text.
+
+--- CONTEXT ---
+{context}
+---------------
 """
 
     return f"""You are the world-class automotive consultant and engineering expert for the Wakala automotive intelligence platform.
@@ -531,34 +578,32 @@ MANDATORY RULES:
 1. LANGUAGE RULE: You MUST respond 100% in {target_lang_name}.
    - Maintain total linguistic purity and fluency in {target_lang_name}. Do NOT mix other languages.
 2. ZERO EMOJIS: Do NOT use any emojis, icons, or graphical symbols under any circumstances.
-3. COFFRE ET VALISES : Dès que tu mentionnes la taille ou le volume du coffre d'un véhicule (en Litres), indique TOUJOURS AUSSI son équivalence concrète en nombre de valises (ex: 'Coffre de 440 L, soit environ 3 à 4 valises' ou 'Grand coffre de 560 L pouvant accueillir 4 à 5 grandes valises de voyage').
+3. COFFRE ET VALISES : Pour qualifier le besoin du client, demande la capacité en nombre de valises, jamais en litres. Dans les spécifications techniques, mentionne les litres uniquement avec leur équivalence concrète en valises.
 4. AUTOMOTIVE SECTOR AUTHORITY:
    - Provide highly accurate, authoritative, technical, and practical insights on ANY question concerning the automotive sector globally and in Morocco based on the CONTEXT below.
 5. STRUCTURE: Use well-formatted bullet points, numbered lists, and bold titles for clarity.
-{rec_rule_gen}
-6. STRICT ONE QUESTION AT A TIME: Always ask STRICTLY ONE diagnostic question at a time to discover the client's preferences (e.g. start with target budget in MAD, then usage, then fuel/transmission). Never present bulleted multi-question lists.
+{rec_rule_en}
+6. DISCOVERY LOOP: Analyze covered and missing dimensions, select one missing dimension by its discriminating power in the remaining pool, and formulate exactly one concise question. Never repeat a covered dimension and never follow a fixed order. Never present a multi-question questionnaire.
+7. CRITICAL OUTPUT CONSTRAINT:
+   - Output ONLY your direct, final response for the user in {target_lang_name}.
+   - NEVER output internal thinking, reasoning steps, checklists, chain-of-thought, or <think> tags.
+   - Begin your response IMMEDIATELY with the answer text.
 
 --- CONTEXT ---
 {context}
 ---------------
 """
 
-
 def sanitize_input(text: str) -> str:
-    """Nettoie le texte utilisateur pour éviter les injections basiques."""
     text = text[:800]
     return re.sub(r'[\x00-\x1F\x7F]', '', text)
 
-
 def redact_pii(text: str) -> str:
-    """Masque les emails et les numéros de téléphone."""
     text = re.sub(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', '[EMAIL_MASKED]', text)
     text = re.sub(r'(?:\+212|0)[ \-]?\d{1}[ \-]?\d{2}[ \-]?\d{2}[ \-]?\d{2}[ \-]?\d{2}', '[PHONE_MASKED]', text)
     return text
 
-
 def normalize_multilingual_query_terms(query: str) -> str:
-    """Traduit et normalise les termes Darija, Arabe et Anglais vers les termes standards du catalogue."""
     q = query.lower()
     replacements = {
         "tomobilat": "voitures",
@@ -590,8 +635,8 @@ def normalize_multilingual_query_terms(query: str) -> str:
         "ديزل": "diesel",
         "مازوط": "diesel",
         "بنزين": "essence",
-        "مستعملة": "neuf",  # PIVOT: redirected from occasion → neuf
-        "مستعمل": "neuf",  # PIVOT: redirected from occasion → neuf
+        "مستعملة": "neuf",
+        "مستعمل": "neuf",
         "جديدة": "neuf",
         "جديد": "neuf",
         "رخيصة": "economique",
@@ -604,8 +649,8 @@ def normalize_multilingual_query_terms(query: str) -> str:
         "أبحث": "cherche",
         "car": "voiture",
         "cars": "voiture",
-        "used car": "neuf",   # PIVOT: redirected from occasion → neuf
-        "used cars": "neuf",  # PIVOT: redirected from occasion → neuf
+        "used car": "neuf",
+        "used cars": "neuf",
         "new car": "neuf",
         "new cars": "neuf",
         "cheap": "economique",
@@ -621,55 +666,75 @@ def normalize_multilingual_query_terms(query: str) -> str:
         q = re.sub(r'\b' + re.escape(term) + r'\b', repl, q)
     return q
 
-
-# ═══════════════════════════════════════════════════════════════
-# CLASSIFICATEUR D'INTENTION RAPIDE MULTILINGUE
-# ═══════════════════════════════════════════════════════════════
-
 def fast_classify_intent(message: str) -> Optional[Dict[str, Any]]:
-    """Classifie instantanément l'intention avec priorité rigoureuse."""
     msg = message.lower().strip()
 
-    # 1. Questions d'Expert / Fiabilité / Pannes / Moteurs (Priorité ABSOLUE pour pannes/défauts)
     expert_kw = [
-        # Français (uniquement termes de problèmes, pannes, fiabilité mécanique)
         'problème', 'probleme', 'problèmes', 'problemes', 'panne', 'pannes', 'bruit bizarre',
         'fiabilité', 'fiabilite', 'avis sur', 'défaut', 'defauts', 'casse moteur', 'surconsommation',
         'courroie distribution', 'puretech', 'tce', 'adblue', '1.2 puretech', '1.2 tce', '1.6 thp',
         'rappel constructeur', 'secteur auto', 'industrie automobile', 'marche automobile',
-        # Darija
         'machakil', 'mashakil', 'lmachakil', 'moshkil', 'moshkila', 'mouchkil', 'mouchkila',
         'sout ghrib', 'vibration', '3oyob', '3ouyoub', 'katkonsomi zit',
         'katkhser', 'katkhesser', 'doukhan', 'khatar', 'nasiha f moteur',
-        # Anglais
         'problem', 'problems', 'issue', 'issues', 'defect', 'defects', 'reliability', 'reliable',
         'review of', 'overheating', 'smoke', 'warning light', 'engine failure', 'timing belt issue',
         'automotive industry', 'sector data',
-        # Espagnol
+        'warning light', 'check engine', 'dashboard light', 'strange noise', 'weird noise',
+        'vibration', 'shaking', 'smoke', 'overheating', 'wont start', "won't start",
+        'hard to start', 'brake noise', 'battery dead', 'flat tire', 'leak',
         'problema', 'problemas', 'avería', 'fallo', 'fiabilidad', 'industria automotriz',
-        # Allemand
         'problem', 'probleme', 'zuverlässigkeit', 'panne',
-        # Italien
         'problema', 'problemi', 'guasto', 'affidabilità',
-        # Arabe
         'مشكل', 'مشاكل', 'مشكلة', 'عيوب', 'عطب', 'اعطال', 'دخان',
         'اعتمادية', 'قطاع السيارات', 'صناعة السيارات'
     ]
+    # Technical questions must stay in the automotive expert flow even when
+    # they contain a word that is also used during vehicle discovery (for
+    # example "automatic" or "diesel").
+    automotive_topics = [
+        'moteur', 'engine', 'motor', 'turbo', 'hybride', 'hybrid', 'electric motor',
+        'batterie', 'battery', 'alternateur', 'starter', 'démarreur', 'demarreur',
+        'embrayage', 'clutch', 'boîte de vitesses', 'gearbox', 'transmission',
+        'frein', 'brake', 'pneu', 'tire', 'tyre', 'suspension', 'amortisseur',
+        'direction', 'airbag', 'abs', 'esp', 'adblue', 'dpf', 'fap', 'egr',
+        'injecteur', 'injector', 'courroie', 'timing belt', 'distribution',
+        'huile', 'oil', 'refroidissement', 'coolant', 'radiateur', 'overheating',
+        'consommation', 'consumption', 'chevaux', 'horsepower', 'torque', 'couple',
+        'bva', 'bvm', 'dci', 'tce', 'puretech', 'tsi', 'tdi', 'vin', 'kilométrage',
+        'kilometrage', 'mileage', 'carte grise', 'assurance', 'sécurité', 'safety',
+        'rappel constructeur', 'recall', 'contrôle technique', 'technical inspection',
+        'موتور', 'محرك', 'بطارية', 'فران', 'عجلة', 'زيت', 'كوبلاج', 'بواط', 'أوتوماتيك'
+    ]
+    question_words = [
+        'quoi', 'qu est', "qu'est", 'comment', 'pourquoi', 'signifie', 'définition',
+        'what', 'how', 'why', 'meaning', 'explain', 'difference', 'différence',
+        'شنو', 'كيفاش', 'علاش', 'معنى'
+    ]
+    maintenance_tracking_signals = [
+        'service book', 'service history', 'track service', 'record service',
+        'record my', 'carnet d’entretien', "carnet d'entretien", 'carnet entretien',
+        'دفتر الصيانة', 'سجل الصيانة'
+    ]
+    if any(signal in msg for signal in maintenance_tracking_signals) and (
+        any(word in msg for word in question_words) or any(word in msg for word in ['record', 'track', 'log', 'update', 'enregistrer', 'suivre'])
+    ):
+        return {"intent": "maintenance_check", "max_price": None, "search_query": None}
+    if any(topic in msg for topic in automotive_topics) and any(word in msg for word in question_words):
+        return {"intent": "auto_expert", "max_price": None, "search_query": None}
     if any(kw in msg for kw in expert_kw):
         return {"intent": "auto_expert", "max_price": None, "search_query": None}
 
-    # 2. Dédouanement / Douane / Customs
     customs_kw = [
         'douane', 'dédouanement', 'dedouanement', 'diwana', 'dywana',
         'import', 'importation', 'taxe douane', 'frais douane', 'taman diwana',
         'customs', 'customs duty', 'import tax', 'clearance fees',
         'aduanas', 'arancel', 'zoll', 'dogana', 'alfândega', 'gümrük', 'таможня',
-        'ديوانة', 'جمارك', 'الجمارك', 'تعشير', 'استيراد'
+        'ديوانة', 'جمارك', 'الجمارك', 'جمرك', 'جمركية', 'الجمركية', 'تعشير', 'التعشير', 'استيراد'
     ]
     if any(kw in msg for kw in customs_kw):
         return {"intent": "customs", "max_price": None, "search_query": None}
 
-    # 3. Entretien / Vidange / Carnet / Maintenance
     maint_kw = [
         'entretien', 'vidange', 'maintenance', 'révision', 'revision',
         'carnet', 'pneu', 'pneus', 'rappel entretien', 'khassni vidange', 'zite',
@@ -680,7 +745,6 @@ def fast_classify_intent(message: str) -> Optional[Dict[str, Any]]:
     if any(kw in msg for kw in maint_kw):
         return {"intent": "maintenance_check", "max_price": None, "search_query": None}
 
-    # 4. Salutations courtes EXCLUSIVES (exact match ou début de salutation sans question technique)
     greetings = [
         'bonjour', 'salut', 'bonsoir', 'hello', 'hi', 'hey', 'good morning', 'good afternoon',
         'salam', 'slm', 'salamo alaykom', 'salamou alaykoum', 'salam alaykom',
@@ -696,28 +760,34 @@ def fast_classify_intent(message: str) -> Optional[Dict[str, Any]]:
         'سلام', 'السلام عليكم', 'مرحبا', 'أهلا', 'شكرا', 'صباح الخير', 'مساء الخير'
     ]
     if any(msg == g or msg.startswith(g + ' ') or msg.startswith(g + ',') or msg.startswith(g + '!') or msg.startswith(g + '?') for g in greetings):
-        # Si c'est une salutation courte (< 30 caractères sans autre question)
         if len(msg) < 35:
             return {"intent": "greeting", "max_price": None, "search_query": None}
 
-    # 5. Recherche explicite de voiture (Multilingue)
     search_triggers = [
         'bghit', 'baghi', 'kanqleb', 'kan9leb', 'kayna chi', 'kayn chi',
         '3ndkom chi', '3andkom', 'cherche', 'recherche', 'trouver',
-        'je veux acheter', 'acheter', 'voiture pour', 'budget de',
-        'tomobila', 'sayara', 'neuf', 'dacia', 'renault',  # PIVOT: removed 'occasion'
+        'je veux acheter', 'acheter', 'voiture pour', 'budget de', 'mon budget',
+        'tomobila', 'sayara', 'neuf', 'dacia', 'renault',
         'peugeot', 'clio', 'golf', 'volkswagen', 'hyundai', 'kia', 'mercedes', 'bmw',
         'looking for', 'search', 'want to buy', 'i want', 'i need', 'find me',
-        'show me', 'cheap car', 'diesel car', 'new car', 'price of',  # PIVOT: removed 'used car'
+        'show me', 'cheap car', 'diesel car', 'new car', 'price of', 'my budget',
         'comprar', 'coche', 'auto', 'kaufen', 'comprare',
-        'سيارة', 'سيارات', 'شراء', 'أبحث', 'أريد', 'بدي', 'طوموبيل'
+        'سيارة', 'سيارات', 'شراء', 'أبحث', 'أريد', 'بدي', 'طوموبيل', 'ميزانيتي', 'البودجي',
+        # Single-word / preference criteria triggers during discovery
+        'diesel', 'essence', 'hybride', 'hybrid', 'electrique', 'petrol', 'gasoline',
+        'مازوط', 'بنزين', 'هجين', 'ايبريد', 'كهربائي',
+        'automatique', 'automatic', 'manuelle', 'manual', 'أوتوماتيك', 'اوتوماتيك', 'يدوي', 'مانييل',
+        'suv', 'crossover', 'citadine', 'berline', 'sedan', 'hatchback', 'سيتادين', 'سيدان',
+        'ville', 'city', 'autoroute', 'highway', 'mixte', 'mixed', 'مدينة', 'طريق', 'سفر', 'مخلط'
     ]
     
     max_price = None
-    k_match = re.search(r'(?:under|below|moins de|max|budget(?: de)?|أقل من|ميزانية)?\s*(\d+)\s*(?:k|000)\s*(?:mad|dh|dirham|درهم|usd|eur)?', msg)
+    k_match = re.search(r'(?:under|below|moins de|max|budget(?: de)?|أقل من|ميزانية|البودجي)?\s*(\d+[\s,.]?\d*)\s*(?:k|000|mad|dh|dirham|درهم|usd|eur)?', msg)
     if k_match:
-        val = int(k_match.group(1))
-        max_price = val * 1000 if val < 1000 else val
+        val_str = k_match.group(1).replace(' ', '').replace(',', '').replace('.', '')
+        if val_str.isdigit():
+            val = int(val_str)
+            max_price = val * 1000 if (val < 1000 and 'k' in msg) else val
     
     mlyon_match = re.search(r'(\d+)\s*(?:mlyon|melyon|million|مليون)', msg)
     if mlyon_match:
@@ -733,13 +803,10 @@ def fast_classify_intent(message: str) -> Optional[Dict[str, Any]]:
         clean_search = normalize_multilingual_query_terms(message)
         return {"intent": "car_search", "max_price": max_price, "search_query": clean_search}
 
-    # 6. Conseil automobile général par défaut (instantané sans appel LLM intermédiaire)
     clean_q = normalize_multilingual_query_terms(message)
     return {"intent": "general_advice", "max_price": max_price, "search_query": clean_q}
 
-
 async def analyze_intent(user_message: str, history: List[Dict[str, str]] = None) -> Dict[str, Any]:
-    """Analyse instantanément l'intention de l'utilisateur (100% Python déterministe < 0.1ms)."""
     fast_result = fast_classify_intent(user_message)
     if fast_result:
         return fast_result
@@ -753,8 +820,60 @@ async def analyze_intent(user_message: str, history: List[Dict[str, str]] = None
     }
 
 
+# This guard is deliberately local and cheap. It prevents the chatbot from
+# becoming a general-purpose assistant and avoids spending 10–20 seconds on
+# an LLM call for a question outside the car domain.
+AUTOMOTIVE_DOMAIN_TERMS = (
+    'voiture', 'voitures', 'véhicule', 'vehicule', 'auto', 'automobile', 'car', 'cars',
+    'vehicle', 'automotive', 'moteur', 'engine', 'motor', 'turbo', 'diesel', 'essence',
+    'petrol', 'gasoline', 'hybride', 'hybrid', 'électrique', 'electric', 'batterie',
+    'battery', 'huile', 'oil', 'vidange', 'entretien', 'maintenance', 'révision',
+    'service', 'frein', 'brake', 'pneu', 'tire', 'tyre', 'embrayage', 'clutch',
+    'boîte', 'boite', 'gearbox', 'transmission', 'suspension', 'airbag', 'abs', 'esp',
+    'adblue', 'dpf', 'fap', 'egr', 'injecteur', 'injector', 'courroie', 'distribution',
+    'consommation', 'consumption', 'kilométrage', 'kilometrage', 'mileage', 'suv',
+    'berline', 'citadine', 'break', 'crossover', 'pickup', 'van', '4x4', 'bva', 'bvm',
+    'dci', 'tce', 'puretech', 'tsi', 'tdi', 'vin', 'panne', 'fiabilité', 'reliability',
+    'occasion', 'neuf', 'new car', 'used car', 'achat', 'acheter', 'buy', 'prix', 'price',
+    'budget', 'assurance', 'insurance', 'douane', 'dédouanement', 'customs', 'import',
+    'sécurité', 'safety', 'carte grise', 'concessionnaire', 'marque', 'modèle',
+    'problème', 'probleme', 'problem', 'issue', 'panne', 'warning light', 'check engine',
+    'voyant', 'bruit', 'noise', 'vibration', 'fumée', 'smoke', 'surchauffe', 'overheating',
+    'ne démarre pas', 'wont start', "won't start", 'fuite', 'leak', 'voyant moteur',
+    'طوموبيل', 'سيارة', 'سيارات', 'موتور', 'محرك', 'بطارية', 'زيت', 'فران', 'بواط',
+    'عجلة', 'كروسة', 'مازوط', 'بنزين', 'كهربائية', 'صيانة', 'ميكانيك', 'ميكانيكي'
+)
+AUTOMOTIVE_GREETING_TERMS = (
+    'bonjour', 'salut', 'bonsoir', 'hello', 'hi', 'hey', 'salam', 'slm', 'مرحبا', 'سلام',
+    'merci', 'thanks', 'thank you', 'شكرا', 'chokran'
+)
+
+
+def is_automotive_domain_request(message: str, history: Optional[List[Dict[str, str]]] = None) -> bool:
+    """Return True only for car-domain messages or a short conversational turn."""
+    normalized = re.sub(r'\s+', ' ', message.lower()).strip()
+    if not normalized:
+        return True
+    if any(term in normalized for term in AUTOMOTIVE_DOMAIN_TERMS):
+        return True
+    if any(brand_or_model in normalized for brand_or_model in KNOWN_BRANDS_MODELS):
+        return True
+    if any(normalized == term or normalized.startswith(term + ' ') for term in AUTOMOTIVE_GREETING_TERMS):
+        return True
+    # Follow-ups such as "and for diesel?" inherit the subject from the chat.
+    recent = ' '.join(str(item.get('content', '')).lower() for item in (history or [])[-4:])
+    return any(term in recent for term in AUTOMOTIVE_DOMAIN_TERMS)
+
+
+OUT_OF_DOMAIN_RESPONSES = {
+    'french': "Je suis spécialisé uniquement dans l'automobile. Posez-moi une question sur une voiture, un moteur, l'entretien, la sécurité, l'achat ou la comparaison de modèles.",
+    'english': "I specialise strictly in cars. Ask me about a vehicle, engine, maintenance, safety, buying, ownership, or comparing car models.",
+    'arabic': "أنا متخصص حصراً في السيارات. اطرح سؤالاً عن سيارة أو محرك أو الصيانة أو السلامة أو الشراء أو مقارنة الطرازات.",
+    'darija_ar': "أنا متخصص غير فمجال السيارات. سولني على طوموبيل، الموتور، الصيانة، السلامة، الشراء ولا مقارنة الموديلات.",
+    'darija_lat': "Ana mkhssas ghir f tomobilat. Sowelni 3la tomobil, moteur, ssiانة, salam, chra wela comparaison dyal les modeles.",
+}
+
 async def retrieve_vehicles(query: str, max_price: Optional[float] = None, top_k: int = 6) -> str:
-    """Interroge Qdrant pour récupérer les véhicules réels du catalogue sans duplication (avec timeout 2.5s)."""
     qdrant = get_qdrant_client()
     clean_query = normalize_multilingual_query_terms(query)
     
@@ -808,8 +927,6 @@ async def retrieve_vehicles(query: str, max_price: Optional[float] = None, top_k
     
     return context_str if context_str else "Aucun véhicule correspondant dans la base de données actuelle."
 
-
-# ─── Salutations immédiates multilingues ───────────────────────
 GREETING_RESPONSES = {
     "darija_lat": "Salam ! Merhba bik f Wakala, l-plateforme l-oula d l-automobile f l-mghrib. Nqder n3awnek tkhtar tomobila jdida li tnasbek, n7esbo rassem diwana, nqarno bin les modeles, wla njawbek 3la ay soual teqni w mécanique. Kifach nqder n3awnek lyoum ?",
     "darija_ar": "السلام عليكم و مرحباً بك في منصة وكالة للسيارات بالمغرب. نقدر نعاونك في اختيار سيارة جديدة مناسبة، حساب مصاريف الديوانة، مقارنة الموديلات، أو الإجابة على أي استفسار تقني أو ميكانيكي. كيفاش نقدر نعاونك اليوم؟",
@@ -824,8 +941,6 @@ GREETING_RESPONSES = {
     "russian": "Здравствуйте и добро пожаловать в Wakala! Я ваш автомобильный консультант в Марокко. Помогу выбрать новый автомобиль, рассчитать таможенные пошлины, сравнить модели или дать экспертный технический совет. Чем могу помочь вам сегодня?"
 }
 
-
-# ─── Connaissances riches sectorielles d'expertise automobile ──
 EXPERT_CONTEXTS = {
     "darija_lat": """Moteurs w machakil mikanikiya ma3roufa f l-mghrib :
 1. Moteur 1.2 PureTech (Peugeot, Citroen, Opel, DS) : Mochkil kbir f la courroie de distribution immergee f zit li katfertet w katboucher la crepine d'huile, chi li kaydir casse moteur w surconsommation kbira d zit.
@@ -879,46 +994,96 @@ CUSTOMS_CONTEXTS = {
     "french": "Dedouanement automobile au Maroc. Explique le calcul des droits de douane et oriente vers le simulateur de dedouanement Wakala."
 }
 
-
 CONSULTATIVE_DISCOVERY_CONTEXTS = {
     "darija_lat": """L-client baghi ychri tomobila walakin mazal ma7eddech koulchi.
-Koun moustachar teqni kbir d Wakala : hder m3ah b tariqa tabi3iya, zwiyna w mfhoma.
-Matkounch robot w matktech 3lih b les questions mserfin.
-Ila mazal ma3tach l-ma3loumat, sewlo soual wahed bohdo f kol risala (chmen naw3 d l-tomobila baghi, wla chhal l-budget li f balo, wla l-isti3mal dyalo).
-Mat3tich liste d les questions w mat3tich des modeles 3chwa2iyen qbel matfhem l-ihtiyaj dyalo.""",
+Nta l-moustachar l-automobile d Wakala f l-mghrib.
+Silsilat d l-as2ila soual b soual :
+1. Etape 1 (Budget) : Ila mazal ma3tach l-budget, sewlo b d-derhem (MAD / DH).
+2. Etape 2 (Usage) : Ila 3tana l-budget, sewlo 3la l-isti3mal dyalo (mdina, triq kbira, wla mkhlet).
+3. Etape 3 (Carburant) : Ila 3refna l-usage, sewlo 3la l-moteur li kayfdel (Mazot, Lisans, Hybride, wla Electrique).
+4. Etape 4 (Boite) : Ila 3refna l-carburant, sewlo 3la la boite (Automatique wla Manuelle).
+5. Etape 5 (Carrosserie) : Ila 3refna la boite, sewlo 3la l-format (SUV, Citadine, Berline).
+6. Etape 6 (Recommandation finale) : Mnin ykounou l-ma3loumat kamlin, 3tih les modeles mn l-catalogue m3a l-coffre b l-valisat w l-bloc JSON.
+
+Qawa3id sSarima :
+- Sewel STRICTEMENT soual wahed f kol risala.
+- Matktech 3lih b les listes d les questions.
+- Hder 100% b Darija b l-hrof l-latiniya w bla aucun emoji.""",
 
     "darija_ar": """الزبون مهتم بالبحث عن سيارة أو استشارة حول الشراء لكنه لم يحدد كل تفاصيله بعد.
-تحدث معه بأسلوب استشاري ذكي وعفوي كخبير سيارات محترف.
-تجنب الأسلوب الآلي أو طرح استمارة أسئلة جافة دفعة واحدة.
-اطرح سؤالاً واحداً فقط بلباقة لمساعدته على توضيح رغبته (مثلاً: نوع السيارة المفضل لديه، أو الميزانية التقريبية، أو طبيعة تنقله اليومي).
-لا ترشح سيارات عشوائية قبل فهم احتياجه بدقة.""",
+أنت المستشار الأول وخبير السيارات في منصة وكالة (Wakala).
+تسلسل مراحل الاستشارة خطوة بخطوة:
+1. المرحلة 1 (الميزانية): إذا كانت الميزانية غير محددة، اسأل فقط عن الميزانية التقريبية بالدرهم.
+2. المرحلة 2 (نوع الاستعمال): إذا حُددت الميزانية، اسأل فقط عن طبيعة التنقل اليومي (وسط المدينة، طريق وسفر، أو مخلط).
+3. المرحلة 3 (نوع الوقود): إذا عُرف الاستعمال، اسأل فقط عن نوع المحرك المفضل (مازوط، ليسانص، إيبريد، أو كهربائي).
+4. المرحلة 4 (علبة السرعات): إذا حُدد الوقود، اسأل فقط عن علبة السرعات (أوتوماتيك أو مانييل).
+5. المرحلة 5 (نوع الهيكل): إذا حُددت علبة السرعات، اسأل فقط عن فئة السيارة (SUV عائلية، سيتادين للمدينة، أو بيرلين).
+6. المرحلة 6 (التوصية النهائية): بعد اكتمال المعايير، رشح أفضل السيارات المناسبة من الكتالوج مع ذكر سعة الصندوق بعدد الفاليزات وإدراج كود JSON.
 
-    "arabic": """العميل يرغب في استشارة حول شراء سيارة ولكن لم يحدد بعد كل معاييره.
-تحدث بأسلوب استشاري مهني ومرن، كخبير سيارات متخصص.
-تجنب تماماً طرح استمارات أو قوائم أسئلة ميكانيكية متتالية.
-اطرح سؤالاً واحداً فقط في كل رسالة لمساعدته بلباقة (مثل فئة السيارة التي يفضلها، أو ميزانيته المستهدفة، أو طبيعة تنقلاته اليومية).
-لا تقدم ترشيحات عشوائية قبل وضوح المعايير.""",
+شروط صارمة:
+- اطرح سؤالاً واحداً فقط في كل رسالة بالدارجة المغربية.
+- ممنوع طرح قائمة أسئلة متعددة دفعة واحدة.
+- التزم 100% بالدارجة المغربية المكتوبة بالعربية وبدون أي إيموجي نهائياً.""",
 
-    "french": """Le client souhaite trouver un véhicule mais n'a pas encore défini l'ensemble de ses critères.
-Adopte une posture d'expert consultant automobile, chaleureuse et naturelle.
-Ne sois pas rigide et ne pose aucun questionnaire à puces.
-Pose UNE SEULE question simple et ouverte à la fois pour comprendre son projet (par exemple le style de véhicule souhaité, son usage principal ou son budget approximatif).
-Ne propose aucun véhicule au hasard avant d'avoir cerné ses attentes.""",
+    "arabic": """العميل يرغب في استشارة حول شراء سيارة في السوق المغربي ولكن لم يحدد بعد كل معاييره وتفضيلاته.
+أنت كبير المستشارين والخبراء التقنيين لمنصة وكالة (Wakala).
+التسلسل التشخيصي الإلزامي خطوة بخطوة:
+1. الخطوة 1 (الميزانية): إذا لم تُحدد الميزانية، اسأل فقط عن الميزانية المستهدفة بالدرهم المغربي.
+2. الخطوة 2 (طبيعة الاستعمال): إذا عُرفت الميزانية، اسأل فقط عن طبيعة القيادة والتنقل اليومي (داخل المدينة، طرق سريعة وسفر، أو قيادة مختلطة).
+3. الخطوة 3 (نوع الوقود): إذا عُرفت طبيعة الاستعمال، اسأل فقط عن نوع المحرك والوقود المفضل (ديزل اقتصادي، بنزين، هجين/هايبرد، أو كهربائي بالكامل).
+4. الخطوة 4 (ناقل الحركة): إذا حُدد الوقود، اسأل فقط عن نوع ناقل الحركة (أوتوماتيكي أو يدوي).
+5. الخطوة 5 (فئة السيارة): إذا حُدد ناقل الحركة، اسأل فقط عن نوع الهيكل المفضل (دفع رباعي / SUV، سيدان مريحة، أو سيارة مدينة مدمجة).
+6. الخطوة 6 (الترشيحات النهائية): عند اكتمال كافة المعايير، قدم ترشيحات دقيقة من الكتالوج مع تعليل تقني وحجم الصندوق بعدد حقائب السفر وإدراج كتل JSON.
 
-    "english": """The user is exploring buying a car but has not yet specified all their preferences.
-Act as an empathetic and highly knowledgeable automotive consultant.
-Do not act like a rigid bot or generate bulleted questionnaires.
-Ask strictly ONE open and friendly question at a time to understand their needs (e.g. preferred vehicle style, daily driving habits, or target budget).
-Do not output random vehicle recommendations before understanding their requirements."""
+قواعد قطعية:
+- اطرح دائماً سؤالاً واحداً فقط في كل رسالة باللغة العربية الفصحى.
+- تجنب تماماً طرح قوائم أسئلة متعددة.
+- التزم 100% باللغة العربية الفصحى السليمة وبدون أي رموز تعبيرية (Emojis).""",
+
+    "french": """Le client souhaite trouver ou acheter un véhicule au Maroc mais n'a pas encore défini l'ensemble de ses critères.
+Tu es l'expert conseiller automobile d'élite de la plateforme Wakala.
+SÉQUENCE STRICTE DE QUALIFICATION TOUR PAR TOUR :
+1. Étape 1 (Budget) : Si le budget n'est pas encore précisé, demande UNIQUEMENT son budget cible en Dirhams (MAD / DH).
+2. Étape 2 (Usage) : Si le budget est connu mais pas l'usage, demande UNIQUEMENT son type de trajet quotidien (ville, autoroute ou mixte).
+3. Étape 3 (Carburant) : Si l'usage est connu mais pas le carburant, demande UNIQUEMENT sa préférence de motorisation (Diesel, Essence, Hybride ou Électrique).
+4. Étape 4 (Boîte de vitesses) : Si le carburant est connu mais pas la boîte, demande UNIQUEMENT son choix de transmission (Boîte automatique ou Boîte manuelle).
+5. Étape 5 (Carrosserie) : Si la boîte est connue mais pas le format, demande UNIQUEMENT sa préférence de carrosserie (SUV, Berline, Citadine compacte).
+6. Étape 6 (Recommandations finales) : Une fois les critères réunis, présente les véhicules pertinents du catalogue avec arguments techniques, équivalence coffre en valises et blocs JSON de recommandation.
+
+RÈGLES IMPÉRATIVES :
+- Pose STRICTEMENT UNE SEULE question par message en français.
+- Ne fais JAMAIS de liste de questions ni de questionnaire.
+- Reste 100% en français avec zéro émoji.""",
+
+    "english": """The user is exploring buying a car in Morocco but has not yet specified all required preferences.
+You are the elite automotive consultant for the Wakala platform.
+STRICT TURN-BY-TURN DISCOVERY SEQUENCE:
+1. Turn 1 (Budget): If target budget is missing, ask ONLY for their target budget in MAD.
+2. Turn 2 (Usage): If budget is known but usage is missing, ask ONLY about their daily driving habits (city vs highway vs mixed).
+3. Turn 3 (Fuel): If usage is known but fuel is missing, ask ONLY about their preferred fuel type (Diesel, Petrol, Hybrid, or EV).
+4. Turn 4 (Transmission): If fuel is known but gearbox is missing, ask ONLY for their transmission preference (Automatic or Manual).
+5. Turn 5 (Body Style): If transmission is known but car type is missing, ask ONLY for their preferred body style (SUV, Sedan, Hatchback/City car).
+6. Turn 6 (Final Recommendations): Once criteria are clear, present tailored vehicle options from the catalogue with full technical reasons, suitcase capacity for the trunk, and JSON recommendation blocks.
+
+STRICT CONSTRAINTS:
+- Ask STRICTLY ONE question per response in English.
+- Do NOT generate bulleted question lists or multiple questions.
+- Answer 100% in English with zero emojis."""
 }
 
-
-async def chat_stream(message: str, history: List[Dict[str, str]]) -> AsyncIterable[str]:
-    """Gère la logique complète du chat et génère la réponse 100% dans la langue du client sur tout le secteur automobile, garantie sans emojis."""
+async def chat_stream(message: str, history: List[Dict[str, str]], language: Optional[str] = None) -> AsyncIterable[str]:
+    """Gère la logique complète du chat et génère la réponse 100% dans la langue du client sur tout le secteur automobile, garantie sans emojis ni fuite de réflexion."""
     clean_message = redact_pii(sanitize_input(message))
     
-    # 1. Détection universelle de la langue avec mémoire de contexte
-    detected_lang = detect_language(clean_message, history=history)
+    # 1. Détection universelle de la langue avec mémoire de contexte et respect de la langue explicite
+    detected_lang = detect_language(clean_message, history=history, explicit_language=language)
+
+    # Keep the assistant useful and safe: it is an automotive expert, not a
+    # general-purpose chatbot. This response is intentionally immediate.
+    if not is_automotive_domain_request(clean_message, history):
+        response = OUT_OF_DOMAIN_RESPONSES.get(detected_lang, OUT_OF_DOMAIN_RESPONSES['french'])
+        yield response
+        return
     
     # 2. Analyse d'intention ultra-rapide
     intent_data = await analyze_intent(clean_message, history)
@@ -928,7 +1093,7 @@ async def chat_stream(message: str, history: List[Dict[str, str]]) -> AsyncItera
     
     # 3. Gestion instantanée des salutations simples (0 latence, 100% langue cible, 0 emoji)
     if intent == "greeting":
-        greeting_text = GREETING_RESPONSES.get(detected_lang, GREETING_RESPONSES["french"])
+        greeting_text = GREETING_RESPONSES.get(detected_lang, GREETING_RESPONSES.get("french", "Bonjour !"))
         words = greeting_text.split(" ")
         for i, word in enumerate(words):
             yield word + (" " if i < len(words) - 1 else "")
@@ -970,12 +1135,9 @@ async def chat_stream(message: str, history: List[Dict[str, str]]) -> AsyncItera
     raw_messages.append({"role": "user", "content": remove_emojis(clean_message)})
     
     # 6. Stream de génération avec filtrage systématique d'emojis et des balises de réflexion (<think>)
-    in_think_block = False
-    
     if settings.OPENROUTER_API_KEY:
         stream_source = _stream_openrouter_direct(raw_messages)
     else:
-        # Fallback local Ollama
         messages = [
             SystemMessage(content=m["content"]) if m["role"] == "system"
             else HumanMessage(content=m["content"]) if m["role"] == "user"
@@ -989,35 +1151,62 @@ async def chat_stream(message: str, history: List[Dict[str, str]]) -> AsyncItera
         stream_source = _adapt_langchain()
 
     thinking_buffer = ""
-    
+    is_filtering_thinking = False
+    started_yielding = False
+
+    THINKING_MARKERS = (
+        "<think>",
+        "Here's a thinking process:",
+        "Here is a thinking process:",
+        "Thinking Process:",
+        "Thinking process:",
+        "Thought process:",
+        "Thought:",
+        "Reasoning Process:",
+        "1. **Analyze",
+        "1. Analyze",
+    )
+
     async for content in stream_source:
         if not content:
             continue
         
-        if "<think>" in content or "Here's a thinking process:" in content:
-            in_think_block = True
-            
-        if in_think_block:
+        if not started_yielding:
             thinking_buffer += content
-            if "</think>" in thinking_buffer:
-                in_think_block = False
-                content = thinking_buffer.split("</think>", 1)[1]
-                thinking_buffer = ""
-            elif "\n\n**" in thinking_buffer or "\n\n###" in thinking_buffer or "\n\n- " in thinking_buffer:
-                in_think_block = False
-                parts = re.split(r'\n\n(?=[\*\#\-])', thinking_buffer)
-                content = "\n\n" + "\n\n".join(parts[1:])
-                thinking_buffer = ""
-            else:
-                continue
+            
+            if any(m in thinking_buffer for m in THINKING_MARKERS):
+                is_filtering_thinking = True
                 
-        if content:
+            if is_filtering_thinking:
+                if "</think>" in thinking_buffer:
+                    after_think = thinking_buffer.split("</think>", 1)[1]
+                    clean = remove_emojis(after_think)
+                    if clean.strip():
+                        started_yielding = True
+                        yield clean.lstrip()
+                    thinking_buffer = ""
+                    is_filtering_thinking = False
+                elif re.search(r'\n\n(?=[A-Z\*\#\-\u0600-\u06FF])', thinking_buffer):
+                    scrubbed = scrub_thinking(thinking_buffer)
+                    if scrubbed:
+                        started_yielding = True
+                        yield remove_emojis(scrubbed)
+                        thinking_buffer = ""
+                        is_filtering_thinking = False
+                continue
+            else:
+                if len(thinking_buffer) > 25 or "\n" in thinking_buffer:
+                    started_yielding = True
+                    yield remove_emojis(thinking_buffer)
+                    thinking_buffer = ""
+                    continue
+        else:
             clean_chunk = remove_emojis(content)
             if clean_chunk:
                 yield clean_chunk
 
     if thinking_buffer:
-        clean_rem = remove_emojis(thinking_buffer)
-        if clean_rem:
-            yield clean_rem
-
+        final_clean = scrub_thinking(thinking_buffer) if is_filtering_thinking else thinking_buffer
+        final_clean = remove_emojis(final_clean)
+        if final_clean.strip():
+            yield final_clean

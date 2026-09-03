@@ -2,7 +2,7 @@ import base64
 import io
 import logging
 
-from fastapi import APIRouter, File, UploadFile, HTTPException, Request
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, Request
 from pydantic import BaseModel
 import numpy as np
 import cv2
@@ -10,6 +10,8 @@ import cv2
 from app.ml.vision.plate_blur import PlateBlur
 from app.ml.vision.yolo_detector import yolo_detector
 from app.core.limiter import limiter
+from app.core.security import get_current_user
+from app.models.user import User
 
 router = APIRouter(prefix="/vision", tags=["Computer Vision"])
 logger = logging.getLogger(__name__)
@@ -25,7 +27,7 @@ class VisionAnalysisResponse(BaseModel):
 
 @router.post("/analyze", response_model=VisionAnalysisResponse)
 @limiter.limit("10/minute")
-async def analyze_image(request: Request, file: UploadFile = File(...)):
+async def analyze_image(request: Request, file: UploadFile = File(...), _user: User = Depends(get_current_user)):
     """
     Reçoit une image de véhicule.
     1. Vérifie si elle est lisible.
@@ -40,7 +42,9 @@ async def analyze_image(request: Request, file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Le fichier est trop volumineux (maximum 5MB).")
 
     try:
-        contents = await file.read()
+        contents = await file.read(5 * 1024 * 1024 + 1)
+        if len(contents) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Le fichier est trop volumineux (maximum 5MB).")
         nparr = np.frombuffer(contents, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         

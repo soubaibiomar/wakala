@@ -30,9 +30,18 @@ BODY_KEYWORDS = {
     "break": "break", "station wagon": "break", "sw": "break", "touring": "break",
     "coupe": "coupe", "coupé": "coupe",
     "cabriolet": "cabriolet", "cabrio": "cabriolet", "convertible": "cabriolet",
-    "monospace": "monospace", "minivan": "monospace", "familial": "monospace", "3aila": "monospace", "family": "monospace",
+    "monospace": "monospace", "minivan": "monospace",
     "utilitaire": "utilitaire", "pick up": "pick_up", "pickup": "pick_up", "truck": "pick_up",
 }
+
+# “Family car” describes the use case, not one single body style. Keep all
+# practical passenger shapes eligible instead of incorrectly forcing the
+# result to monospace/minivans only.
+FAMILY_BODY_TYPES = ["monospace", "suv", "break", "berline", "citadine"]
+FAMILY_QUERY_TERMS = (
+    "family", "famille", "familial", "familiale", "familiaux", "familiales",
+    "3aila", "عائلية", "عائلية", "أطفال", "kids", "children", "baby", "bébé",
+)
 
 
 def extract_brand(text: str) -> Optional[str]:
@@ -57,6 +66,11 @@ def extract_body_type(text: str) -> Optional[str]:
         if keyword in lower:
             return body
     return None
+
+
+def is_family_query(text: str) -> bool:
+    lower = text.lower()
+    return any(re.search(rf"\b{re.escape(term)}\b", lower) for term in FAMILY_QUERY_TERMS)
 
 
 PRICE_PATTERNS = [
@@ -125,6 +139,9 @@ def _parse_price_value(raw: str, is_melyoun: bool = False, is_alf: bool = False)
 def extract_price(text: str) -> tuple[Optional[float], Optional[float]]:
     # Remove mileage substrings before matching price to prevent '50000km' matching as price
     sanitized_text = re.sub(r'\d+\s*(?:km|kms|kilomètres?)', '', text, flags=re.IGNORECASE)
+    # Moroccan users commonly write Dhs; normalize it to the accepted Dh
+    # suffix before applying the catalogue price patterns.
+    sanitized_text = re.sub(r'\bdhs?\b', 'dh', sanitized_text, flags=re.IGNORECASE)
     for pattern in PRICE_PATTERNS:
         m = pattern.search(sanitized_text)
         if m:
@@ -135,7 +152,10 @@ def extract_price(text: str) -> tuple[Optional[float], Optional[float]]:
 
             if d.get("exact"):
                 val = _parse_price_value(d["exact"], is_melyoun, is_alf)
-                return (val * 0.85, val * 1.15) if val is not None else (None, None)
+                # An exact stated budget is a hard maximum for catalogue
+                # requests: never recommend a vehicle above the user's MAD
+                # limit.
+                return (None, val) if val is not None else (None, None)
             p_min = _parse_price_value(d["min"], is_melyoun, is_alf) if d.get("min") else None
             p_max = _parse_price_value(d["max"], is_melyoun, is_alf) if d.get("max") else None
             return (p_min, p_max)
@@ -196,6 +216,8 @@ def extract_filters_from_query(query: str) -> dict:
     body = extract_body_type(query)
     if body:
         filters["body_type"] = body
+    elif is_family_query(query):
+        filters["body_type_in"] = FAMILY_BODY_TYPES.copy()
     city = extract_city(query)
     if city:
         filters["city"] = city

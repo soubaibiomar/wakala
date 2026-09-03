@@ -6352,13 +6352,13 @@
       "updated": 1,
       "link": null,
       "locked": false,
-      "text": "• Marketplaces: Avito.ma, Moteur.ma, Wandaloo, Spoticar, Otoclic, Kifal\n• Concessionnaires Neufs: Dacia Maroc, Renault Maroc\n• Priorité JSON-LD: Extraction structurée sans IA quand possible\n• Fallback LLM: Extraction Pydantic via GPT/Qwen si pas de JSON-LD\n• Service Quarantaine: Détection anomalies de prix avant injection\n• Kafka Producer: Publication des annonces brutes dans listings.raw",
+      "text": "• Marketplaces: Avito.ma, Moteur.ma, Wandaloo, Spoticar, Otoclic, Kifal\n• Concessionnaires Neufs: Dacia Maroc, Renault Maroc\n• Priorité JSON-LD: Extraction structurée sans IA quand possible\n• Fallback LLM: Extraction Pydantic via OpenRouter si pas de JSON-LD\n• Service Quarantaine: Détection anomalies de prix avant injection\n• Kafka Producer: Publication des annonces brutes dans listings.raw",
       "fontSize": 13,
       "fontFamily": 2,
       "textAlign": "left",
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "• Marketplaces: Avito.ma, Moteur.ma, Wandaloo, Spoticar, Otoclic, Kifal\n• Concessionnaires Neufs: Dacia Maroc, Renault Maroc\n• Priorité JSON-LD: Extraction structurée sans IA quand possible\n• Fallback LLM: Extraction Pydantic via GPT/Qwen si pas de JSON-LD\n• Service Quarantaine: Détection anomalies de prix avant injection\n• Kafka Producer: Publication des annonces brutes dans listings.raw",
+      "originalText": "• Marketplaces: Avito.ma, Moteur.ma, Wandaloo, Spoticar, Otoclic, Kifal\n• Concessionnaires Neufs: Dacia Maroc, Renault Maroc\n• Priorité JSON-LD: Extraction structurée sans IA quand possible\n• Fallback LLM: Extraction Pydantic via OpenRouter si pas de JSON-LD\n• Service Quarantaine: Détection anomalies de prix avant injection\n• Kafka Producer: Publication des annonces brutes dans listings.raw",
       "lineHeight": 1.4
     },
     {

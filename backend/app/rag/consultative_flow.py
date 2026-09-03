@@ -13,7 +13,12 @@ import logging
 import re
 from typing import Any, Optional
 
-from app.rag.needs_profile_schema import NeedsProfile, PRIORITY_ALIASES, VALID_DIMENSIONS
+from app.rag.needs_profile_schema import (
+    DIMENSION_ORDER,
+    NeedsProfile,
+    PRIORITY_ALIASES,
+    VALID_DIMENSIONS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -107,10 +112,18 @@ def extract_profile_fields(message: str) -> dict:
                 break
 
     # ── Usage ────────────────────────────────────────────────────
-    for usage, keywords in _USAGE_KEYWORDS.items():
-        if any(kw in text_lower for kw in keywords):
-            extracted["usage"] = usage
-            break
+    # Le cas mixte doit être détecté avant "ville" ou "route" :
+    # "ville et route" ne doit pas être tronqué en simple usage urbain.
+    mixed_keywords = _USAGE_KEYWORDS["mixte"] + ["city and highway", "city/highway", "city or highway"]
+    if any(kw in text_lower for kw in mixed_keywords):
+        extracted["usage"] = "mixte"
+    else:
+        for usage, keywords in _USAGE_KEYWORDS.items():
+            if usage == "mixte":
+                continue
+            if any(kw in text_lower for kw in keywords):
+                extracted["usage"] = usage
+                break
 
     # ── Carburant ────────────────────────────────────────────────
     for fuel, keywords in _FUEL_KEYWORDS.items():
@@ -126,7 +139,7 @@ def extract_profile_fields(message: str) -> dict:
 
     # ── Nombre de passagers ──────────────────────────────────────
     passengers_match = re.search(
-        r"(\d)\s*(?:passagers?|personnes?|places?|pers|nas)", text_lower
+        r"(\d+)\s*(?:passagers?|personnes?|people|persons?|places?|pers|nas)", text_lower
     )
     if passengers_match:
         val = int(passengers_match.group(1))
@@ -135,11 +148,21 @@ def extract_profile_fields(message: str) -> dict:
 
     # ── Priorités (8 dimensions) ─────────────────────────────────
     priorities = []
+    # Ces termes alimentent les filtres durs/contexte (et non une préférence
+    # 8D explicite). Cela évite par exemple que "budget 240000" couvre
+    # artificiellement la dimension prix_acces.
+    non_priority_aliases = {"budget", "prix", "ville", "city", "urbain", "urban"}
     for alias, dimension in PRIORITY_ALIASES.items():
-        if alias in text_lower and dimension in VALID_DIMENSIONS:
+        if alias not in non_priority_aliases and alias in text_lower and dimension in VALID_DIMENSIONS:
             priorities.append(dimension)
     if priorities:
         extracted["priorities"] = list(set(priorities))
+
+    # Une sensibilité forte à la consommation concerne à la fois le coût réel
+    # et l'impact énergétique. On conserve les deux signaux séparément afin
+    # que le moteur puisse les pondérer sans que le LLM ne les invente.
+    if any(term in text_lower for term in ("consommation", "consumption", "conso", "faible consommation", "économie de carburant", "fuel economy")):
+        extracted["priorities"] = list(set(extracted.get("priorities", [])) | {"cout_reel", "ecologie"})
 
     # ── Contraintes textuelles ───────────────────────────────────
     constraint_patterns = [
@@ -204,6 +227,19 @@ class ConsultativeFlow:
 
         if extracted:
             updated = current.merge_update(extracted)
+            # Les filtres durs ne sont pas des préférences 8D. Une préférence
+            # n'est couverte que lorsqu'elle est explicitement exprimée :
+            # budget et usage restent donc des prérequis indépendants.
+            covered = set(updated.covered_dimensions)
+            covered.update(dimension for dimension in extracted.get("priorities", []) if dimension in VALID_DIMENSIONS)
+            if extracted.get("nb_passagers") is not None:
+                covered.add("espace")
+            if extracted.get("fuel_preference") in {"hybride", "electrique"}:
+                covered.add("ecologie")
+            updated = updated.model_copy(update={
+                "covered_dimensions": [d for d in DIMENSION_ORDER if d in covered],
+                "pending_dimensions": [d for d in updated.pending_dimensions if d not in covered],
+            })
             self._profiles[session_id] = updated
             logger.info(
                 "Profile updated for session %s: %d fields filled, complete=%s",
@@ -214,35 +250,120 @@ class ConsultativeFlow:
         return current
 
     def get_phase(self, session_id: str) -> str:
-        """Détermine la phase courante : 'discovery' ou 'restitution'."""
+        """Retourne la phase historique basée sur les prérequis minimaux.
+
+        Cette méthode reste compatible avec les intégrations existantes. Le
+        chatbot utilise ``get_dialogue_phase`` afin de poursuivre la découverte
+        jusqu'à ce que les préférences soient réellement assez discriminantes.
+        """
         profile = self.get_profile(session_id)
         return "restitution" if profile.is_complete else "discovery"
 
-    def get_next_question_target(self, session_id: str) -> tuple[str, str]:
+    def get_dialogue_phase(self, session_id: str) -> str:
+        """Phase utilisée par le chatbot : découverte ou restitution réelle."""
+        return "restitution" if self.get_profile(session_id).ready_for_recommendation else "discovery"
+
+    def _dimension_priority_order(self, profile: NeedsProfile) -> list[str]:
+        """Retourne les dimensions pertinentes avant les dimensions génériques."""
+        if profile.usage == "ville":
+            preferred = ["espace", "securite", "praticite_urbaine"]
+        elif profile.usage == "route":
+            preferred = ["securite", "cout_reel", "performance"]
+        elif profile.usage == "offroad":
+            preferred = ["motricite", "performance", "securite"]
+        else:
+            preferred = ["espace", "securite", "praticite_urbaine", "cout_reel", "performance", "ecologie", "motricite", "prix_acces"]
+        return preferred + [dimension for dimension in DIMENSION_ORDER if dimension not in preferred]
+
+    @staticmethod
+    def _vehicle_dimension_value(vehicle: dict, dimension: str) -> str:
+        """Extrait une valeur comparable pour estimer le pouvoir discriminant."""
+        aliases = {
+            "espace": ("trunk_capacity_l", "seats", "body_type"),
+            "securite": ("ncap_rating", "safety_rating", "description"),
+            "cout_reel": ("consumption_l_100", "fuel_type"),
+            "prix_acces": ("price",),
+            "praticite_urbaine": ("body_type", "length_mm", "turning_radius"),
+            "performance": ("engine_power_hp", "acceleration_0_100"),
+            "ecologie": ("fuel_type", "co2_g_km", "consumption_l_100"),
+            "motricite": ("drive_type", "body_type", "description"),
+        }
+        for key in aliases.get(dimension, ()):
+            value = vehicle.get(key)
+            if value not in (None, "", []):
+                return str(value).lower()
+        return "unknown"
+
+    def _rank_missing_dimensions(self, profile: NeedsProfile, candidate_vehicles: Optional[list[dict]]) -> list[str]:
+        """Classe les dimensions par utilité et, si possible, par diversité du pool."""
+        covered = set(profile.covered_dimensions) | set(profile.pending_dimensions)
+        candidates = [d for d in self._dimension_priority_order(profile) if d not in covered]
+        if not candidate_vehicles or len(candidate_vehicles) < 2:
+            return candidates
+        # Une dimension qui sépare le mieux les candidats est plus utile qu'une
+        # dimension dont tous les véhicules ont la même valeur.
+        diversity = {
+            dimension: len({self._vehicle_dimension_value(vehicle, dimension) for vehicle in candidate_vehicles})
+            for dimension in candidates
+        }
+        return sorted(candidates, key=lambda dimension: (-diversity[dimension], candidates.index(dimension)))
+
+    def get_next_question_plan(
+        self, session_id: str, candidate_vehicles: Optional[list[dict]] = None
+    ) -> dict[str, Any]:
+        """Produit une sélection Analyze → Select → Formulate de 1 à 2 questions."""
+        profile = self.get_profile(session_id)
+        if profile.budget_max is None:
+            return {"dimensions": [], "target": "budget", "questions": [
+                "Quel est votre budget maximum en dirhams (MAD ou DH) ?"
+            ]}
+        if profile.usage is None:
+            return {"dimensions": [], "target": "usage", "questions": [
+                "Utiliserez-vous surtout la voiture en ville, sur route, ou dans les deux ?"
+            ]}
+
+        ranked = self._rank_missing_dimensions(profile, candidate_vehicles)
+        if not ranked:
+            return {"dimensions": [], "target": "complete", "questions": []}
+
+        first = ranked[0]
+        questions = {
+            "espace": "De combien de place avez-vous besoin pour les passagers et les valises ?",
+            "securite": "Quel niveau d'importance accordez-vous à la sécurité certifiée (notes NCAP) ?",
+            "cout_reel": "Préférez-vous réduire la consommation et les coûts d'utilisation, même si le prix d'achat est plus élevé ?",
+            "prix_acces": "Souhaitez-vous privilégier le prix d'achat le plus bas dans votre budget ?",
+            "praticite_urbaine": "Pour la ville, privilégiez-vous une voiture compacte et facile à garer ?",
+            "performance": "Préférez-vous davantage de puissance et de reprises, ou une conduite plus économique ?",
+            "ecologie": "L'énergie hybride ou électrique est-elle une priorité pour vous ?",
+            "motricite": "Avez-vous besoin d'une transmission intégrale ou d'aptitudes tout-terrain ?",
+        }
+        selected = [first]
+        if len(ranked) > 1 and first not in {"cout_reel", "performance"}:
+            selected.append(ranked[1])
+        rendered = [questions[dimension] for dimension in selected]
+        if len(selected) == 2:
+            rendered[1] = f"Et entre {selected[0]} et {selected[1]}, lequel compte le plus pour vous ?"
+        return {"dimensions": selected, "target": ",".join(selected), "questions": rendered}
+
+    def record_question_plan(self, session_id: str, plan: dict[str, Any]) -> None:
+        """Enregistre la question envoyée pour empêcher les répétitions."""
+        dimensions = [d for d in plan.get("dimensions", []) if d in VALID_DIMENSIONS]
+        if not dimensions:
+            return
+        profile = self.get_profile(session_id)
+        asked = list(dict.fromkeys(profile.asked_dimensions + dimensions))
+        updated = profile.model_copy(update={"asked_dimensions": asked, "pending_dimensions": dimensions})
+        self._profiles[session_id] = updated
+
+    def get_next_question_target(self, session_id: str, candidate_vehicles: Optional[list[dict]] = None) -> tuple[str, str]:
         """
         Détermine l'UNIQUE information prioritaire à demander au prochain tour.
         Stratégie : 1 seule question à la fois, par ordre de priorité.
         """
-        profile = self.get_profile(session_id)
-        if profile.budget_max is None:
-            return (
-                "budget",
-                "Demande UNIQUEMENT le budget maximum souhaité en Dirhams (MAD / DH). "
-                "Exemple : 'Quel budget maximum envisagez-vous en DH ?'",
-            )
-        elif profile.usage is None:
-            return (
-                "usage",
-                "Demande UNIQUEMENT l'usage principal prévu pour le véhicule. "
-                "Exemple : 'Ce sera plutôt pour la ville au quotidien, des trajets mixtes, ou de longs trajets ?'",
-            )
-        elif not profile.fuel_preference and not profile.brand_preference:
-            return (
-                "preference",
-                "Demande s'il y a une préférence de carburant (essence, diesel, hybride) ou de marque particulière.",
-            )
-        else:
+        plan = self.get_next_question_plan(session_id, candidate_vehicles)
+        if not plan["questions"]:
             return ("complete", "Le profil est suffisant pour passer à la recommandation.")
+        return (plan["target"], " Pose au maximum ces questions, sans en ajouter : " + " ".join(plan["questions"]))
 
     def get_discovery_context(self, session_id: str) -> str:
         """
@@ -260,8 +381,21 @@ class ConsultativeFlow:
             filled.append(f"Marque: {profile.brand_preference}")
         if profile.body_type_preference:
             filled.append(f"Carrosserie: {profile.body_type_preference}")
+        if profile.nb_passagers:
+            filled.append(f"Passagers habituels: {profile.nb_passagers}")
+        if profile.priorities:
+            filled.append(f"Priorités: {', '.join(profile.priorities)}")
 
-        res = "Informations connues : " + (", ".join(filled) if filled else "Aucune pour l'instant")
+        missing = ", ".join(profile.missing_dimensions) or "aucune"
+        pending = ", ".join(profile.pending_dimensions) or "aucune"
+        essential_missing = ", ".join(profile.missing_essential_fields()) or "aucun"
+        res = (
+            "Informations connues : " + (", ".join(filled) if filled else "Aucune pour l'instant")
+            + f". CHAMPS MANQUANTS : {essential_missing}."
+            + f". DIMENSIONS 8D COUVERTES : {', '.join(profile.covered_dimensions) or 'aucune'}."
+            + f" DIMENSIONS 8D MANQUANTS : {missing}."
+            + f" QUESTIONS EN ATTENTE : {pending}. Pose 1 à 2 questions maximum."
+        )
         return res
 
     def build_recommendation_query(self, session_id: str) -> dict:

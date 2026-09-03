@@ -104,25 +104,45 @@
   color: #bba14f;
 }
 
-.vehicle-card__subtitle {
-  font-size: 0.8rem;
-  color: #7b8b9a;
-}
-
 /* ─── Specs row ────────────────────────────────────────────── */
 .vehicle-card__specs {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  font-size: 0.75rem;
-  color: #1a202c;
-  margin-bottom: 12px;
+  gap: 0 18px;
+  padding: 12px 0;
+  margin: 2px 0 4px;
+  border-top: 1px solid rgba(123, 139, 154, 0.16);
+  border-bottom: 1px solid rgba(123, 139, 154, 0.16);
 }
 
 .vehicle-card__specs-item {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  padding: 5px 0;
+  color: #526273;
+  font-size: 0.74rem;
+}
+
+.vehicle-card__specs-label {
+  color: #91a0af;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.vehicle-card__specs-value {
+  overflow: hidden;
+  color: #243447;
+  font-weight: 650;
+  text-align: right;
+  text-overflow: ellipsis;
+  text-transform: capitalize;
+  white-space: nowrap;
 }
 
 /* ─── Footer / Price ───────────────────────────────────────── */

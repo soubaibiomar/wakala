@@ -3,7 +3,6 @@ import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ChevronRight,
-  Sparkles,
   Car,
   ShieldCheck,
   Award,
@@ -84,11 +83,6 @@ export const MarquePage: React.FC = () => {
           </div>
 
           <div className="brand-hero__content">
-            <span className="brand-hero__tag" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 12px', background: 'rgba(212, 160, 23, 0.15)', border: '1px solid rgba(212, 160, 23, 0.4)', borderRadius: '20px', color: '#d4a017', fontSize: '0.8rem', fontWeight: 600, marginBottom: '14px' }}>
-              <Sparkles size={13} />
-              Catalogue Officiel Neuf
-            </span>
-
             {brandInfo?.logo && (
               <div className="brand-hero__logo-wrapper" style={{ margin: '10px 0 16px' }}>
                 <img
@@ -152,11 +146,15 @@ export const MarquePage: React.FC = () => {
                 >
                   <div style={{ height: '180px', background: '#0a1118', overflow: 'hidden' }}>
                     <img
-                      src={m.hero_image_url || resolveVehicleImage(displayBrandName, m.name)}
+                      src={resolveVehicleImage(displayBrandName, m.name)}
                       alt={`${displayBrandName} ${m.name}`}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '10px', background: '#eef0f2' }}
                       onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = resolveVehicleImage(displayBrandName, m.name);
+                        const image = e.currentTarget;
+                        // External catalogue images can expire. Do not retry the
+                        // same URL indefinitely: always leave a visible card.
+                        image.onerror = null;
+                        image.src = '/assets/car-side-fallback.svg';
                       }}
                     />
                   </div>
@@ -167,8 +165,10 @@ export const MarquePage: React.FC = () => {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                       <div>
-                        <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block' }}>À partir de</span>
-                        <strong style={{ color: '#d4a017', fontSize: '1.1rem' }}>{m.starting_price_mad.toLocaleString('fr-FR')} MAD</strong>
+                        {m.starting_price_mad > 0 && <>
+                          <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block' }}>À partir de</span>
+                          <strong style={{ color: '#d4a017', fontSize: '1.1rem' }}>{m.starting_price_mad.toLocaleString('fr-FR')} MAD</strong>
+                        </>}
                       </div>
                       <span style={{ padding: '6px 12px', background: 'rgba(212, 160, 23, 0.1)', color: '#d4a017', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600 }}>
                         Fiche &amp; Finitions →

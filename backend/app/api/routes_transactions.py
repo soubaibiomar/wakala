@@ -1,3 +1,4 @@
+import hmac
 import os
 import uuid
 from typing import List
@@ -85,13 +86,17 @@ async def webhook_payment_success(
             status_code=500,
             detail="Configuration serveur incomplète : WEBHOOK_SECRET non défini."
         )
-    if not webhook_secret or webhook_secret != expected_secret:
+    if not webhook_secret or not hmac.compare_digest(webhook_secret, expected_secret):
         raise HTTPException(status_code=403, detail="Signature Webhook invalide.")
 
     result = await db.execute(select(Transaction).where(Transaction.id == tx_id))
     tx = result.scalar_one_or_none()
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction non trouvée.")
+
+    # Webhooks are retried by providers; make the state transition idempotent.
+    if tx.status == "FUNDS_SECURED":
+        return {"status": tx.status}
         
     res = await payment_service.simulate_webhook_payment_success(tx.payment_intent_id)
     if res["status"] == "succeeded":
@@ -125,7 +130,9 @@ async def upload_transfer_document(
         raise HTTPException(status_code=400, detail="Le fichier est trop volumineux (maximum 5MB).")
         
     # On simule l'enregistrement du fichier
-    file_content = await file.read()
+    file_content = await file.read(5 * 1024 * 1024 + 1)
+    if len(file_content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Le fichier est trop volumineux (maximum 5MB).")
     
     # OCR Extraction
     document_text = ocr_validator.extract_text(file_content)

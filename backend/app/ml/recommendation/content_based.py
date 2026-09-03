@@ -30,6 +30,14 @@ BODY_TYPE_ORDER = [
     "monospace", "suv", "pick_up", "utilitaire",
 ]
 
+FAMILY_BODY_FIT = {
+    "monospace": 1.00,
+    "suv": 0.92,
+    "break": 0.88,
+    "berline": 0.76,
+    "citadine": 0.64,
+}
+
 TRANSMISSION_MAP = {"manuelle": 0, "automatique": 1, "semi_auto": 0.5}
 
 FUEL_ORDER = [
@@ -173,9 +181,11 @@ def compute_content_scores(
         return []
 
     candidates = candidate_vehicles_from_filters(vehicles, filters)
-
+    # A hard filter with zero matches must stay empty. Falling back to the
+    # complete catalogue is how a request for an unavailable brand (for
+    # example Mercedes) previously returned unrelated vehicles.
     if not candidates:
-        candidates = vehicles
+        return []
 
     matrix = build_feature_matrix(candidates)
     if matrix.shape[0] == 0:
@@ -189,6 +199,15 @@ def compute_content_scores(
         normalized = (similarities - sim_min) / (sim_max - sim_min)
     else:
         normalized = np.ones_like(similarities)
+
+    # Family is a practical use case, not a synonym for minivan. Apply a
+    # modest practicality bonus after the hard family-shape filter so SUVs,
+    # estates, and sedans remain valid and can compete with MPVs.
+    if filters.get("body_type_in"):
+        family_fit = np.array([
+            FAMILY_BODY_FIT.get(v.body_type or "", 0.5) for v in candidates
+        ])
+        normalized = (normalized * 0.72) + (family_fit * 0.28)
 
     results = []
     for i, v in enumerate(candidates):

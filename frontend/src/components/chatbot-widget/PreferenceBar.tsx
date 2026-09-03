@@ -1,28 +1,51 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import styles from './chatbot.module.css';
 
-interface PreferenceOption {
+export interface PreferenceOption {
   label: string;
   value: string;
 }
 
-interface PreferenceCategory {
+export type SupportedLanguage = 'fr' | 'darija' | 'ar' | 'en';
+
+export interface PreferenceCategoryDef {
   id: string;
   type: 'slider' | 'pills';
   name: string;
   questionPatterns: RegExp[];
-  options?: PreferenceOption[];
-  // Slider properties
   sliderMin?: number;
   sliderMax?: number;
   sliderStep?: number;
   sliderDefault?: number;
-  sliderLabel?: string;
-  formatValue?: (val: number) => string;
-  formatSubmitText?: (val: number) => string;
+  sliderLabels?: Record<SupportedLanguage, string>;
+  formatValue?: (val: number, lang: SupportedLanguage) => string;
+  formatSubmitText?: (val: number, lang: SupportedLanguage) => string;
+  localizedOptions?: Record<SupportedLanguage, PreferenceOption[]>;
 }
 
-export function getSuitcasesText(liters: number): string {
+export function getSuitcasesText(liters: number, lang: SupportedLanguage = 'fr'): string {
+  if (lang === 'ar') {
+    if (liters < 280) return '1-2 حقائب يد صغيرة';
+    if (liters <= 380) return '2-3 حقائب سفر';
+    if (liters <= 500) return '3-4 حقائب سفر';
+    if (liters <= 650) return '4-5 حقائب سفر كبيرة';
+    return '5-6+ حقائب سفر كبيرة';
+  }
+  if (lang === 'darija') {
+    if (liters < 280) return '1-2 فاليزات صغار';
+    if (liters <= 380) return '2-3 فاليزات';
+    if (liters <= 500) return '3-4 فاليزات';
+    if (liters <= 650) return '4-5 فاليزات كبار';
+    return '5-6+ فاليزات كبار';
+  }
+  if (lang === 'en') {
+    if (liters < 280) return '1-2 cabin bags';
+    if (liters <= 380) return '2-3 suitcases';
+    if (liters <= 500) return '3-4 suitcases';
+    if (liters <= 650) return '4-5 large suitcases';
+    return '5-6+ large suitcases';
+  }
+  // French default
   if (liters < 280) return '1-2 valises cabine';
   if (liters <= 380) return '2-3 valises cabine';
   if (liters <= 500) return '3-4 valises';
@@ -30,7 +53,31 @@ export function getSuitcasesText(liters: number): string {
   return '5-6+ grandes valises';
 }
 
-const PREFERENCE_CATEGORIES: PreferenceCategory[] = [
+function resolveLang(explicitLang?: string, text?: string): SupportedLanguage {
+  if (explicitLang) {
+    const l = explicitLang.toLowerCase();
+    if (l === 'darija' || l === 'darija_ar' || l === 'darija_lat') return 'darija';
+    if (l === 'ar' || l === 'arabic') return 'ar';
+    if (l === 'en' || l === 'english') return 'en';
+    if (l === 'fr' || l === 'french') return 'fr';
+  }
+
+  if (text) {
+    const hasArabicScript = /[\u0600-\u06FF]/.test(text);
+    if (hasArabicScript) {
+      const isDarija = /(?:ديال|ديالي|طوموبيل|شحال|فاليز|مزيان|بغيت|كاين|مخلط)/i.test(text);
+      return isDarija ? 'darija' : 'ar';
+    }
+    const isEnglish = /(?:budget|what|which|fuel|transmission|driving|trunk|suitcases)/i.test(text);
+    if (isEnglish && !/(?:quel|votre|boîte|voiture|carburant)/i.test(text)) {
+      return 'en';
+    }
+  }
+
+  return 'fr';
+}
+
+const PREFERENCE_CATEGORIES: PreferenceCategoryDef[] = [
   {
     id: 'budget',
     type: 'slider',
@@ -39,50 +86,52 @@ const PREFERENCE_CATEGORIES: PreferenceCategory[] = [
     sliderMax: 700000,
     sliderStep: 5000,
     sliderDefault: 180000,
-    sliderLabel: 'Ajustez votre budget :',
-    formatValue: (val: number) => `${val.toLocaleString('fr-FR')} DH`,
-    formatSubmitText: (val: number) => `Mon budget est de ${val.toLocaleString('fr-FR')} DH`,
+    sliderLabels: {
+      fr: 'Ajustez votre budget :',
+      darija: 'حدد الميزانية ديالك بالدرهم :',
+      ar: 'حدد ميزانيتك المستهدفة بالدرهم :',
+      en: 'Adjust your target budget in MAD:',
+    },
+    formatValue: (val: number, lang: SupportedLanguage) => {
+      if (lang === 'ar' || lang === 'darija') {
+        return `${val.toLocaleString('fr-FR')} درهم`;
+      }
+      if (lang === 'en') {
+        return `${val.toLocaleString('en-US')} MAD`;
+      }
+      return `${val.toLocaleString('fr-FR')} DH`;
+    },
+    formatSubmitText: (val: number, lang: SupportedLanguage) => {
+      if (lang === 'ar') {
+        return `ميزانيتي المستهدفة هي ${val.toLocaleString('fr-FR')} درهم`;
+      }
+      if (lang === 'darija') {
+        return `البودجي ديالي هو ${val.toLocaleString('fr-FR')} درهم`;
+      }
+      if (lang === 'en') {
+        return `My budget is ${val.toLocaleString('en-US')} MAD`;
+      }
+      return `Mon budget est de ${val.toLocaleString('fr-FR')} DH`;
+    },
     questionPatterns: [
       /quel(?: est)? (?:donc )?(?:votre )?budget/i,
       /quel budget/i,
       /budget (?:maximal|maximum|approximatif|envisag|pr[ée]vu|estim[ée]|souhait[ée]|cible)/i,
       /fourchette budg[ée]taire/i,
+      /budget.*(?:envisagez|souhaitez|prévoyez).*\?/i,
       /chhal (?:l-)?budget/i,
       /chhal (?:3ndek|baghi t7et|tqder tdfa3|flous)/i,
-      /شحال (?:هي )?الميزانية/i,
-      /الميزانية (?:المرصودة|التقريبية|المحددة|القصوى|ديالك)/i,
+      /شحال (?:هي )?(?:الميزانية|البودجي)/i,
+      /الميزانية (?:المرصودة|التقريبية|المحددة|القصوى|ديالك|المستهدفة)/i,
       /كم (?:هي )?ميزانيتك/i,
+      /ما (?:هي )?ميزانيتك/i,
+      /ميزانيتك/i,
+      /البودجي/i,
       /what(?:'s| is) your (?:approximate |target )?budget/i,
       /approximate budget/i,
       /target budget/i,
-      /budget.*(?:envisagez|souhaitez|prévoyez).*\?/i,
-    ],
-  },
-  {
-    id: 'coffre',
-    type: 'slider',
-    name: 'Volume Coffre & Valises',
-    sliderMin: 150,
-    sliderMax: 800,
-    sliderStep: 25,
-    sliderDefault: 425,
-    sliderLabel: 'Volume du coffre & valises :',
-    formatValue: (val: number) => `${val} L (${getSuitcasesText(val)})`,
-    formatSubmitText: (val: number) => `Je souhaite un volume de coffre d'environ ${val} L (~ ${getSuitcasesText(val)})`,
-    questionPatterns: [
-      /coffre/i,
-      /volume (?:du |de |en )?coffre/i,
-      /taille (?:du )?coffre/i,
-      /capacit[ée] (?:du )?coffre/i,
-      /valises?/i,
-      /bagages?/i,
-      /chhal (?:l-)?coffre/i,
-      /صندوق/i,
-      /حقائب/i,
-      /trunk/i,
-      /boot (?:space|capacity|size)/i,
-      /luggage/i,
-      /suitcases?/i,
+      /budget in mad/i,
+      /how much (?:would you like|do you plan) to spend/i,
     ],
   },
   {
@@ -98,16 +147,36 @@ const PREFERENCE_CATEGORIES: PreferenceCategory[] = [
       /wach (?:baghiha )?l-mdina wla/i,
       /isti3mal.*(?:mdina|safar|triq)/i,
       /طبيعة (?:الاستعمال|القيادة|التنقل)/i,
-      /داخل المدينة (?:أم|أو) السفر/i,
-      /what type of (?:driving|commute)/i,
-      /city or highway/i,
+      /نوع (?:الاستعمال|التنقل)/i,
+      /داخل المدينة|طرق سريعة|سفر/i,
+      /وسط المدينة|طريق وسفر/i,
+      /daily driving habits/i,
+      /city.*highway/i,
+      /driving commute/i,
+      /usage/i,
     ],
-    options: [
-      { label: 'Ville & Quotidien', value: 'Usage principal en ville pour les trajets quotidiens' },
-      { label: 'Trajets mixtes (Ville & Route)', value: 'Usage mixte ville et autoroute' },
-      { label: 'Autoroute & Longues distances', value: 'Principalement autoroute et longs trajets' },
-      { label: 'Usage familial & Espace', value: 'Usage familial spacieux et confortable' },
-    ],
+    localizedOptions: {
+      fr: [
+        { label: 'Usage mixte (ville & autoroute)', value: 'Usage mixte (ville et autoroute)' },
+        { label: '100% Ville au quotidien', value: 'Principalement de la ville au quotidien' },
+        { label: 'Grands trajets & Autoroute', value: 'Longs trajets et autoroute fréquents' },
+      ],
+      darija: [
+        { label: 'مخلط (مدينة وطريق)', value: 'تنقل مخلط بين المدينة والطريق' },
+        { label: 'المدينة بزاف', value: 'كنستعملها بزاف وسط المدينة' },
+        { label: 'طريق طويلة وسفر', value: 'طريق طويلة وسفر مستمر' },
+      ],
+      ar: [
+        { label: 'تنقل مختلط (مدينة وسفر)', value: 'استعمال مختلط بين المدينة والطرق السريعة' },
+        { label: 'داخل المدينة يومياً', value: 'تنقل يومي داخل المدينة' },
+        { label: 'مسافات طويلة وسفر', value: 'سفر متكرر ومسافات طويلة' },
+      ],
+      en: [
+        { label: 'Mixed (City & Highway)', value: 'Mixed city and highway driving' },
+        { label: 'Mainly City Commute', value: 'Mainly daily city driving' },
+        { label: 'Long Distance & Highway', value: 'Frequent long distance and highway travel' },
+      ],
+    },
   },
   {
     id: 'fuel',
@@ -120,16 +189,40 @@ const PREFERENCE_CATEGORIES: PreferenceCategory[] = [
       /moteur.*(?:diesel|essence|hybride)/i,
       /mazot (?:wla|ou) lisans/i,
       /نوع (?:الوقود|المحرك)/i,
+      /المحرك المفضل/i,
       /ديزل (?:أم|أو) بنزين/i,
+      /مازوط (?:ولا|أو) ليسانص/i,
       /what (?:type of )?fuel/i,
       /petrol, diesel or hybrid/i,
+      /fuel type/i,
+      /preferred fuel/i,
     ],
-    options: [
-      { label: 'Diesel', value: 'Je préfère un moteur diesel économique' },
-      { label: 'Essence', value: 'Je préfère un moteur essence' },
-      { label: 'Hybride', value: 'Je cherche un véhicule hybride' },
-      { label: '100% Électrique', value: 'Je cherche un véhicule 100% électrique' },
-    ],
+    localizedOptions: {
+      fr: [
+        { label: 'Diesel', value: 'Je préfère un moteur diesel économique' },
+        { label: 'Essence', value: 'Je préfère un moteur essence' },
+        { label: 'Hybride', value: 'Je cherche un véhicule hybride' },
+        { label: '100% Électrique', value: 'Je cherche un véhicule 100% électrique' },
+      ],
+      darija: [
+        { label: 'مازوط (Diesel)', value: 'كنفضل محرك مازوط اقتصادي' },
+        { label: 'ليصانص (Essence)', value: 'كنفضل محرك ليسانص' },
+        { label: 'هجين (Hybride)', value: 'كنقلب على طوموبيل إيبريد' },
+        { label: 'كهربائي (Électrique)', value: 'كنقلب على طوموبيل كهربائية 100%' },
+      ],
+      ar: [
+        { label: 'ديزل (Diesel)', value: 'أفضل محرك ديزل اقتصادي' },
+        { label: 'بنزين (Essence)', value: 'أفضل محرك بنزين' },
+        { label: 'هجين (Hybride)', value: 'أبحث عن سيارة هجينة (هايبرد)' },
+        { label: 'كهربائي بالكامل', value: 'أبحث عن سيارة كهربائية بالكامل' },
+      ],
+      en: [
+        { label: 'Diesel', value: 'I prefer an economical diesel engine' },
+        { label: 'Petrol / Gasoline', value: 'I prefer a petrol engine' },
+        { label: 'Hybrid', value: 'I am looking for a hybrid vehicle' },
+        { label: '100% Electric', value: 'I am looking for a 100% electric vehicle' },
+      ],
+    },
   },
   {
     id: 'transmission',
@@ -143,13 +236,32 @@ const PREFERENCE_CATEGORIES: PreferenceCategory[] = [
       /bva ou bvm/i,
       /automatique wla manuelle/i,
       /ناقل (?:الحركة|السرعة)/i,
+      /علبة السرعات/i,
       /أوتوماتيك (?:أم|أو) عادي/i,
+      /أوتوماتيك (?:أم|أو) مانييل/i,
       /manual or automatic/i,
+      /transmission preference/i,
+      /automatic or manual/i,
+      /gearbox/i,
     ],
-    options: [
-      { label: 'Boîte Manuelle', value: 'Je préfère une boîte manuelle' },
-      { label: 'Boîte Automatique', value: 'Je préfère une boîte automatique' },
-    ],
+    localizedOptions: {
+      fr: [
+        { label: 'Boîte Automatique', value: 'Je préfère une boîte automatique' },
+        { label: 'Boîte Manuelle', value: 'Je préfère une boîte manuelle' },
+      ],
+      darija: [
+        { label: 'أوتوماتيك (Automatique)', value: 'كنفضل بواط أوتوماتيك' },
+        { label: 'مانييل (Manuelle)', value: 'كنفضل بواط مانييل عادية' },
+      ],
+      ar: [
+        { label: 'ناقل حركة أوتوماتيكي', value: 'أفضل ناقل حركة أوتوماتيكي' },
+        { label: 'ناقل حركة يدوي', value: 'أفضل ناقل حركة يدوي' },
+      ],
+      en: [
+        { label: 'Automatic', value: 'I prefer an automatic gearbox' },
+        { label: 'Manual', value: 'I prefer a manual gearbox' },
+      ],
+    },
   },
   {
     id: 'body',
@@ -164,29 +276,112 @@ const PREFERENCE_CATEGORIES: PreferenceCategory[] = [
       /taille du véhicule/i,
       /نوع الهيكل/i,
       /فئة السيارة/i,
+      /شكل السيارة/i,
+      /سيتادين.*suv/i,
+      /دفع رباعي.*سيدان/i,
       /body style/i,
+      /suv, sedan or hatchback/i,
+      /preferred body/i,
+      /vehicle style/i,
     ],
-    options: [
-      { label: 'Citadine compacte', value: 'Je recherche une citadine compacte' },
-      { label: 'SUV / Crossover', value: 'Je recherche un SUV / Crossover' },
-      { label: 'Berline', value: 'Je recherche une berline élégante' },
-      { label: 'Grand coffre (~4+ valises)', value: 'Je recherche un véhicule spacieux avec grand coffre' },
+    localizedOptions: {
+      fr: [
+        { label: 'Citadine compacte', value: 'Je recherche une citadine compacte' },
+        { label: 'SUV / Crossover', value: 'Je recherche un SUV / Crossover' },
+        { label: 'Berline', value: 'Je recherche une berline élégante' },
+        { label: 'Grand coffre (~4+ valises)', value: 'Je recherche un véhicule spacieux avec grand coffre' },
+      ],
+      darija: [
+        { label: 'سيتادين صغيرة', value: 'كنقلب على سيتادين مصلوحة للمدينة' },
+        { label: 'SUV / Crossover', value: 'كنقلب على SUV عالية ومريحة' },
+        { label: 'بيرلين (Berline)', value: 'كنقلب على بيرلين عائلية أنيقة' },
+        { label: 'صندوق كبير (~4 فاليزات)', value: 'كنقلب على طوموبيل بكوفر كبير كيهز الفاليزات' },
+      ],
+      ar: [
+        { label: 'سيارة مدمجة للمدينة', value: 'أبحث عن سيارة مدينة مدمجة وعملية' },
+        { label: 'سيارة دفع رباعي / SUV', value: 'أبحث عن سيارة SUV / كروس أوفر مرتفعة' },
+        { label: 'سيدان (Berline)', value: 'أبحث عن سيارة سيدان أنيقة ومريحة' },
+        { label: 'صندوق واسع (~4+ حقائب)', value: 'أبحث عن سيارة بصندوق أمتعة واسع يتسع لحقائب السفر' },
+      ],
+      en: [
+        { label: 'Compact City Car', value: 'I am looking for a compact city car' },
+        { label: 'SUV / Crossover', value: 'I am looking for an SUV or Crossover' },
+        { label: 'Sedan / Saloon', value: 'I am looking for an elegant sedan' },
+        { label: 'Large Trunk (~4+ suitcases)', value: 'I am looking for a spacious vehicle with a large trunk' },
+      ],
+    },
+  },
+  {
+    id: 'coffre',
+    type: 'slider',
+    name: 'Capacité bagages',
+    sliderMin: 1,
+    sliderMax: 12,
+    sliderStep: 1,
+    sliderDefault: 5,
+    sliderLabels: {
+      fr: 'Nombre de valises :',
+      darija: 'عدد الفاليزات :',
+      ar: 'عدد الحقائب :',
+      en: 'Number of suitcases:',
+    },
+    formatValue: (val: number, lang: SupportedLanguage) => `${val} ${lang === 'fr' ? 'valise(s)' : lang === 'darija' ? 'فاليزات' : lang === 'ar' ? 'حقيبة/حقائب' : 'suitcase(s)'}`,
+    formatSubmitText: (val: number, lang: SupportedLanguage) => {
+      if (lang === 'ar') {
+        return `أرغب في سيارة تتسع لحوالي ${val} حقائب`;
+      }
+      if (lang === 'darija') {
+        return `باغي طوموبيل كتسع تقريباً لـ ${val} فاليزات`;
+      }
+      if (lang === 'en') {
+        return `I need space for around ${val} suitcases`;
+      }
+      return `Je souhaite un coffre pouvant contenir environ ${val} valises`;
+    },
+    questionPatterns: [
+      /coffre/i,
+      /volume (?:du |de |en )?coffre/i,
+      /taille (?:du )?coffre/i,
+      /capacit[ée] (?:du )?coffre/i,
+      /valises?/i,
+      /bagages?/i,
+      /chhal (?:l-)?coffre/i,
+      /صندوق/i,
+      /حقائب/i,
+      /فاليز/i,
+      /trunk/i,
+      /boot (?:space|capacity|size)/i,
+      /luggage/i,
+      /suitcases?/i,
     ],
   },
 ];
 
+const VALIDATE_BTN_LABELS: Record<SupportedLanguage, string> = {
+  fr: 'Valider',
+  darija: 'تأكيد',
+  ar: 'تأكيد',
+  en: 'Confirm',
+};
+
 interface PreferenceBarProps {
   lastAssistantMessage?: string;
+  currentLanguage?: string;
   onSelectOption: (optionText: string) => void;
   disabled?: boolean;
 }
 
 export default function PreferenceBar({
   lastAssistantMessage,
+  currentLanguage,
   onSelectOption,
   disabled = false,
 }: PreferenceBarProps) {
-  const activeCategory = useMemo<PreferenceCategory | null>(() => {
+  const activeLang = useMemo<SupportedLanguage>(() => {
+    return resolveLang(currentLanguage, lastAssistantMessage);
+  }, [currentLanguage, lastAssistantMessage]);
+
+  const activeCategory = useMemo<PreferenceCategoryDef | null>(() => {
     if (!lastAssistantMessage) return null;
     const cleanMsg = lastAssistantMessage.trim();
     const lower = cleanMsg.toLowerCase();
@@ -195,7 +390,10 @@ export default function PreferenceBar({
     if (
       lower.includes('car_recommendation') ||
       lower.includes('voici une sélection') ||
-      lower.includes('voici les véhicules')
+      lower.includes('voici les véhicules') ||
+      lower.includes('here are some recommended vehicles') ||
+      cleanMsg.includes('إليك أبرز السيارات') ||
+      cleanMsg.includes('هاهما أحسن الموديلات')
     ) {
       return null;
     }
@@ -244,12 +442,12 @@ export default function PreferenceBar({
     return null;
   }
 
-  // Isolation des événements de glissement pour éviter tout mouvement de la fenêtre du chatbot
+  // Isolation des événements de glissement pour éviter tout mouvement parasite
   const stopPropagationHandler = (e: React.SyntheticEvent) => {
     e.stopPropagation();
   };
 
-  // 1. Mode Slider Numérique Pur (Budget, Coffre) - AUCUN bouton de suggestion sous le slider
+  // 1. Mode Slider Numérique Pur (Budget, Coffre)
   if (activeCategory.type === 'slider') {
     const minVal = activeCategory.sliderMin ?? 50000;
     const maxVal = activeCategory.sliderMax ?? 700000;
@@ -258,15 +456,17 @@ export default function PreferenceBar({
 
     const handleValidateSlider = () => {
       if (activeCategory.formatSubmitText) {
-        onSelectOption(activeCategory.formatSubmitText(sliderValue));
+        onSelectOption(activeCategory.formatSubmitText(sliderValue, activeLang));
       } else {
         onSelectOption(`${activeCategory.name} : ${sliderValue}`);
       }
     };
 
+    const label = activeCategory.sliderLabels?.[activeLang] ?? `Ajustez votre ${activeCategory.name.toLowerCase()} :`;
     const displayValue = activeCategory.formatValue
-      ? activeCategory.formatValue(sliderValue)
+      ? activeCategory.formatValue(sliderValue, activeLang)
       : `${sliderValue}`;
+    const validateBtnText = VALIDATE_BTN_LABELS[activeLang] || 'Valider';
 
     return (
       <div 
@@ -277,9 +477,7 @@ export default function PreferenceBar({
       >
         <div className={styles.prefSliderContainer}>
           <div className={styles.prefSliderHeader}>
-            <span className={styles.prefSliderLabel}>
-              {activeCategory.sliderLabel ?? `Ajustez votre ${activeCategory.name.toLowerCase()} :`}
-            </span>
+            <span className={styles.prefSliderLabel}>{label}</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span className={styles.prefSliderValue}>{displayValue}</span>
               <button
@@ -288,7 +486,7 @@ export default function PreferenceBar({
                 onClick={handleValidateSlider}
                 disabled={disabled}
               >
-                Valider
+                {validateBtnText}
               </button>
             </div>
           </div>
@@ -322,6 +520,8 @@ export default function PreferenceBar({
   }
 
   // 2. Mode Pastilles de Choix Discrètes (Usage, Carburant, Boîte, Format)
+  const currentOptions = activeCategory.localizedOptions?.[activeLang] || activeCategory.localizedOptions?.['fr'] || [];
+
   return (
     <div 
       className={styles.preferenceBarContainer}
@@ -331,7 +531,7 @@ export default function PreferenceBar({
     >
       <div className={styles.prefChipsScroll}>
         <div className={styles.prefChipsWrapper}>
-          {activeCategory.options?.map((opt) => (
+          {currentOptions.map((opt) => (
             <button
               key={opt.label}
               type="button"

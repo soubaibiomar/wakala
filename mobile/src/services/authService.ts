@@ -1,4 +1,4 @@
-import api from './api';
+import api, { setWebSessionToken, getWebSessionToken } from './api';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { User, TokenResponse } from '@vente-auto/shared-types';
@@ -14,7 +14,7 @@ export const authService = {
     const { access_token } = response.data;
     if (access_token) {
       if (Platform.OS === 'web') {
-        if (typeof window !== 'undefined') localStorage.setItem('token', access_token);
+        setWebSessionToken(access_token);
       } else {
         await SecureStore.setItemAsync('token', access_token);
       }
@@ -60,7 +60,7 @@ export const authService = {
 
   async logout(): Promise<void> {
     if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined') localStorage.removeItem('token');
+      setWebSessionToken(null);
     } else {
       await SecureStore.deleteItemAsync('token');
     }
@@ -68,7 +68,7 @@ export const authService = {
   
   async getToken(): Promise<string | null> {
     if (Platform.OS === 'web') {
-      return typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      return getWebSessionToken();
     }
     return await SecureStore.getItemAsync('token');
   }

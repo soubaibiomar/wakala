@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class RawListing(BaseModel):
     """
-    Sortie brute de parse_listing(), avant normalisation Ollama.
+    Sortie brute de parse_listing(), avant normalisation.
     Schéma commun à toutes les plateformes, quelle que soit la source.
     """
     model_config = ConfigDict(populate_by_name=True)
@@ -36,7 +36,7 @@ class RawListing(BaseModel):
 class Listing(BaseModel):
     """
     Unified schema for individual vehicle listings from marketplaces.
-    Produced after normalization (Ollama or rule-based).
+    Produced after normalization (cloud or rule-based).
     """
     model_config = ConfigDict(populate_by_name=True)
 

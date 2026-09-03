@@ -21,7 +21,6 @@ from app.schemas.vehicle_schema import (
     VehicleReadWithSeller,
     VehicleUpdate,
 )
-from app.rag.compare_chain import compare_chain
 from app.services.ai.sync import upsert_vehicle_to_qdrant, delete_vehicle_from_qdrant
 from fastapi import BackgroundTasks
 
@@ -55,6 +54,11 @@ async def list_vehicles(
     year_min: Optional[int] = Query(None, ge=1950, description="Année minimum"),
     year_max: Optional[int] = Query(None, le=2030, description="Année maximum"),
     mileage_max: Optional[int] = Query(None, ge=0, description="Kilométrage maximum"),
+    doors: Optional[int] = Query(None, ge=2, le=6, description="Nombre de portes"),
+    seats: Optional[int] = Query(None, ge=1, le=9, description="Nombre de places"),
+    color: Optional[str] = Query(None, description="Couleur"),
+    min_engine_power: Optional[int] = Query(None, ge=0, description="Puissance minimum"),
+    is_4x4: Optional[bool] = Query(None, description="Transmission intégrale"),
     condition: Optional[str] = Query(None, description="Condition (neuf/occasion)"),
     group_by_model: Optional[bool] = Query(False, description="Grouper par marque et modèle (renvoie le moins cher)"),
     # Tri
@@ -133,9 +137,24 @@ async def list_vehicles(
         query = query.where(Vehicle.year <= year_max)
     if mileage_max is not None:
         query = query.where(Vehicle.mileage <= mileage_max)
+    if doors is not None:
+        query = query.where(Vehicle.doors == doors)
+    if seats is not None:
+        query = query.where(Vehicle.seats == seats)
+    if color:
+        query = query.where(Vehicle.color.ilike(f"%{color}%"))
+    if min_engine_power is not None:
+        query = query.where(Vehicle.engine_power_hp >= min_engine_power)
+    if is_4x4 is not None:
+        query = query.where(Vehicle.is_4x4 == is_4x4)
     
-    # Wakala is exclusively a new cars platform (0 km)
-    query = query.where(Vehicle.condition == "new", Vehicle.mileage == 0)
+    # The catalogue must expose only active, new 0 km vehicles. Deleted imports
+    # remain in the database for history, but must never leak into the showroom.
+    query = query.where(
+        Vehicle.status == "available",
+        Vehicle.condition == "new",
+        Vehicle.mileage == 0,
+    )
 
     if condition == 'occasion':
         query = query.where(1 == 0)
@@ -175,13 +194,13 @@ async def list_vehicles(
 
 
 # ──────────────────────────────────────────────────────────────
-# GET /compare — Comparaison IA de véhicules
+# GET /compare — Comparaison factuelle de véhicules
 # ──────────────────────────────────────────────────────────────
 
 @router.get(
     "/compare",
-    summary="Comparaison IA de plusieurs véhicules",
-    description="Retourne les données brutes des véhicules et un verdict IA comparatif.",
+    summary="Comparaison factuelle de plusieurs véhicules",
+    description="Retourne les données des véhicules sélectionnés sans génération IA.",
 )
 async def compare_vehicles(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -202,25 +221,9 @@ async def compare_vehicles(
             detail="Aucun véhicule trouvé.",
         )
     
-    vehicles_data = []
-    for v in vehicles:
-        vehicles_data.append({
-            "id": str(v.id),
-            "brand": v.brand,
-            "model": v.model,
-            "year": v.year,
-            "price": float(v.price),
-            "mileage": v.mileage,
-            "fuel_type": v.fuel_type,
-            "condition_score": float(v.condition_score) if v.condition_score else None,
-            "description": v.description,
-        })
-    
-    ai_verdict = await compare_chain.generate_comparison(vehicles_data)
-    
     return {
         "vehicles": [VehicleRead.model_validate(v) for v in vehicles],
-        "ai_verdict": ai_verdict
+        "ai_verdict": ""
     }
 
 

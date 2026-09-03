@@ -10,6 +10,11 @@
 
 import axios from 'axios';
 
+let sessionToken: string | null = null;
+export const setSessionToken = (token: string | null) => { sessionToken = token; };
+export const getSessionToken = () => sessionToken;
+export const clearSessionToken = () => { sessionToken = null; };
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
   timeout: 15000,
@@ -20,7 +25,7 @@ const api = axios.create({
 
 // ─── Intercepteur requête : injecter le JWT ──────────────────
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('wakala_token');
+  const token = sessionToken;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -33,8 +38,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Token expiré ou invalide — nettoyer et laisser le AuthContext gérer
-      localStorage.removeItem('wakala_token');
-      localStorage.removeItem('wakala_user');
+      clearSessionToken();
     }
     return Promise.reject(error);
   }

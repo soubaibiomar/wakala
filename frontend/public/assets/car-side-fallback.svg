@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" role="img" aria-label="Image latérale du véhicule indisponible">
+  <defs>
+    <linearGradient id="paint" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4c9ee8"/><stop offset="1" stop-color="#1769b0"/></linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#344b61"/><stop offset="1" stop-color="#101c29"/></linearGradient>
+  </defs>
+  <rect width="800" height="420" fill="#f3f5f7"/>
+  <ellipse cx="402" cy="333" rx="298" ry="16" fill="#d7dce1"/>
+  <path d="M116 281c13-42 45-70 91-82l105-27c34-9 60-31 82-60 15-20 38-31 63-31h57c47 0 87 22 112 60l35 54c16 25 36 39 64 50l30 12c12 5 20 17 20 30v15c0 11-9 20-20 20h-38c-3-44-39-78-84-78s-81 34-84 78H299c-3-44-39-78-84-78s-81 34-84 78h-19v-23c0-8 1-16 4-20Z" fill="url(#paint)" stroke="#173c63" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M303 175h276l-33-48c-18-26-47-40-78-40h-41c-18 0-35 8-46 23l-49 65Z" fill="url(#glass)" stroke="#173c63" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M441 94l-43 81h112l-7-81m18 0 47 81h55l-24-34c-20-30-53-47-89-47Z" fill="#91b4d2" opacity=".72" stroke="#173c63" stroke-width="5"/>
+  <path d="M120 247h600M286 192h278" stroke="#78b9ed" stroke-width="5" stroke-linecap="round" opacity=".8"/>
+  <path d="M305 229h181M528 229h92" stroke="#15538c" stroke-width="5" stroke-linecap="round" opacity=".7"/>
+  <circle cx="215" cy="299" r="48" fill="#152331" stroke="#0d1722" stroke-width="7"/><circle cx="215" cy="299" r="27" fill="#677685"/><circle cx="215" cy="299" r="10" fill="#dce5ec"/>
+  <circle cx="624" cy="299" r="48" fill="#152331" stroke="#0d1722" stroke-width="7"/><circle cx="624" cy="299" r="27" fill="#677685"/><circle cx="624" cy="299" r="10" fill="#dce5ec"/>
+  <path d="M111 348h634" stroke="#c7cdd3" stroke-width="5" stroke-linecap="round"/>
+</svg>

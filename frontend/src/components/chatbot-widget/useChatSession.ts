@@ -50,6 +50,7 @@ export function useChatSession() {
   });
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentLanguage, setCurrentLanguage] = useState<string>('fr');
   const sessionIdRef = useRef<string>(getOrCreateSessionId());
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -92,9 +93,11 @@ export function useChatSession() {
     }
   }, []);
 
-  const sendMessage = useCallback(async (text: string) => {
+  const sendMessage = useCallback(async (text: string, langOverride?: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
+
+    const activeLang = langOverride || currentLanguage;
 
     // Cancel any in-flight request
     cancelGeneration();
@@ -127,7 +130,6 @@ export function useChatSession() {
 
     try {
       // Build history for backend (excluding the current user message just added)
-      // Actually, we can just pass the previous messages
       const history = messages.map(m => ({ role: m.role, content: m.content }));
       
       await chatbotService.streamMessage(
@@ -144,14 +146,15 @@ export function useChatSession() {
           });
         },
         sessionIdRef.current,
-        controller.signal
+        controller.signal,
+        activeLang
       );
       
     } catch {
       setMessages((prev) => {
         return prev.map(msg => {
           if (msg.id === assistantId && !msg.content) {
-            return { ...msg, content: 'Désolé, je rencontre une difficulté technique. Veuillez réessayer.' };
+            return { ...msg, content: activeLang === 'en' ? 'Sorry, a temporary technical issue occurred. Please try again.' : 'Désolé, je rencontre une difficulté technique. Veuillez réessayer.' };
           }
           return msg;
         });
@@ -161,10 +164,13 @@ export function useChatSession() {
       abortControllerRef.current = null;
       setIsTyping(false);
     }
-  }, [messages, cancelGeneration]);
+  }, [messages, currentLanguage, cancelGeneration]);
 
-  const initConversation = useCallback((welcomeText: string) => {
+  const initConversation = useCallback((welcomeText: string, langCode?: string) => {
     cancelGeneration();
+    if (langCode) {
+      setCurrentLanguage(langCode);
+    }
     const assistantMsg: Message = {
       id: 'welcome-' + generateId(),
       role: 'assistant',
@@ -193,6 +199,8 @@ export function useChatSession() {
     cancelGeneration,
     clearHistory,
     initConversation,
+    currentLanguage,
+    setCurrentLanguage,
     sessionId: sessionIdRef.current,
   };
 }

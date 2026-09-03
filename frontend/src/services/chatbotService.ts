@@ -1,7 +1,7 @@
 /**
  * chatbotService.ts — Service pour le chatbot RAG.
  */
-import api from './api';
+import api, { getSessionToken } from './api';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -30,7 +30,8 @@ export const chatbotService = {
     history: Array<{ role: string; content: string }>,
     onChunk: (chunk: string) => void,
     sessionId?: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    language?: string
   ) => {
     // Determine the base URL from the Axios instance or env
     const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
@@ -40,7 +41,7 @@ export const chatbotService = {
         'Content-Type': 'application/json',
       };
       
-      const token = localStorage.getItem('token');
+      const token = getSessionToken();
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
@@ -51,7 +52,8 @@ export const chatbotService = {
         body: JSON.stringify({
           message,
           history,
-          session_id: sessionId
+          session_id: sessionId,
+          language
         }),
         signal
       });
@@ -87,7 +89,7 @@ export const chatbotService = {
   /** Récupérer l'historique des sessions de chat de l'utilisateur */
   getChatHistory: async () => {
     const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-    const token = localStorage.getItem('token');
+    const token = getSessionToken();
     if (!token) return [];
     
     const response = await fetch(`${baseURL}/v1/ai/chat/history`, {

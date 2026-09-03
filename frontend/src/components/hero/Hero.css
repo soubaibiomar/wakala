@@ -212,6 +212,53 @@
   gap: var(--space-md);
 }
 
+.search-bar-container {
+  position: relative;
+  width: 100%;
+}
+
+.search-suggestions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 10px);
+  z-index: 5;
+  padding: 12px;
+  border: 1px solid var(--border-subtle, rgba(174, 140, 78, 0.25));
+  border-radius: var(--radius-card, 18px);
+  background: var(--bg-card, #fff);
+  box-shadow: var(--shadow-card, 0 16px 36px rgba(0, 0, 0, 0.18));
+}
+
+.search-suggestions__label {
+  margin: 2px 8px 8px;
+  color: var(--text-secondary, #64748b);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.search-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 10px 9px;
+  border: 0;
+  border-radius: 10px;
+  color: var(--text-primary, #122135);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.search-suggestion:hover,
+.search-suggestion:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--color-primary, #ae8c4e) 10%, transparent);
+}
+
 .search-bar {
   display: flex;
   align-items: center;

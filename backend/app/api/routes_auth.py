@@ -386,11 +386,13 @@ async def google_login(
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
     try:
-        if settings.GOOGLE_CLIENT_ID:
-            idinfo = id_token.verify_oauth2_token(payload.token, google_requests.Request(), audience=settings.GOOGLE_CLIENT_ID)
-        else:
-            # Fallback for dev if client_id is not set, but not recommended for production
-            idinfo = id_token.verify_oauth2_token(payload.token, google_requests.Request())
+        if not settings.GOOGLE_CLIENT_ID and settings.APP_ENV != "development":
+            raise RuntimeError("Google OAuth client is not configured")
+        idinfo = id_token.verify_oauth2_token(
+            payload.token,
+            google_requests.Request(),
+            audience=settings.GOOGLE_CLIENT_ID or None,
+        )
         
         email = idinfo.get("email")
         full_name = idinfo.get("name", "Utilisateur Google")
@@ -398,10 +400,10 @@ async def google_login(
 
         if not email:
             raise ValueError("Email non fourni par Google")
-    except ValueError as e:
+    except (ValueError, RuntimeError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Token Google invalide : {str(e)}",
+            detail="Token Google invalide.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -432,4 +434,3 @@ async def google_login(
         access_token=token,
         user=UserRead.model_validate(user),
     )
-

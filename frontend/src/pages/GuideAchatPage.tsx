@@ -21,7 +21,7 @@ import PageMeta from '../components/seo/PageMeta';
 import FAQStructuredData from '../components/seo/FAQStructuredData';
 import BreadcrumbStructuredData from '../components/seo/BreadcrumbStructuredData';
 import seoService, { SeoHubData } from '../services/seoService';
-import { resolveVehicleImage } from '../utils/vehicleImageResolver';
+import { CATALOGUE_IMAGE_FALLBACK, resolveVehicleImage } from '../utils/vehicleImageResolver';
 import './StaticPages.css';
 
 export const GuideAchatPage: React.FC = () => {
@@ -292,11 +292,11 @@ export const GuideAchatPage: React.FC = () => {
                 >
                   <div style={{ height: '180px', background: '#0a1118', overflow: 'hidden' }}>
                     <img
-                      src={m.hero_image_url || resolveVehicleImage(m.brand_name, m.name)}
+                      src={resolveVehicleImage(m.brand_name, m.name)}
                       alt={`${m.brand_name} ${m.name}`}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = resolveVehicleImage(m.brand_name, m.name);
+                        (e.currentTarget as HTMLImageElement).src = CATALOGUE_IMAGE_FALLBACK;
                       }}
                     />
                   </div>
@@ -307,8 +307,10 @@ export const GuideAchatPage: React.FC = () => {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
                       <div>
-                        <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>À partir de</span>
-                        <strong style={{ color: '#d4a017', fontSize: '1.1rem' }}>{m.starting_price_mad.toLocaleString('fr-FR')} MAD</strong>
+                        {m.starting_price_mad > 0 && <>
+                          <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>À partir de</span>
+                          <strong style={{ color: '#d4a017', fontSize: '1.1rem' }}>{m.starting_price_mad.toLocaleString('fr-FR')} MAD</strong>
+                        </>}
                       </div>
                       <span style={{ padding: '6px 12px', background: 'rgba(212, 160, 23, 0.1)', color: '#d4a017', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600 }}>
                         Fiche technique →

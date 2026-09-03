@@ -27,6 +27,19 @@ export interface RecommendationResult {
   best_version_name?: string | null;
   relaxed_filter?: string | null;
   wakala_score_breakdown?: WakalaCriteriaScores;
+  eight_dimension_scores?: EightDimensionScores;
+  total_8d_score?: number;
+  total_8d_percent?: number;
+}
+
+export type EightDimensionScores = Record<string, number>;
+
+export interface EightDimensionScoreResult {
+  vehicle_id: string;
+  scores: EightDimensionScores;
+  weighted_total: number;
+  weighted_total_percent: number;
+  source: string;
 }
 
 export interface Top3VehicleItem {
@@ -94,5 +107,15 @@ export const recommendationService = {
     );
     return data;
   },
-};
 
+  async scoreVehicles8d(params: {
+    vehicle_ids: string[];
+    profile?: { usage?: string; priorities?: string[]; constraints?: string[] };
+  }): Promise<EightDimensionScoreResult[]> {
+    const { data } = await api.post<EightDimensionScoreResult[]>(
+      '/recommendation/score-8d',
+      params,
+    );
+    return data;
+  },
+};

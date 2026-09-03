@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { X, Sparkles, AlertCircle } from 'lucide-react';
+import { X, Scale, AlertCircle } from 'lucide-react';
 import { useCompare } from '../../context/CompareContext';
 import { compareService, CompareResponse } from '../../services/compareService';
+import { resolveVehicleImage } from '../../utils/vehicleImageResolver';
+import type { Vehicle } from '../../types/vehicle';
 
 export default function VehicleComparator({ onClose }: { onClose: () => void }) {
   const { compareList } = useCompare();
@@ -29,10 +31,12 @@ export default function VehicleComparator({ onClose }: { onClose: () => void }) 
   
   const mileages = data?.vehicles.map(v => v.mileage || 0) || [];
   const minMileage = mileages.length ? Math.min(...mileages) : 0;
-  
-  const conditionScores = data?.vehicles.map(v => v.condition_score || 0) || [];
-  const maxCondition = conditionScores.length ? Math.max(...conditionScores) : 0;
 
+  const getVehicleImage = (vehicle: Vehicle) => {
+    const storedImage = vehicle.images?.[0]?.file_path;
+    return storedImage || resolveVehicleImage(vehicle.brand, vehicle.model) || '/assets/car-side-fallback.svg';
+  };
+  
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -53,8 +57,8 @@ export default function VehicleComparator({ onClose }: { onClose: () => void }) 
           background: 'var(--bg-elevated)'
         }}>
           <h2 style={{ margin: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Sparkles color="var(--accent-gold)" />
-            Comparateur Intelligent
+            <Scale color="var(--accent-gold)" />
+            Comparateur de véhicules
           </h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
             <X size={24} />
@@ -69,7 +73,7 @@ export default function VehicleComparator({ onClose }: { onClose: () => void }) 
                 width: 40, height: 40, border: '3px solid var(--border-subtle)',
                 borderTopColor: 'var(--accent-gold)', borderRadius: '50%', animation: 'spin 1s linear infinite'
               }} />
-              <div style={{ color: 'var(--text-muted)' }}>Génération de la synthèse IA (Llama 3.3)...</div>
+              <div style={{ color: 'var(--text-muted)' }}>Chargement des données des véhicules...</div>
             </div>
           ) : error ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--accent-red)', padding: 20 }}>
@@ -78,21 +82,6 @@ export default function VehicleComparator({ onClose }: { onClose: () => void }) 
             </div>
           ) : data && (
             <>
-              {/* Verdict IA */}
-              <div style={{
-                background: 'rgba(234,179,8,0.05)', border: '1px solid var(--accent-gold)',
-                borderRadius: 'var(--radius-card)', padding: '20px', marginBottom: '32px'
-              }}>
-                <h3 style={{ margin: '0 0 12px 0', fontSize: '1rem', color: 'var(--accent-gold)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Sparkles size={18} /> Verdict IA
-                </h3>
-                <div style={{ color: 'var(--text-secondary)', lineHeight: 1.6, fontSize: '0.95rem' }}>
-                  {data.ai_verdict.split('\n').map((line, i) => (
-                    <p key={i} style={{ margin: line ? '0 0 8px 0' : 0 }}>{line}</p>
-                  ))}
-                </div>
-              </div>
-
               {/* Data Grid */}
               <div style={{
                 display: 'flex', gap: '24px', overflowX: 'auto', paddingBottom: '16px'
@@ -104,11 +93,17 @@ export default function VehicleComparator({ onClose }: { onClose: () => void }) 
                     overflow: 'hidden'
                   }}>
                     <div style={{ height: 160, background: 'var(--bg-card)', position: 'relative' }}>
-                      {v.images?.[0] ? (
-                        <img src={v.images[0].file_path} alt={v.model} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Sans image</div>
-                      )}
+                      <img
+                        src={getVehicleImage(v)}
+                        alt={`${v.brand} ${v.model}`}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 18 }}
+                        onError={(event) => {
+                          const target = event.currentTarget;
+                          if (!target.src.endsWith('/assets/car-side-fallback.svg')) {
+                            target.src = '/assets/car-side-fallback.svg';
+                          }
+                        }}
+                      />
                     </div>
                     
                     <div style={{ padding: '20px' }}>
@@ -138,14 +133,13 @@ export default function VehicleComparator({ onClose }: { onClose: () => void }) 
                           </div>
                         </div>
 
-                        {/* Score IA (Carrosserie) */}
+                        {/* Caractéristiques factuelles */}
                         <div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 4 }}>Score Carrosserie (IA)</div>
-                          <div style={{ 
-                            fontSize: '1rem', fontWeight: 600,
-                            color: (v.condition_score || 0) === maxCondition && maxCondition > 0 ? 'var(--accent-gold)' : 'var(--text-primary)'
-                          }}>
-                            {v.condition_score ? `${v.condition_score} / 100` : 'N/A'}
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 4 }}>Caractéristiques</div>
+                          <div style={{ fontSize: '0.9rem', fontWeight: 600, lineHeight: 1.65 }}>
+                            {v.body_type || '—'} · {v.engine_power_hp ? `${v.engine_power_hp} ch` : 'Puissance —'}<br />
+                            {v.doors || '—'} portes · {v.seats || '—'} places<br />
+                            {v.city || 'Ville non renseignée'}
                           </div>
                         </div>
                       </div>

@@ -30,6 +30,9 @@ export default function Navbar() {
               <Link to="/" className={isActive('/')}>Accueil</Link>
             </li>
             <li>
+              <Link to="/catalogue" className={isActive('/catalogue')}>Catalogue</Link>
+            </li>
+            <li>
               <Link to="/dedouanement" className={isActive('/dedouanement')}>Dédouanement</Link>
             </li>
 

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, File, Form, UploadFile, HTTPException, status
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 import uuid
@@ -64,8 +65,11 @@ async def add_service(
         os.makedirs(UPLOAD_DIR, exist_ok=True)
         file_name = f"{uuid.uuid4().hex}.{raw_ext}"
         file_path = os.path.join(UPLOAD_DIR, file_name)
+        receipt_bytes = receipt.file.read(5 * 1024 * 1024 + 1)
+        if len(receipt_bytes) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="La facture est trop volumineuse (maximum 5MB).")
         with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(receipt.file, buffer)
+            buffer.write(receipt_bytes)
         receipt_url = f"/uploads/receipts/{file_name}"
 
     try:
@@ -104,6 +108,29 @@ async def add_service(
     await db.commit()
     await db.refresh(new_service)
     return new_service
+
+@router.get("/receipts/{filename}")
+async def get_receipt(
+    filename: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Serve receipts only to the authenticated owner of the vehicle record."""
+    safe_name = os.path.basename(filename)
+    if safe_name != filename:
+        raise HTTPException(status_code=404, detail="Facture introuvable")
+    result = await db.execute(
+        select(VehicleService).where(
+            VehicleService.user_id == current_user.id,
+            VehicleService.receipt_url == f"/uploads/receipts/{safe_name}",
+        )
+    )
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Facture introuvable")
+    path = os.path.join(UPLOAD_DIR, safe_name)
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="Facture introuvable")
+    return FileResponse(path)
 
 @router.get("/history/{car_id}", response_model=List[VehicleServiceResponse])
 async def get_service_history(

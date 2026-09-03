@@ -71,10 +71,9 @@ export const NewCarDetailPage: React.FC = () => {
     return resolveBrandLogo(brandName, logoUrl);
   };
 
-  const getModelImage = (brandName: string, modelName: string, currentImg?: string | null) => {
-    if (currentImg && !currentImg.includes('placeholder') && !currentImg.includes('example.com') && (currentImg.startsWith('/') || currentImg.startsWith('http'))) {
-      return currentImg;
-    }
+  const getModelImage = (brandName: string, modelName: string, _currentImg?: string | null) => {
+    // Official catalogue pages use the curated side-profile model image.
+    // Stored listing/Wakala images are intentionally not used here.
     return resolveVehicleImage(brandName, modelName);
   };
 
@@ -102,6 +101,9 @@ export const NewCarDetailPage: React.FC = () => {
   const currentTrim = trimDetail;
   const otr = currentTrim?.on_the_road_breakdown;
   const pt = currentTrim?.powertrain;
+  const currentCataloguePrice = Number(currentTrim?.promo_price_mad || currentTrim?.price_new_mad || 0);
+  const hasCurrentCataloguePrice = Number.isFinite(currentCataloguePrice) && currentCataloguePrice > 0;
+  const hasOtrPrice = Number(otr?.total_clef_en_main_mad || 0) > 0;
   const mainImgSrc = getModelImage(model.brand.name, model.name, currentTrim?.image_url || model.hero_image_url);
   const brandLogoSrc = getBrandLogo(model.brand.name, model.brand.logo_url);
 
@@ -113,7 +115,7 @@ export const NewCarDetailPage: React.FC = () => {
   ];
 
   const pageTitle = `${model.brand.name} ${model.name} Neuf au Maroc — Prix, Fiche & Vignette DGI`;
-  const pageDesc = `Découvrez la nouvelle ${model.brand.name} ${model.name} au Maroc. Fiche technique officielle, motorisation, prix clé en main à partir de ${(currentTrim?.price_new_mad || model.starting_price_mad || 0).toLocaleString()} MAD et réservation d'essai.`;
+  const pageDesc = `Découvrez la nouvelle ${model.brand.name} ${model.name} au Maroc. Fiche technique officielle, motorisation${hasCurrentCataloguePrice ? `, prix clé en main à partir de ${currentCataloguePrice.toLocaleString()} MAD` : ''} et réservation d'essai.`;
 
   return (
     <div className="newcar-detail-page">
@@ -155,7 +157,9 @@ export const NewCarDetailPage: React.FC = () => {
                 alt={`${model.brand.name} ${model.name} ${currentTrim?.name || ''}`}
                 className="studio-main-image"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=1000';
+                  const image = e.currentTarget;
+                  image.onerror = null;
+                  image.src = '/assets/car-side-fallback.svg';
                 }}
               />
             </div>
@@ -210,21 +214,24 @@ export const NewCarDetailPage: React.FC = () => {
                     onClick={() => handleSelectTrim(t.id)}
                   >
                     <span className="trim-pill-name">{t.name}</span>
-                    <span className="trim-pill-price">
-                      {(t.promo_price_mad || t.price_new_mad).toLocaleString()} DH
-                    </span>
+                    {(Number(t.promo_price_mad || t.price_new_mad || 0) > 0) && (
+                      <span className="trim-pill-price">
+                        {(t.promo_price_mad || t.price_new_mad).toLocaleString()} DH
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Moroccan Pricing & OTR Breakdown */}
+            {hasCurrentCataloguePrice && (
             <div className="price-card-morocco">
               <div className="price-main-row">
                 <div>
                   <span className="price-label">Prix Catalogue TTC :</span>
                   <div className="price-val">
-                    {(currentTrim?.promo_price_mad || currentTrim?.price_new_mad || 0).toLocaleString()} <span className="currency">MAD</span>
+                    {currentCataloguePrice.toLocaleString()} <span className="currency">MAD</span>
                   </div>
                   {currentTrim?.is_promo && currentTrim.promo_price_mad && (
                     <span className="old-price">
@@ -232,12 +239,12 @@ export const NewCarDetailPage: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <div className="otr-badge-box">
+                {hasOtrPrice && <div className="otr-badge-box">
                   <span className="otr-badge-title">Clé en Main Estimé</span>
                   <span className="otr-badge-amount">
-                    {(otr?.total_clef_en_main_mad || 0).toLocaleString()} MAD
+                    {otr?.total_clef_en_main_mad.toLocaleString()} MAD
                   </span>
-                </div>
+                </div>}
               </div>
 
               {/* Tax Accordion / Mini details */}
@@ -281,6 +288,7 @@ export const NewCarDetailPage: React.FC = () => {
                 </button>
               </div>
             </div>
+            )}
           </div>
         </div>
 
@@ -288,32 +296,26 @@ export const NewCarDetailPage: React.FC = () => {
         {pt && (
           <div className="specs-highlight-grid">
             <div className="spec-tile">
-              <span className="spec-icon">⛽</span>
               <span className="spec-name">Carburant</span>
               <span className="spec-val">{pt.fuel_type}</span>
             </div>
             <div className="spec-tile">
-              <span className="spec-icon">⚙️</span>
               <span className="spec-name">Transmission</span>
               <span className="spec-val">{pt.transmission}</span>
             </div>
             <div className="spec-tile">
-              <span className="spec-icon">🐎</span>
               <span className="spec-name">Puissance Fiscale</span>
               <span className="spec-val">{pt.fiscal_power_cv} CV ({pt.engine_power_hp || 100} ch)</span>
             </div>
             <div className="spec-tile">
-              <span className="spec-icon">🌱</span>
               <span className="spec-name">Consommation Mixte</span>
               <span className="spec-val">{pt.consumption_l_100 || '4.5'} L / 100 km</span>
             </div>
             <div className="spec-tile">
-              <span className="spec-icon">🧳</span>
               <span className="spec-name">Volume du Coffre</span>
               <span className="spec-val">{currentTrim?.trunk_capacity_l || 380} Litres</span>
             </div>
             <div className="spec-tile">
-              <span className="spec-icon">⭐</span>
               <span className="spec-name">Sécurité Euro NCAP</span>
               <span className="spec-val">{currentTrim?.euro_ncap_stars || 4} / 5 étoiles</span>
             </div>

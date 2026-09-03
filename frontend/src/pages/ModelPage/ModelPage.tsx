@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
-import { ChevronRight, Fuel, Settings, Zap, Calendar, Sparkles, ArrowRight } from 'lucide-react';
+import { ChevronRight, Fuel, Settings, Zap, Calendar, ArrowRight } from 'lucide-react';
 import { vehicleService } from '../../services/vehicleService';
 import type { Vehicle } from '../../types/vehicle';
 import { FUEL_LABELS, TRANSMISSION_LABELS } from '../../types/vehicle';
-import { resolveVehicleImage } from '../../utils/vehicleImageResolver';
+import { CATALOGUE_IMAGE_FALLBACK, resolveVehicleImage } from '../../utils/vehicleImageResolver';
 import './ModelPage.css';
 
 export default function ModelPage() {
@@ -45,10 +45,13 @@ export default function ModelPage() {
   const displayBrand = brandName ? brandName.charAt(0).toUpperCase() + brandName.slice(1).toLowerCase() : '';
   const displayModel = modelName ? decodeURIComponent(modelName) : '';
 
-  const mainImage = resolveVehicleImage(displayBrand, displayModel, versions[0]?.images);
+  const mainImage = resolveVehicleImage(displayBrand, displayModel);
     
-  const startingPrice = versions.length > 0 
-    ? Math.min(...versions.map(v => v.price))
+  // A zero price means that the manufacturer/importer did not publish a
+  // price. Never present it as a real "À partir de 0 MAD" offer.
+  const pricedVersions = versions.filter((version) => Number.isFinite(version.price) && version.price > 0);
+  const startingPrice = pricedVersions.length > 0
+    ? Math.min(...pricedVersions.map((version) => version.price))
     : 0;
 
   const formattedPrice = new Intl.NumberFormat('fr-MA').format(startingPrice);
@@ -136,9 +139,9 @@ export default function ModelPage() {
     <div className="model-page">
       <Helmet>
         <title>{`${displayBrand} ${displayModel} Neuf - Prix et Fiche Technique au Maroc | Wakala`}</title>
-        <meta name="description" content={`Découvrez le ${displayBrand} ${displayModel} neuf au Maroc. Consultez les ${versions.length} versions disponibles, comparez les prix (à partir de ${formattedPrice} MAD), les équipements et la fiche technique complète.`} />
+        <meta name="description" content={`Découvrez le ${displayBrand} ${displayModel} neuf au Maroc. Consultez les ${versions.length} versions disponibles${startingPrice > 0 ? `, comparez les prix (à partir de ${formattedPrice} MAD)` : ''}, les équipements et la fiche technique complète.`} />
         <meta property="og:title" content={`${displayBrand} ${displayModel} Neuf - Prix et Fiche Technique au Maroc`} />
-        <meta property="og:description" content={`Découvrez le ${displayBrand} ${displayModel} neuf au Maroc à partir de ${formattedPrice} MAD. Comparez les différentes finitions et motorisations.`} />
+        <meta property="og:description" content={`Découvrez le ${displayBrand} ${displayModel} neuf au Maroc${startingPrice > 0 ? ` à partir de ${formattedPrice} MAD` : ''}. Comparez les différentes finitions et motorisations.`} />
         <meta property="og:image" content={mainImage} />
         <meta property="og:type" content="product" />
         <meta name="twitter:card" content="summary_large_image" />
@@ -163,10 +166,6 @@ export default function ModelPage() {
 
           <div className="model-page__hero-main">
             <div className="model-page__hero-text">
-              <div className="model-page__badge">
-                <Sparkles size={14} />
-                <span>Véhicule Neuf Officiel Maroc</span>
-              </div>
               <h1 className="model-page__title">
                 <span className="brand">{displayBrand}</span>
                 <span className="model">{displayModel}</span>
@@ -176,10 +175,12 @@ export default function ModelPage() {
                 Découvrez toutes les caractéristiques techniques, motorisations certifiées et comparez les finitions disponibles au Maroc.
               </p>
               
-              <div className="model-page__price-badge">
-                <span className="label">À partir de</span>
-                <span className="price">{formattedPrice} <span className="currency">MAD</span></span>
-              </div>
+              {startingPrice > 0 && (
+                <div className="model-page__price-badge">
+                  <span className="label">À partir de</span>
+                  <span className="price">{formattedPrice} <span className="currency">MAD</span></span>
+                </div>
+              )}
             </div>
             
             <div className="model-page__hero-visual">
@@ -190,7 +191,9 @@ export default function ModelPage() {
                 className="model-page__hero-img"
                 loading="eager"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/assets/phares-intro.jpg';
+                  const target = e.target as HTMLImageElement;
+                  target.onerror = null;
+                  target.src = CATALOGUE_IMAGE_FALLBACK;
                 }}
               />
             </div>
@@ -225,9 +228,11 @@ export default function ModelPage() {
                     <h3 className="version-card-premium__title">
                       {versionTitle}
                     </h3>
-                    <div className="version-card-premium__price">
-                      {new Intl.NumberFormat('fr-MA').format(version.price)} <span className="currency">MAD</span>
-                    </div>
+                    {Number.isFinite(version.price) && version.price > 0 && (
+                      <div className="version-card-premium__price">
+                        {new Intl.NumberFormat('fr-MA').format(version.price)} <span className="currency">MAD</span>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="version-card-premium__divider"></div>

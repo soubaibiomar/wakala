@@ -3,7 +3,7 @@
 Wakala Scraper Pipeline — Orchestrateur Multi-Plateformes
 ═══════════════════════════════════════════════════════════════
 
-Exécute séquentiellement les scrapers actifs, normalise via Ollama,
+Exécute séquentiellement les scrapers actifs,
 déduplique inter-plateformes, et écrit les résultats.
 
 Usage:
@@ -11,7 +11,6 @@ Usage:
     python main.py --site moteur           # Run only Moteur.ma
     python main.py --schedule --interval 10  # Run every 10 minutes
     python main.py --max-pages 3           # Scrape 3 pages per platform
-    python main.py --skip-ollama           # Skip Ollama normalization
 """
 import argparse
 import logging
@@ -130,8 +129,6 @@ def main():
                         help="Run continuously in a loop.")
     parser.add_argument("--interval", type=int, default=10,
                         help="Interval in minutes between runs (if --schedule).")
-    parser.add_argument("--skip-ollama", action="store_true",
-                        help="Skip Ollama normalization (raw output only).")
     parser.add_argument("--skip-dedup", action="store_true",
                         help="Skip cross-platform deduplication.")
 
@@ -167,26 +164,12 @@ def main():
             )
             all_raw.extend(raw)
 
-        # ── Phase 2: Ollama normalization ─────────────────────
-        if not args.skip_ollama and all_raw:
-            try:
-                from services.normalizer_ollama import normalize_listing
-                logger.info(f"\n--- OLLAMA NORMALIZATION ({len(all_raw)} listings) ---")
-                normalized = []
-                for raw in all_raw:
-                    norm = normalize_listing(raw)
-                    normalized.append(norm)
-                all_raw = normalized
-                logger.info(f"--- Normalization complete ---")
-            except Exception as e:
-                logger.warning(f"Ollama normalization skipped: {e}")
-
-        # ── Phase 3: Cross-platform deduplication ─────────────
+        # ── Phase 2: Cross-platform deduplication ─────────────
         if not args.skip_dedup and all_raw:
             logger.info(f"\n--- DEDUPLICATION ({len(all_raw)} listings) ---")
             all_raw = deduplicate_listings(all_raw)
 
-        # ── Phase 4: Summary ─────────────────────────────────
+        # ── Phase 3: Summary ─────────────────────────────────
         logger.info(f"\n{'='*60}")
         logger.info(f"PIPELINE SUMMARY")
         logger.info(f"{'='*60}")

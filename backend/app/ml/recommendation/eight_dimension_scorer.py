@@ -13,6 +13,7 @@ ne classe pas, ne recommande pas. C'est top3_selector.py qui orchestre.
 """
 
 import logging
+import re
 from typing import Any, Optional
 
 from pydantic import BaseModel, Field
@@ -87,11 +88,14 @@ def _score_securite(ncap_rating: Optional[str], year: Optional[int]) -> float:
     - Pas de note NCAP : estimation par année (>2020 → 3.5, >2018 → 3, sinon 2.5)
     """
     if ncap_rating:
-        rating_str = str(ncap_rating).strip()
-        # Try to extract star count
-        for star_count in [5, 4, 3, 2, 1]:
-            if str(star_count) in rating_str:
-                return min(5.0, max(1.0, float(star_count)))
+        rating_str = str(ncap_rating).strip().lower()
+        # Read the rating itself, not an unrelated year in a string such as
+        # "4★ (Euro NCAP 2021)". This makes safety ranking deterministic.
+        rating_match = re.search(r"(?<!\d)([1-5](?:[.,]0)?)(?=\s*(?:/\s*5|[★*]|stars?|étoiles?))", rating_str)
+        if rating_match:
+            return min(5.0, max(1.0, float(rating_match.group(1).replace(',', '.'))))
+        if re.fullmatch(r"[1-5](?:[.,]0)?", rating_str):
+            return float(rating_str.replace(',', '.'))
 
     # Fallback: estimation par année
     y = year or 2020

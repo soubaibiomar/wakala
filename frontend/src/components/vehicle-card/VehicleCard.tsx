@@ -4,11 +4,13 @@
  */
 
 import { Link } from 'react-router-dom';
-import { Scale, Gauge, ArrowRight } from 'lucide-react';
+import { Scale, ArrowRight } from 'lucide-react';
 import type { Vehicle } from '../../types/vehicle';
 import MatchScoreBadge from '../recommendation-form/MatchScoreBadge';
 import { useCompare } from '../../context/CompareContext';
 import { resolveVehicleImage } from '../../utils/vehicleImageResolver';
+import { EightDimensionScores } from '../recommendation-experience/EightDimensionScores';
+import type { EightDimensionScores as ScoreMap } from '../../services/recommendationService';
 import './VehicleCard.css';
 
 interface VehicleCardProps {
@@ -20,6 +22,8 @@ interface VehicleCardProps {
   keyFacts?: string[];
   budgetMargin?: number | null;
   bestVersionName?: string | null;
+  eightDimensionScores?: ScoreMap;
+  total8dScore?: number;
 }
 
 function cleanVehicleTitle(brand: string, model: string): { brand: string; model: string } {
@@ -57,6 +61,25 @@ function cleanVehicleTitle(brand: string, model: string): { brand: string; model
 }
 
 function getDisplayBodyType(brand: string, model: string, currentBodyType?: string): string {
+  const labels: Record<string, string> = {
+    pick_up: 'Pick-up',
+    cabriolet: 'Cabriolet',
+    utilitaire: 'Utilitaire',
+    monospace: 'Monospace',
+    break: 'Break',
+    citadine: 'Citadine',
+    coupe: 'Coupé',
+    suv: 'SUV',
+    berline: 'Berline',
+  };
+
+  // The database classification is the source of truth. Name-based
+  // heuristics are only a fallback for legacy/API records without a type.
+  if (currentBodyType) {
+    const normalized = currentBodyType.toLowerCase().replace('-', '_');
+    return labels[normalized] || currentBodyType.charAt(0).toUpperCase() + currentBodyType.slice(1);
+  }
+
   const name = `${brand} ${model}`.toLowerCase();
   
   const suvKeywords = [
@@ -69,6 +92,11 @@ function getDisplayBodyType(brand: string, model: string, currentBodyType?: stri
   if (suvKeywords.some(kw => name.includes(kw))) {
     return 'SUV';
   }
+
+  const coupeKeywords = ['db12', 'valhalla', 'valiant', 'valkyrie', 'vanquish', 'vantage', 'amg gt', 'supra', 'mustang'];
+  if (coupeKeywords.some(kw => name.includes(kw))) {
+    return 'Coupé';
+  }
   
   const citadineKeywords = [
     'clio', '208', '207', '206', 'c3', 'sandero', 'fiesta', 'polo', 'golf', 'yaris', 'i10', 'i20', 'picanto',
@@ -78,15 +106,7 @@ function getDisplayBodyType(brand: string, model: string, currentBodyType?: stri
     return 'Citadine';
   }
 
-  if (currentBodyType && currentBodyType.toLowerCase() !== 'berline') {
-    return currentBodyType.charAt(0).toUpperCase() + currentBodyType.slice(1);
-  }
-
   return 'Berline';
-}
-
-function getFallbackImage(brand: string, model: string): string {
-  return resolveVehicleImage(brand, model);
 }
 
 function getSourceName(url?: string): string | null {
@@ -120,6 +140,8 @@ export default function VehicleCard({
   keyFacts,
   budgetMargin,
   bestVersionName,
+  eightDimensionScores,
+  total8dScore,
 }: VehicleCardProps) {
   const { addVehicle, compareList } = useCompare();
   const isCompared = compareList.some((v) => v.id === vehicle.id);
@@ -127,14 +149,13 @@ export default function VehicleCard({
   // Clean brand and model for crisp presentation
   const { brand: cleanBrand, model: cleanModel } = cleanVehicleTitle(vehicle.brand, vehicle.model);
   const displayBodyType = getDisplayBodyType(cleanBrand, cleanModel, vehicle.body_type);
-  const fallbackImg = getFallbackImage(cleanBrand, cleanModel);
-
   // Format price securely
-  const formattedPrice = new Intl.NumberFormat('fr-MA', {
+  const hasPrice = Number.isFinite(vehicle.price) && vehicle.price > 0;
+  const formattedPrice = hasPrice ? new Intl.NumberFormat('fr-MA', {
     style: 'currency',
     currency: 'MAD',
     maximumFractionDigits: 0,
-  }).format(vehicle.price);
+  }).format(vehicle.price) : '';
 
   // Determine if this vehicle is a new model or grouped model
   const isNewOfficial = Boolean(
@@ -143,7 +164,7 @@ export default function VehicleCard({
     vehicle.mileage === 0
   );
 
-  const finalPrice = isNewOfficial ? `À partir de ${formattedPrice}` : formattedPrice;
+  const finalPrice = hasPrice ? (isNewOfficial ? `À partir de ${formattedPrice}` : formattedPrice) : '';
   const shortId = vehicle.id.split('-')[0];
   const occSlug = `${cleanBrand.toLowerCase()}-${cleanModel.toLowerCase()}-${vehicle.year || '0'}-${shortId}`
     .replace(/[^a-z0-9\-]+/g, '-')
@@ -157,7 +178,11 @@ export default function VehicleCard({
     ? `/marque/${encodeURIComponent(cleanBrand.toLowerCase())}/${encodeURIComponent(cleanModelForUrl)}` 
     : `/vehicule/${occSlug}`;
 
-  const carImgSrc = resolveVehicleImage(cleanBrand, cleanModel, vehicle.images);
+  // New catalogue vehicles must use the curated side-profile image, never a
+  // stored Wakala/listing photo. Used listings keep their own uploaded image.
+  const carImgSrc = isNewOfficial
+    ? resolveVehicleImage(cleanBrand, cleanModel)
+    : resolveVehicleImage(cleanBrand, cleanModel, vehicle.images);
 
   let displayDescription = vehicle.description || '';
   let versionsCount: string | null = null;
@@ -183,32 +208,11 @@ export default function VehicleCard({
           style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '10px' }}
           onError={(e) => {
             const target = e.target as HTMLImageElement;
-            target.src = fallbackImg;
+            target.onerror = null;
+            target.src = '/assets/car-side-fallback.svg';
           }}
         />
 
-        {/* Badges container */}
-        <div style={{
-          position: 'absolute', top: 12, left: 12, 
-          display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 2
-        }}>
-          <div style={{
-            background: 'linear-gradient(135deg, #ae8c4e 0%, #c9a24b 100%)', 
-            color: '#ffffff', 
-            padding: '4px 10px', 
-            borderRadius: '12px', 
-            fontSize: '0.72rem', 
-            fontWeight: 700,
-            boxShadow: '0 2px 6px rgba(0,0,0,0.15)', 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '4px',
-            border: '1px solid rgba(174, 140, 78, 0.4)'
-          }}>
-            <span>✨ Neuf</span>
-          </div>
-        </div>
-        
         {/* Render dynamic NLP matching badges if provided */}
         {badges && badges.length > 0 && (
           <div style={{ position: 'absolute', bottom: 12, left: 12, display: 'flex', gap: '4px', flexWrap: 'wrap', zIndex: 2 }}>
@@ -262,29 +266,22 @@ export default function VehicleCard({
           <h3 className="vehicle-card__title">
             {cleanBrand} {cleanModel}
           </h3>
-          <div className="vehicle-card__subtitle">
-            {bestVersionName || (vehicle.year ? `Modèle ${vehicle.year} · Neuf` : 'Véhicule Neuf')}
-          </div>
         </div>
 
         {/* Fiche Technique Grid */}
         <div className="vehicle-card__specs">
-          <div className="vehicle-card__specs-item">
-            <span style={{ color: '#e11d48' }}>⛽</span> 
-            <span style={{ textTransform: 'capitalize' }}>{vehicle.fuel_type}</span>
-          </div>
-          <div className="vehicle-card__specs-item">
-            <span style={{ color: '#8b5cf6' }}>⚙️</span> 
-            <span style={{ textTransform: 'capitalize' }}>{vehicle.transmission}</span>
-          </div>
-          <div className="vehicle-card__specs-item">
-            <span style={{ color: '#e11d48' }}>🚗</span> 
-            <span style={{ textTransform: 'capitalize' }}>{displayBodyType}</span>
-          </div>
-          <div className="vehicle-card__specs-item">
-            <span style={{ color: '#bba14f' }}><Gauge size={14} /></span> 
-            <span>Neuf (0 km)</span>
-          </div>
+          {[
+            ['Énergie', vehicle.fuel_type],
+            ['Boîte', vehicle.transmission],
+            ['Carrosserie', displayBodyType],
+          ].map(([label, value]) => (
+            <div className="vehicle-card__specs-item" key={label}>
+              <span className="vehicle-card__specs-label">{label}</span>
+              <span className="vehicle-card__specs-value">
+                {String(value || '').replace(/^./, (letter) => letter.toUpperCase())}
+              </span>
+            </div>
+          ))}
         </div>
 
         {/* Faits tangibles chiffrés Wakala */}
@@ -307,11 +304,13 @@ export default function VehicleCard({
           </div>
         )}
 
+        <EightDimensionScores scores={eightDimensionScores} total={total8dScore} />
+
         {/* Footer: Price + Budget Margin + Versions CTA */}
         <div className="vehicle-card__footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '12px' }}>
           <div>
             <span className="vehicle-card__price">{finalPrice}</span>
-            {budgetMargin !== undefined && budgetMargin !== null && (
+            {hasPrice && budgetMargin !== undefined && budgetMargin !== null && (
               <div style={{
                 fontSize: '0.68rem',
                 fontWeight: 700,

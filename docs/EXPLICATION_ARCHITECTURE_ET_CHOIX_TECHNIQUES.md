@@ -75,7 +75,7 @@ Wakala est une plateforme d'aide à la décision et d'achat automobile pour le m
 
 | Technologie | Rôle | Pourquoi ce choix ? |
 | :--- | :--- | :--- |
-| **FastAPI (Python AsyncIO)** | Passerelle API REST | FastAPI offre des performances proches de Go/Node.js grâce à `uvicorn`/`starlette`. Le support natif de l'asynchronisme (`async`/`await`) est indispensable pour gérer simultanément les appels LLM (Ollama/OpenAI), les requêtes vectorielles Qdrant et les requêtes relationnelles PostgreSQL. |
+| **FastAPI (Python AsyncIO)** | Passerelle API REST | FastAPI offre des performances proches de Go/Node.js grâce à `uvicorn`/`starlette`. Le support natif de l'asynchronisme (`async`/`await`) est indispensable pour gérer simultanément les appels LLM cloud, les requêtes vectorielles Qdrant et les requêtes relationnelles PostgreSQL. |
 | **Pydantic v2** | Validation & Contrats de données | Sérialisation et validation strictes à l'entrée et à la sortie de chaque endpoint. Empêche toute injection de types invalides dans le pipeline de scoring. |
 | **SQLAlchemy 2.0 Async** | ORM Relationnel | Sessions asynchrones non bloquantes, gestion fine des transactions pour les réservations, transactions de séquestre et logs d'audit. |
 
@@ -210,7 +210,7 @@ Lancez les conteneurs requis pour le stockage et l'ingestion :
 
 ```bash
 cd "d:/Projet automobile/vente-auto-platform"
-docker compose up -d postgres neo4j qdrant kafka ollama
+docker compose up -d postgres neo4j qdrant kafka
 ```
 
 ### Étape 2 : Déploiement des Migrations SQL

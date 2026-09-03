@@ -12,7 +12,9 @@ from app.ml.scoring.top3_aggregator import top3_aggregator, Top3Response
 from app.models.vehicle import Vehicle
 
 USAGE_TO_BODY_TYPE = {
-    "familial": ["suv", "monospace", "break"],
+    # Family use is broader than MPVs: SUVs, estates, sedans, and compact
+    # passenger cars can all be valid family choices.
+    "familial": ["suv", "monospace", "break", "berline", "citadine"],
     "urbain": ["citadine", "berline"],
     "longue_distance": ["berline", "suv", "break"],
     "professionnel": ["utilitaire", "pick_up", "berline"],
@@ -104,6 +106,10 @@ class MatchingEngine:
             page_size=request.page_size,
             cold_start=cold_start,
             user_id=request.user_id,
+            diversity_types=(
+                {str(v.id): str(v.body_type or "").lower() for v in filtered_vehicles}
+                if isinstance(body_filter, list) else None
+            ),
         )
         
         # 8. Map back to RankedResult avec badges et justifications Wakala

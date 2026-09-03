@@ -7,15 +7,15 @@ from pydantic import EmailStr
 
 # Settings for FastMail using Env Vars or Defaults for local dev
 conf = ConnectionConfig(
-    MAIL_USERNAME=os.environ.get("MAIL_USERNAME", "dev@wakala.ma"),
-    MAIL_PASSWORD=os.environ.get("MAIL_PASSWORD", "secret"),
+    MAIL_USERNAME=os.environ.get("MAIL_USERNAME", ""),
+    MAIL_PASSWORD=os.environ.get("MAIL_PASSWORD", ""),
     MAIL_FROM=os.environ.get("MAIL_FROM", "noreply@wakala.ma"),
     MAIL_PORT=int(os.environ.get("MAIL_PORT", 1025)),
     MAIL_SERVER=os.environ.get("MAIL_SERVER", "localhost"),
     MAIL_STARTTLS=os.environ.get("MAIL_STARTTLS", "False").lower() in ("true", "1", "t"),
     MAIL_SSL_TLS=os.environ.get("MAIL_SSL_TLS", "False").lower() in ("true", "1", "t"),
     USE_CREDENTIALS=os.environ.get("USE_CREDENTIALS", "False").lower() in ("true", "1", "t"),
-    VALIDATE_CERTS=os.environ.get("VALIDATE_CERTS", "False").lower() in ("true", "1", "t"),
+    VALIDATE_CERTS=os.environ.get("VALIDATE_CERTS", "True").lower() in ("true", "1", "t"),
 )
 
 
@@ -23,9 +23,8 @@ async def send_otp_email(email: str, otp_code: str):
     """
     Envoie un email HTML contenant le code OTP.
     """
-    print(f"\n======================================")
-    print(f"OTP for {email}: {otp_code}")
-    print(f"======================================\n")
+    import logging
+    logging.getLogger(__name__).info("Sending OTP email to %s", email)
 
     html_content = f"""
     <!DOCTYPE html>
@@ -112,4 +111,4 @@ async def send_otp_email(email: str, otp_code: str):
     try:
         await fm.send_message(message)
     except Exception as e:
-        print(f"Error sending email to {email}: {e}")
+        logging.getLogger(__name__).error("Error sending email to %s: %s", email, e)

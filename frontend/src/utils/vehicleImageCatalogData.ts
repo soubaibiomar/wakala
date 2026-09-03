@@ -2012,9 +2012,9 @@ export const VEHICLE_STUDIO_IMAGES: Record<string, Record<string, string>> = {
   },
   "seres": {
     "3": "https://www.moteur.ma/storage/media/images/models/nouvelle-seres 3-481.png",
-    "seres 3": "https://www.moteur.ma/storage/media/images/models/nouvelle-seres 3-481.png",
+    "seres 3": "https://carwow-uk-wp-0.imgix.net/New-Seres-3-front.png?auto=format&cs=tinysrgb&fit=crop&ixlib=rb-1.1.0&q=80&w=1600",
     "5": "https://www.moteur.ma/storage/media/images/models/nouvelle-seres 5-738.png",
-    "seres 5": "https://www.moteur.ma/storage/media/images/models/nouvelle-seres 5-738.png",
+    "seres 5": "https://www.moteur.ma/storage/media/images/models/nouvelle-5-826.png",
     "j7": "https://www.moteur.ma/storage/media/images/models/nouvelle-j7-480.png",
     "s07": "https://www.moteur.ma/storage/media/images/models/nouvelle-s07-188.png",
     "cabrio": "https://www.moteur.ma/storage/media/images/models/nouvelle-cabrio-652.png",
@@ -2032,7 +2032,7 @@ export const VEHICLE_STUDIO_IMAGES: Record<string, Record<string, string>> = {
     "x35": "https://www.moteur.ma/storage/media/images/models/nouvelle-x35-420.png",
     "seres 3à partir de349 000 dhs1 version": "https://www.moteur.ma/storage/media/images/models/nouvelle-3-584.png",
     "seres 5à partir de555 000 dhs2 versions": "https://www.moteur.ma/storage/media/images/models/nouvelle-5-826.png",
-    "seres 7": "https://www.moteur.ma/storage/media/images/models/nouvelle-seres 7-954.png",
+    "seres 7": "https://www.moteur.ma/storage/media/images/models/nouvelle-7-954.png",
     "7": "https://www.moteur.ma/storage/media/images/models/nouvelle-seres 7-954.png"
   },
   "skoda": {

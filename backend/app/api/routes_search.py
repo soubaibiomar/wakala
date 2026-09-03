@@ -11,6 +11,8 @@ POST /api/search/voice
 """
 
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Request
+from app.core.security import get_current_user
+from app.models.user import User
 from pydantic import BaseModel, Field
 from typing import Optional
 
@@ -22,7 +24,7 @@ from app.core.limiter import limiter
 router = APIRouter()
 
 class ParseRequest(BaseModel):
-    texte: str = Field(..., description="Texte de recherche libre")
+    texte: str = Field(..., min_length=1, max_length=2000, description="Texte de recherche libre")
 
 class VoiceSearchResponse(BaseModel):
     texte_transcrit: str
@@ -41,7 +43,7 @@ async def parse_search_query(request: Request, payload: ParseRequest):
 
 @router.post("/voice", response_model=VoiceSearchResponse)
 @limiter.limit("5/minute")
-async def parse_voice_query(request: Request, file: UploadFile = File(...)):
+async def parse_voice_query(request: Request, file: UploadFile = File(...), _user: User = Depends(get_current_user)):
     """
     Transcrit l'audio via le pipeline IA ASR Arabe/Darija :
     1. CohereLabs Arabic Transcribe (CohereLabs/cohere-transcribe-arabic-07-2026)
@@ -50,14 +52,16 @@ async def parse_voice_query(request: Request, file: UploadFile = File(...)):
     et extrait les critères NLP.
     Retourne également le texte transcrit pour permettre à l'utilisateur de l'éditer.
     """
+    if not (file.content_type or "").startswith("audio/"):
+        raise HTTPException(status_code=400, detail="Le fichier doit être un fichier audio.")
     if file.size and file.size > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Le fichier audio est trop volumineux (maximum 10MB).")
-        
     transcription = await transcrire_audio(file)
     
     if transcription and not transcription.startswith("ERROR:"):
         resultat_nlp = await extract_search_criteria(transcription)
     else:
+        transcription = ""
         resultat_nlp = ExtractedCriteria(erreur=True)
         
     return VoiceSearchResponse(

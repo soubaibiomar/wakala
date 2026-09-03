@@ -27,11 +27,11 @@ async def list_new_car_brands(
             BrandCatalog.slug,
             BrandCatalog.logo_url,
             BrandCatalog.country_of_origin,
-            func.count(ModelCatalog.id).label("models_count"),
+            func.count(func.distinct(TrimCatalog.model_id)).label("models_count"),
             func.min(TrimCatalog.price_new_mad).label("min_price_mad")
         )
         .outerjoin(ModelCatalog, ModelCatalog.brand_id == BrandCatalog.id)
-        .outerjoin(TrimCatalog, TrimCatalog.model_id == ModelCatalog.id)
+        .outerjoin(TrimCatalog, and_(TrimCatalog.model_id == ModelCatalog.id, TrimCatalog.is_available_in_morocco.is_(True)))
         .where(BrandCatalog.is_active.is_(True))
         .group_by(BrandCatalog.id)
         .order_by(BrandCatalog.name.asc())
@@ -69,10 +69,11 @@ async def list_new_car_models(
     stmt = (
         select(ModelCatalog)
         .join(BrandCatalog, BrandCatalog.id == ModelCatalog.brand_id)
+        .where(BrandCatalog.is_active.is_(True))
         .options(
             selectinload(ModelCatalog.brand),
             selectinload(ModelCatalog.powertrains),
-            selectinload(ModelCatalog.trims)
+        selectinload(ModelCatalog.trims.and_(TrimCatalog.is_available_in_morocco.is_(True)))
         )
     )
 
@@ -159,10 +160,11 @@ async def get_model_detail(
     stmt = (
         select(ModelCatalog)
         .where(cond)
+        .where(ModelCatalog.brand.has(BrandCatalog.is_active.is_(True)))
         .options(
             selectinload(ModelCatalog.brand),
             selectinload(ModelCatalog.powertrains),
-            selectinload(ModelCatalog.trims).selectinload(TrimCatalog.powertrain)
+            selectinload(ModelCatalog.trims.and_(TrimCatalog.is_available_in_morocco.is_(True))).selectinload(TrimCatalog.powertrain)
         )
     )
     res = await db.execute(stmt)
@@ -252,7 +254,7 @@ async def get_trim_full_sheet(
 
     stmt = (
         select(TrimCatalog)
-        .where(cond)
+        .where(cond, TrimCatalog.is_available_in_morocco.is_(True))
         .options(
             selectinload(TrimCatalog.model).selectinload(ModelCatalog.brand),
             selectinload(TrimCatalog.powertrain),

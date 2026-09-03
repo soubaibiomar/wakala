@@ -12,9 +12,9 @@
 /* ─── Hero Section Premium ─────────────────────────────────── */
 .brand-hero {
   position: relative;
-  background: var(--color-bg-primary, #FFFFFF);
-  border-bottom: 1px solid var(--color-glass-border, rgba(18, 33, 53, 0.08));
-  padding: 3rem 0 4rem;
+  background: linear-gradient(135deg, #0d1b2a 0%, #122135 62%, #1d3850 100%);
+  border-bottom: 1px solid rgba(174, 140, 78, 0.35);
+  padding: 2rem 0 2.75rem;
   overflow: hidden;
 }
 
@@ -22,7 +22,7 @@
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: radial-gradient(circle at 50% 0%, rgba(174, 140, 78, 0.06) 0%, rgba(248, 247, 244, 0) 70%);
+  background: radial-gradient(circle at 50% 0%, rgba(201, 162, 75, 0.22) 0%, rgba(18, 33, 53, 0) 68%);
   pointer-events: none;
 }
 
@@ -34,7 +34,7 @@
   z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.15rem;
 }
 
 /* Breadcrumbs */
@@ -43,11 +43,11 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.85rem;
-  color: var(--color-text-muted, #8492A6);
+  color: rgba(226, 232, 240, 0.7);
 }
 
 .brand-breadcrumbs a {
-  color: var(--color-text-muted, #8492A6);
+  color: rgba(226, 232, 240, 0.7);
   text-decoration: none;
   transition: color 0.2s ease;
 }
@@ -57,7 +57,7 @@
 }
 
 .brand-breadcrumbs .current {
-  color: var(--color-text-primary, #122135);
+  color: #e4bd67;
   font-weight: 600;
 }
 
@@ -67,7 +67,7 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 1.25rem;
+  gap: 0.85rem;
   max-width: 800px;
   margin: 0 auto;
 }
@@ -77,7 +77,7 @@
   border: 1px solid rgba(18, 33, 53, 0.08);
   border-radius: 20px;
   padding: 1rem 1.75rem;
-  box-shadow: 0 8px 24px rgba(18, 33, 53, 0.04);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -112,7 +112,7 @@
   font-family: var(--font-display, 'Outfit', 'Playfair Display', serif);
   font-size: 3rem;
   font-weight: 800;
-  color: var(--color-text-primary, #122135);
+  color: #ffffff;
   margin: 0;
   letter-spacing: -0.02em;
 }
@@ -198,7 +198,7 @@
   justify-content: center;
   min-height: 40vh;
   gap: 1.5rem;
-  color: var(--color-text-muted, #8492A6);
+  color: rgba(226, 232, 240, 0.78);
   font-size: 1.05rem;
 }
 

@@ -2,9 +2,10 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
-import { ChevronRight, Sparkles, Car } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { POPULAR_BRANDS } from '../../constants/brands';
 import { vehicleService } from '../../services/vehicleService';
+import { newCatalogService } from '../../services/newCatalogService';
 import type { Vehicle } from '../../types/vehicle';
 import VehicleCard from '../../components/vehicle-card/VehicleCard';
 import './BrandPage.css';
@@ -54,6 +55,42 @@ export default function BrandPage() {
     }
 
     try {
+      // Official new vehicles live in the new catalogue tables. The legacy
+      // /vehicles endpoint does not contain the imported Excel catalogue,
+      // which made valid brands such as Alpine appear empty.
+      if (activeTab === 'neuf' || activeTab === 'all') {
+        const catalogueModels = await newCatalogService.getModels({
+          brand_slug: brandInfo?.slug || brandName.toLowerCase().trim().replace(/\s+/g, '-'),
+        });
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const pageModels = catalogueModels.slice(start, start + PAGE_SIZE);
+        const mappedVehicles = pageModels.map((model) => ({
+          id: model.id,
+          seller_id: 'catalogue',
+          brand: model.brand.name,
+          model: model.name,
+          version: 'Modèle Neuf',
+          year: model.year_start,
+          mileage: 0,
+          fuel_type: (model.available_fuels[0] || 'essence') as Vehicle['fuel_type'],
+          body_type: (model.body_type || 'berline') as Vehicle['body_type'],
+          transmission: 'automatique' as Vehicle['transmission'],
+          doors: 5,
+          seats: 5,
+          city: 'Maroc',
+          price: model.starting_price_mad || 0,
+          condition: 'neuf',
+          status: 'available',
+          images: model.hero_image_url ? [{ file_path: model.hero_image_url }] : [],
+          description: 'Véhicule neuf officiel du catalogue Wakala',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } satisfies Vehicle));
+        setVehicles(mappedVehicles);
+        setTotal(catalogueModels.length);
+        return;
+      }
+
       const res = await vehicleService.getVehicles(filters);
       setVehicles(res.items);
       setTotal(res.total);
@@ -129,11 +166,6 @@ export default function BrandPage() {
           </div>
 
           <div className="brand-hero__content">
-            <span className="brand-hero__tag">
-              <Sparkles size={13} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
-              Marque Officielle
-            </span>
-            
             {brandInfo?.logo ? (
               <div className="brand-hero__logo-wrapper">
                 <img 
@@ -162,7 +194,6 @@ export default function BrandPage() {
             className={`brand-filter-btn ${activeTab === 'all' ? 'active' : ''}`}
             onClick={() => handleTabChange('all')}
           >
-            <Car size={16} />
             <span>Tous les véhicules</span>
             <span className="badge-count">{activeTab === 'all' && !loading ? total : '•'}</span>
           </button>
@@ -171,7 +202,6 @@ export default function BrandPage() {
             className={`brand-filter-btn ${activeTab === 'neuf' ? 'active' : ''}`}
             onClick={() => handleTabChange('neuf')}
           >
-            <Sparkles size={15} />
             <span>Modèles Neufs</span>
             <span className="badge-count">{activeTab === 'neuf' && !loading ? total : '•'}</span>
           </button>

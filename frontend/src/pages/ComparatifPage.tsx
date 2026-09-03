@@ -19,7 +19,7 @@ import PageMeta from '../components/seo/PageMeta';
 import FAQStructuredData from '../components/seo/FAQStructuredData';
 import BreadcrumbStructuredData from '../components/seo/BreadcrumbStructuredData';
 import seoService, { ComparatifSeoData } from '../services/seoService';
-import { resolveVehicleImage } from '../utils/vehicleImageResolver';
+import { CATALOGUE_IMAGE_FALLBACK, resolveVehicleImage } from '../utils/vehicleImageResolver';
 import './ComparatorPage.css';
 
 export const ComparatifPage: React.FC = () => {
@@ -132,7 +132,7 @@ export const ComparatifPage: React.FC = () => {
                 alt={v1.full_name}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = resolveVehicleImage(v1.brand_name, v1.model_name);
+                  (e.currentTarget as HTMLImageElement).src = CATALOGUE_IMAGE_FALLBACK;
                 }}
               />
               <div style={{ position: 'absolute', top: '12px', left: '12px', padding: '4px 10px', background: 'rgba(0,0,0,0.7)', borderRadius: '20px', color: '#fff', fontSize: '0.75rem', fontWeight: 600 }}>
@@ -178,7 +178,7 @@ export const ComparatifPage: React.FC = () => {
                 alt={v2.full_name}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = resolveVehicleImage(v2.brand_name, v2.model_name);
+                  (e.currentTarget as HTMLImageElement).src = CATALOGUE_IMAGE_FALLBACK;
                 }}
               />
               <div style={{ position: 'absolute', top: '12px', left: '12px', padding: '4px 10px', background: 'rgba(0,0,0,0.7)', borderRadius: '20px', color: '#fff', fontSize: '0.75rem', fontWeight: 600 }}>

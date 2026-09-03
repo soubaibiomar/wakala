@@ -4,28 +4,6 @@
 # ═══════════════════════════════════════════════════════════════
 
 services:
-  # ─── Ollama ────────────────────────────────────────────────
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
-    restart: unless-stopped
-    environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
-      - OLLAMA_KEEP_ALIVE=-1
-      - OLLAMA_MAX_LOADED_MODELS=3
-      - OLLAMA_NUM_PARALLEL=2
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [ gpu ]
-    ports:
-      - "127.0.0.1:11434:11434"
-    volumes:
-      - ollama:/root/.ollama
 
   # ─── PostgreSQL ────────────────────────────────────────────
   postgres:
@@ -54,6 +32,9 @@ services:
     restart: unless-stopped
     environment:
       NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-neo4j_secret_password}
+      # Keep the credential available to the container healthcheck as well.
+      # NEO4J_AUTH is only consumed during database initialization.
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-neo4j_secret_password}
       NEO4J_PLUGINS: '["graph-data-science"]'
       NEO4J_dbms_security_procedures_unrestricted: "gds.*"
       NEO4J_dbms_security_procedures_allowlist: "gds.*"
@@ -123,11 +104,14 @@ services:
     volumes:
       - kafka_data:/var/lib/kafka/data
     healthcheck:
-      test: [ "CMD-SHELL", "nc -z localhost 9092 || exit 1" ]
+      # Check that the broker can answer Kafka requests, not only that its TCP
+      # listener is open. KRaft may expose the listener while it is still
+      # recovering its metadata and partitions.
+      test: [ "CMD-SHELL", "kafka-topics --bootstrap-server localhost:29092 --list >/dev/null 2>&1" ]
       interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
+      timeout: 15s
+      retries: 30
+      start_period: 300s
 
   # ─── Scraper Producer (sole Kafka source for listings.raw) ──────
   scraper-producer:
@@ -145,9 +129,6 @@ services:
       # Set SCRAPER_MODE=live for production, leave unset for dry-run (default)
       SCRAPER_MODE: "live"
       SCHEDULE_INTERVAL_HOURS: "1"
-      OLLAMA_BASE_URL: "http://ollama:11434/v1"
-      OLLAMA_MODEL_TEXT: "qwen3:8b"
-      OLLAMA_MODEL_CODE: "qwen2.5-coder:7b"
       POSTGRES_HOST: "postgres"
       POSTGRES_PORT: "5432"
       POSTGRES_USER: ${POSTGRES_USER:-wakala_user}
@@ -188,9 +169,6 @@ services:
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:?NEO4J_PASSWORD must be set}
       QDRANT_HOST: qdrant
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      OLLAMA_BASE_URL: http://ollama:11434/v1
-      OLLAMA_MODEL_TEXT: qwen3:8b
-      OLLAMA_MODEL_CODE: qwen2.5-coder:7b
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -240,7 +218,6 @@ services:
       NEO4J_USER: ${NEO4J_USER:-neo4j}
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:?NEO4J_PASSWORD must be set}
       QDRANT_HOST: qdrant
-      OLLAMA_BASE_URL: http://ollama:11434/v1
     command: python scheduler.py
 
   frontend:
@@ -264,5 +241,3 @@ volumes:
   neo4j_logs:
   qdrant_data:
   kafka_data:
-  ollama:
-    external: true

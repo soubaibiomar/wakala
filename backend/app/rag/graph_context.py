@@ -18,6 +18,9 @@ async def enrich_with_graph(
     graph_service = get_graph_service()
     enriched: dict[str, dict] = {}
 
+    if graph_service.driver is None:
+        return {vid: {"similar_vehicles": []} for vid in vehicle_ids[:5]}
+
     # Batch query: fetch similar vehicles for all IDs in a single Cypher call
     try:
         async with graph_service.driver.session() as session:
@@ -68,6 +71,9 @@ async def get_popularity_scores(
 
     graph_service = get_graph_service()
     scores: dict[str, float] = {}
+
+    if graph_service.driver is None:
+        return {vid: 0.0 for vid in vehicle_ids}
 
     # Batch query: fetch all popularity scores in a single Cypher call
     try:

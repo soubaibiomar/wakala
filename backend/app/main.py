@@ -13,6 +13,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
+import os
 try:
     from slowapi import Limiter, _rate_limit_exceeded_handler
     from slowapi.util import get_remote_address
@@ -110,26 +111,27 @@ app = FastAPI(
         "- Analyse d'images (vision)"
     ),
     version="0.1.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url="/docs" if settings.APP_ENV == "development" else None,
+    redoc_url="/redoc" if settings.APP_ENV == "development" else None,
 )
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# ─── Static Files (Uploads) ────────────────────────────────────
-import os
-os.makedirs("uploads/receipts", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+# Avatars are intentionally public profile media; receipts and identity
+# documents are served through authenticated routes only.
+os.makedirs("uploads/avatars", exist_ok=True)
+app.mount("/uploads/avatars", StaticFiles(directory="uploads/avatars"), name="avatars")
 
+# ─── Static Files (Uploads) ────────────────────────────────────
 # ─── CORS ──────────────────────────────────────────────────────
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-Webhook-Signature", "X-Webhook-Timestamp"],
 )
 
 app.add_middleware(SecurityHeadersMiddleware)
@@ -173,7 +175,11 @@ import sys
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
-    print(f"Validation Error on {request.url}: {exc.errors()} - Body: {exc.body}", file=sys.stderr)
+    import logging
+    logging.getLogger(__name__).warning(
+        "Request validation failed: method=%s path=%s errors=%s",
+        request.method, request.url.path, exc.errors(),
+    )
     return JSONResponse(status_code=422, content={"detail": jsonable_encoder(exc.errors())})# ─── Health check ─────────────────────────────────────────────
 
 @app.get("/health", tags=["Health"])

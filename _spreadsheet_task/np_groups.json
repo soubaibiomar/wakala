@@ -1,0 +1,2583 @@
+UNIQUE_GROUPS=222
+[
+  {
+    "brand": "Abarth",
+    "model": "500e",
+    "rows": [
+      2,
+      3
+    ],
+    "variants": [
+      "500e Turismo Electric 42 kWh 155 ch Berline (Milieu de gamme)",
+      "500e Scorpionissima Electric 42 kWh 155 ch Cabrio (Haut de gamme)"
+    ]
+  },
+  {
+    "brand": "Abarth",
+    "model": "595",
+    "rows": [
+      4,
+      5,
+      6
+    ],
+    "variants": [
+      "595 Base 1.4 T-Jet 165 ch BVM5 (Entrée de gamme)",
+      "595 Turismo 1.4 T-Jet 165 ch BVM5 (Milieu de gamme)",
+      "595 Turismo Cabriolet 1.4 T-Jet 165 ch BVA5 (Haut de gamme)"
+    ]
+  },
+  {
+    "brand": "Abarth",
+    "model": "695",
+    "rows": [
+      7,
+      8
+    ],
+    "variants": [
+      "695 Competizione 1.4 T-Jet 180 ch BVM5 Berline (Cœur de gamme)",
+      "695 75° Anniversario Cabriolet 1.4 T-Jet 180 ch BVA5 (Haut de gamme)"
+    ]
+  },
+  {
+    "brand": "Alpine",
+    "model": "A290",
+    "rows": [
+      30,
+      31,
+      32
+    ],
+    "variants": [
+      "A290 GT Electric 52 kWh 180 ch (Entrée de gamme)",
+      "A290 GT Performance Electric 52 kWh 220 ch (Milieu de gamme)",
+      "A290 GTS Electric 52 kWh 220 ch (Haut de gamme)"
+    ]
+  },
+  {
+    "brand": "Alpine",
+    "model": "A390",
+    "rows": [
+      33,
+      34
+    ],
+    "variants": [
+      "A390 GT Dual-Motor AWD 89 kWh 360 ch (Entrée / Milieu de gamme)",
+      "A390 GTS Tri-Motor AWD 89 kWh 500 ch (Haut de gamme / Flagship)"
+    ]
+  },
+  {
+    "brand": "Aston Martin",
+    "model": "DB12",
+    "rows": [
+      35,
+      36
+    ],
+    "variants": [
+      "DB12 4.0 V8 Bi-Turbo 680 ch Coupé Super Tourer (Milieu de gamme)",
+      "DB12 Volante 4.0 V8 Bi-Turbo 680 ch Cabriolet (Haut de gamme)"
+    ]
+  },
+  {
+    "brand": "Aston Martin",
+    "model": "DBX",
+    "rows": [
+      37,
+      38,
+      39
+    ],
+    "variants": [
+      "DBX 4.0 V8 Bi-Turbo 550 ch AWD (Entrée de gamme SUV)",
+      "DBX707 4.0 V8 Bi-Turbo 707 ch AWD Hyper-SUV (Milieu / Haut de gamme)",
+      "DBX707 AMR Edition Q-Personalized 707 ch AWD (Flagship SUV)"
+    ]
+  },
+  {
+    "brand": "Aston Martin",
+    "model": "Valhalla",
+    "rows": [
+      40
+    ],
+    "variants": [
+      "Valhalla 4.0 V8 Bi-Turbo PHEV Hybride 1012 ch AWD"
+    ]
+  },
+  {
+    "brand": "Aston Martin",
+    "model": "Valiant",
+    "rows": [
+      41
+    ],
+    "variants": [
+      "Valiant 5.2 V12 Bi-Turbo BVM6 745 ch (Édition Limitée Collector)"
+    ]
+  },
+  {
+    "brand": "Aston Martin",
+    "model": "Valkyrie",
+    "rows": [
+      42
+    ],
+    "variants": [
+      "Valkyrie 6.5 V12 Atmosphérique Hybride 1155 ch (Hypercar F1 Route)"
+    ]
+  },
+  {
+    "brand": "Aston Martin",
+    "model": "Vanquish",
+    "rows": [
+      43
+    ],
+    "variants": [
+      "Vanquish 5.2 V12 Bi-Turbo 835 ch ZF8 (Flagship V12 Supercar)"
+    ]
+  },
+  {
+    "brand": "Aston Martin",
+    "model": "Vantage",
+    "rows": [
+      44,
+      45
+    ],
+    "variants": [
+      "Vantage 4.0 V8 Bi-Turbo 665 ch Coupé ZF8 (Entrée de gamme)",
+      "Vantage Roadster 4.0 V8 Bi-Turbo 665 ch Cabriolet (Haut de gamme)"
+    ]
+  },
+  {
+    "brand": "Audi",
+    "model": "A3 Berline",
+    "rows": [
+      46,
+      47,
+      48,
+      49,
+      50
+    ],
+    "variants": [
+      "A3 Berline 35 TDI 150 ch S tronic Attraction (Entrée de gamme)",
+      "A3 Berline 35 TDI 150 ch S tronic Advanced (Milieu de gamme)",
+      "A3 Berline 35 TDI 150 ch S tronic Design Luxe (Milieu de gamme)",
+      "A3 Berline 35 TDI 150 ch S tronic S-Line (Haut de gamme)",
+      "A3 Berline 35 TDI 150 ch S-Line Plus quattro (Haut de gamme / Top)"
+    ]
+  },
+  {
+    "brand": "Audi",
+    "model": "A3 Sportback",
+    "rows": [
+      51,
+      52,
+      53,
+      54,
+      55
+    ],
+    "variants": [
+      "A3 Sportback 35 TDI 150 ch S tronic Attraction (Entrée de gamme)",
+      "A3 Sportback 35 TDI 150 ch S tronic Advanced (Milieu de gamme)",
+      "A3 Sportback 35 TDI 150 ch S tronic Design Luxe (Milieu de gamme)",
+      "A3 Sportback 35 TDI 150 ch S tronic S-Line (Haut de gamme)",
+      "A3 Sportback 35 TDI 150 ch S-Line Plus quattro (Haut de gamme / Top)"
+    ]
+  },
+  {
+    "brand": "Audi",
+    "model": "A4 Berline",
+    "rows": [
+      56,
+      57,
+      58
+    ],
+    "variants": [
+      "A4 Berline 35 TDI 150 ch S tronic Attraction (Entrée de gamme)",
+      "A4 Berline 35 TDI 150 ch S tronic Advanced (Milieu de gamme)",
+      "A4 Berline 40 TDI 190 ch S tronic S-Line (Haut de gamme)"
+    ]
+  },
+  {
+    "brand": "Audi",
+    "model": "A5",
+    "rows": [
+      59,
+      60,
+      61
+    ],
+    "variants": [
+      "Nouvelle A5 Berline 2.0 TDI 204 ch S tronic Attraction (Entrée de gamme)",
+      "Nouvelle A5 Berline 2.0 TDI 204 ch S tronic Advanced (Milieu de gamme)",
+      "Nouvelle A5 Berline 2.0 TDI 204 ch S tronic S-Line (Haut de gamme)"
+    ]
+  },
+  {
+    "brand": "Audi",
+    "model": "A6",
+    "rows": [
+      62,
+      63,
+      64,
+      65
+    ],
+    "variants": [
+      "A6 Berline 40 TDI 204 ch S tronic Attraction (Entrée de gamme)",
+      "A6 Berline 40 TDI 204 ch S tronic Advanced (Milieu de gamme)",
+      "A6 Berline 40 TDI 204 ch S tronic Design Luxe (Milieu de gamme)",
+      "A6 Berline 40 TDI 204 ch S tronic S-Line (Haut de gamme)"
+    ]
+  },
+  {
+    "brand": "Audi",
+    "model": "A6 e-tron",
+    "rows": [
+      66,
+      67
+    ],
+    "variants": [
+      "A6 e-tron Sportback 100 kWh 286 ch Attraction (Entrée de gamme EV)",
+      "A6 e-tron Performance 100 kWh 380 ch quattro S-Line (Haut de gamme EV)"
+    ]
+  },
+  {
+    "brand": "Audi",
+    "model": "A7",
+    "rows": [
+      68,
+      69
+    ],
+    "variants": [
+      "A7 Sportback 40 TDI 204 ch S tronic Attraction (Entrée / Milieu de gamme)",
+      "A7 Sportback 45 TDI 245 ch quattro S-Line (Haut de gamme)"
+    ]
+  },
+  {
+    "brand": "Audi",
+    "model": "A8",
+    "rows": [
+      70
+    ],
+    "variants": [
+      "A8 L 50 TDI 286 ch quattro tiptronic Luxe (Haut de gamme / Flagship)"
+    ]
+  },
+  {
+    "brand": "Audi",
+    "model": "Q2",
+    "rows": [
+      71,
+      72,
+      73
+    ],
+    "variants": [
+      "Q2 30 TDI 116 ch S tronic Attraction (Entrée de gamme)",
+      "Q2 35 TDI 150 ch S tronic Advanced (Milieu de gamme)",
+      "Q2 35 TDI 150 ch S tronic S-Line (Haut de gamme)"
+    ]
+  },
+  {
+    "brand": "Audi",
+    "model": "Q3",
+    "rows": [
+      74,
+      75,
+      76,
+      77,
+      78
+    ],
+    "variants": [
+      "Q3 35 TDI 150 ch S tronic Attraction (Entrée de gamme)",
+      "Q3 35 TDI 150 ch S tronic Advanced (Milieu de gamme)",
+      "Q3 35 TDI 150 ch S tronic Design Luxe (Milieu de gamme)",
+      "Q3 35 TDI 150 ch S tronic S-Line (Haut de gamme)",
+      "Q3 35 TDI 150 ch S-Line Plus quattro (Haut de gamme / Top)"
+    ]
+  },
+  {
+    "brand": "Audi",
+    "model": "Q3 Sportback",
+    "rows": [
+      79,
+      80,
+      81,
+      82
+    ],
+    "variants": [
+      "Q3 Sportback 35 TDI 150 ch S tronic Attraction (Entrée de gamme)",
+      "Q3 Sportback 35 TDI 150 ch S tronic Advanced (Milieu de gamme)",
+      "Q3 Sportback 35 TDI 150 ch S tronic Design Luxe (Milieu de gamme)",
+      "Q3 Sportback 35 TDI 150 ch S tronic S-Line (Haut de gamme)"
+    ]
+  },
+  {
+    "brand": "Audi",
+    "model": "Q5",
+    "rows": [
+      83,
+      84,
+      85,
+      86
+    ],
+    "variants": [
+      "Q5 40 TDI 204 ch S tronic quattro Attraction (Entrée de gamme)",
+      "Q5 40 TDI 204 ch S tronic quattro Advanced (Milieu de gamme)",
+      "Q5 40 TDI 204 ch S tronic quattro Design Luxe (Milieu de gamme)",
+      "Q5 40 TDI 204 ch S tronic quattro S-Line (Haut de gamme)"
+    ]
+  },
+  {
+    "brand": "Audi",
+    "model": "Q5 Sportback",
+    "rows": [
+      87,
+      88,
+      89,
+      90
+    ],
+    "variants": [
+      "Q5 Sportback 40 TDI 204 ch quattro Attraction (Entrée de gamme)",
+      "Q5 Sportback 40 TDI 204 ch quattro Advanced (Milieu de gamme)",
+      "Q5 Sportback 40 TDI 204 ch quattro Design Luxe (Milieu de gamme)",
+      "Q5 Sportback 40 TDI 204 ch quattro S-Line (Haut de gamme)"
+    ]
+  },
+  {
+    "brand": "Audi",
+    "model": "Q7",
+    "rows": [
+      91,
+      92,
+      93
+    ],
+    "variants": [
+      "Q7 45 TDI 231 ch tiptronic quattro Attraction (Entrée de gamme)",
+      "Q7 50 TDI 286 ch tiptronic quattro Advanced (Milieu de gamme)",
+      "Q7 50 TDI 286 ch tiptronic quattro Design Luxe (Haut de gamme)"
+    ]
+  },
+  {
+    "brand": "Audi",
+    "model": "Q8",
+    "rows": [
+      94,
+      95,
+      96,
+      97,
+      98,
+      99
+    ],
+    "variants": [
+      "Q8 50 TDI 286 ch tiptronic quattro Attraction (Entrée de gamme)",
+      "Q8 50 TDI 286 ch tiptronic quattro Advanced (Milieu de gamme)",
+      "Q8 50 TDI 286 ch tiptronic quattro Design Luxe (Milieu de gamme)",
+      "Q8 50 TDI 286 ch tiptronic quattro S-Line (Haut de gamme)",
+      "Q8 50 TDI 286 ch S-Line Plus quattro (Haut de gamme / Top)",
+      "SQ8 4.0 V8 TFSI 507 ch tiptronic quattro (Sport Performance)"
+    ]
+  },
+  {
+    "brand": "Audi",
+    "model": "RS 3",
+    "rows": [
+      100
+    ],
+    "variants": [
+      "RS 3 Sportback 2.5 TFSI 400 ch quattro S tronic (Sport RS Flagship)"
+    ]
+  },
+  {
+    "brand": "Audi",
+    "model": "RS Q8",
+    "rows": [
+      101
+    ],
+    "variants": [
+      "RS Q8 4.0 V8 Bi-Turbo 600 ch quattro tiptronic (Super-SUV RS Flagship)"
+    ]
+  },
+  {
+    "brand": "Bentley",
+    "model": "Bentayga",
+    "rows": [
+      114,
+      115,
+      116,
+      117,
+      118
+    ],
+    "variants": [
+      "Bentayga Hybrid V6 3.0 PHEV 462 ch AWD (Entrée de gamme)",
+      "Bentayga V8 4.0 Bi-Turbo 550 ch AWD (Milieu de gamme)",
+      "Bentayga S V8 4.0 Bi-Turbo 550 ch AWD Châssis Sport (Milieu / Haut)",
+      "Bentayga EWB (Extended Wheelbase) Azure V8 550 ch AWD (Haut de gamme Limousine)",
+      "Bentayga EWB Mulliner Ultra-Luxe Bespoke AWD (Flagship SUV)"
+    ]
+  },
+  {
+    "brand": "Bentley",
+    "model": "Continental GT",
+    "rows": [
+      119,
+      120,
+      121,
+      122,
+      123
+    ],
+    "variants": [
+      "Continental GT V8 4.0 Bi-Turbo 550 ch AWD (Entrée de gamme)",
+      "Continental GT Azure V8 4.0 Bi-Turbo 550 ch AWD (Milieu de gamme)",
+      "Continental GTC Cabriolet V8 4.0 Bi-Turbo 550 ch AWD (Milieu de gamme Cabrio)",
+      "Continental GT Speed Ultra Performance Hybrid V8 782 ch AWD (Haut de gamme)",
+      "Continental GT Mulliner Ultra-Luxe Bespoke AWD (Flagship)"
+    ]
+  },
+  {
+    "brand": "Bentley",
+    "model": "Flying Spur",
+    "rows": [
+      124,
+      125,
+      126,
+      127
+    ],
+    "variants": [
+      "Flying Spur Hybrid V6 2.9 PHEV 544 ch AWD (Entrée de gamme)",
+      "Flying Spur Azure Hybrid V6 2.9 PHEV 544 ch AWD (Milieu de gamme)",
+      "Flying Spur Speed Ultra Performance Hybrid V8 782 ch AWD (Haut de gamme)",
+      "Flying Spur Mulliner Ultra-Luxe Bespoke AWD (Flagship)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "i5",
+    "rows": [
+      128
+    ],
+    "variants": [
+      "i5 eDrive40 81 kWh 340 ch Steptronic M Sport (Limousine EV)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "iX",
+    "rows": [
+      129,
+      130
+    ],
+    "variants": [
+      "iX xDrive40 76 kWh 326 ch AWD Steptronic Lounge (SUV EV Entrée)",
+      "iX xDrive50 111 kWh 523 ch AWD Steptronic M Sport (SUV EV Haut)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "iX3",
+    "rows": [
+      131
+    ],
+    "variants": [
+      "iX3 Impressive 80 kWh 286 ch Steptronic M Sport (SUV EV Nouveauté)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "M4",
+    "rows": [
+      132
+    ],
+    "variants": [
+      "M4 Coupé 510 ch M xDrive Steptronic (Haut de gamme M)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "M5",
+    "rows": [
+      133
+    ],
+    "variants": [
+      "Nouvelle M5 Berline V8 4.4 PHEV 727 ch M xDrive (Super-Berline M Hybride)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "Série 1",
+    "rows": [
+      134,
+      135,
+      136,
+      137
+    ],
+    "variants": [
+      "Série 1 118d 150 ch Steptronic Lounge (Entrée de gamme Diesel)",
+      "Série 1 118d 150 ch Steptronic Advantage (Milieu de gamme Diesel)",
+      "Série 1 120d 190 ch Steptronic M Sport (Haut de gamme Diesel)",
+      "Série 1 120 170 ch Steptronic M Sport (Gamme Essence)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "Série 2 Gran Coupé",
+    "rows": [
+      138,
+      139
+    ],
+    "variants": [
+      "Série 2 Gran Coupé 218d 150 ch Steptronic Lounge (Entrée de gamme)",
+      "Série 2 Gran Coupé 218d 150 ch Steptronic M Sport (Haut de gamme)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "Série 3",
+    "rows": [
+      140,
+      141,
+      142
+    ],
+    "variants": [
+      "Série 3 Berline 320d 190 ch Steptronic Lounge (Entrée de gamme)",
+      "Série 3 Berline 320d 190 ch Steptronic Advantage (Milieu de gamme)",
+      "Série 3 Berline 320d 190 ch Steptronic M Sport (Haut de gamme)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "Série 4 Cabriolet",
+    "rows": [
+      143
+    ],
+    "variants": [
+      "Série 4 Cabriolet 420d 190 ch Steptronic M Sport (Cabriolet Diesel)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "Série 4 Coupé",
+    "rows": [
+      144
+    ],
+    "variants": [
+      "Série 4 Coupé 420i 184 ch Steptronic M Sport (Essence Coupé)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "Série 4 Gran Coupé",
+    "rows": [
+      145,
+      146
+    ],
+    "variants": [
+      "Série 4 Gran Coupé 420d 190 ch Steptronic Lounge (Entrée de gamme Diesel)",
+      "Série 4 Gran Coupé 420d 190 ch Steptronic M Sport (Haut de gamme Diesel)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "Série 5",
+    "rows": [
+      147,
+      148,
+      149,
+      150
+    ],
+    "variants": [
+      "Nouvelle Série 5 520d 197 ch Steptronic Lounge (Entrée de gamme Diesel)",
+      "Nouvelle Série 5 520d 197 ch Steptronic M Sport (Haut de gamme Diesel)",
+      "Nouvelle Série 5 520i 208 ch Steptronic M Sport (Gamme Essence)",
+      "Nouvelle Série 5 530e PHEV 299 ch Steptronic M Sport (Hybride Rechargeable)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "Série 7",
+    "rows": [
+      151,
+      152,
+      153
+    ],
+    "variants": [
+      "Série 7 740d xDrive 300 ch Steptronic Pure Excellence (Limousine Diesel)",
+      "Série 7 735i 286 ch Steptronic Pure Excellence (Limousine Essence)",
+      "Série 7 750e xDrive PHEV 489 ch Steptronic M Sport (Limousine Hybride)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "X1",
+    "rows": [
+      154,
+      155,
+      156
+    ],
+    "variants": [
+      "X1 sDrive18d 150 ch Steptronic Lounge (Entrée de gamme)",
+      "X1 sDrive18d 150 ch Steptronic xLine (Milieu de gamme)",
+      "X1 sDrive18d 150 ch Steptronic M Sport (Haut de gamme)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "X2",
+    "rows": [
+      157,
+      158
+    ],
+    "variants": [
+      "Nouveau X2 sDrive18d 150 ch Steptronic Lounge (Entrée de gamme)",
+      "Nouveau X2 sDrive18d 150 ch Steptronic M Sport (Haut de gamme)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "X3",
+    "rows": [
+      159,
+      160,
+      161
+    ],
+    "variants": [
+      "Nouveau X3 20d xDrive 197 ch Steptronic Lounge (Entrée de gamme)",
+      "Nouveau X3 20d xDrive 197 ch Steptronic xLine (Milieu de gamme)",
+      "Nouveau X3 20d xDrive 197 ch Steptronic M Sport (Haut de gamme)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "X4",
+    "rows": [
+      162,
+      163
+    ],
+    "variants": [
+      "X4 xDrive20d 190 ch Steptronic xLine (Milieu de gamme)",
+      "X4 xDrive20d 190 ch Steptronic M Sport (Haut de gamme)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "X5",
+    "rows": [
+      164,
+      165,
+      166
+    ],
+    "variants": [
+      "X5 xDrive30d 298 ch Steptronic xLine (Milieu de gamme Diesel)",
+      "X5 xDrive30d 298 ch Steptronic M Sport (Haut de gamme Diesel)",
+      "X5 xDrive50e PHEV 489 ch Steptronic M Sport (Hybride Rechargeable)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "X5 M",
+    "rows": [
+      167
+    ],
+    "variants": [
+      "X5 M Competition V8 4.4 Bi-Turbo 625 ch M xDrive (Super-SUV M)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "X6",
+    "rows": [
+      168,
+      169
+    ],
+    "variants": [
+      "X6 xDrive30d 298 ch Steptronic M Sport (Haut de gamme Diesel)",
+      "X6 M60i xDrive 530 ch Steptronic (Modèle M Essence)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "X7",
+    "rows": [
+      170,
+      171,
+      172
+    ],
+    "variants": [
+      "X7 xDrive40d 352 ch Steptronic Design Pure Excellence 7 Pl (Diesel)",
+      "X7 xDrive40i 381 ch Steptronic Pure Excellence 7 Pl (Essence)",
+      "X7 M60i xDrive V8 530 ch Steptronic 7 Pl (Modèle M Essence)"
+    ]
+  },
+  {
+    "brand": "BMW",
+    "model": "XM",
+    "rows": [
+      173
+    ],
+    "variants": [
+      "XM V8 4.4 Bi-Turbo PHEV 653 ch xDrive M Steptronic (Super-SUV M Flagship)"
+    ]
+  },
+  {
+    "brand": "CHANGAN",
+    "model": "Hunter",
+    "rows": [
+      201
+    ],
+    "variants": [
+      "Hunter Pick-up Double Cabine 1.9 Turbo Diesel 150 ch 4x4 (Sur devis)"
+    ]
+  },
+  {
+    "brand": "CHANGAN",
+    "model": "UNI-T",
+    "rows": [
+      203
+    ],
+    "variants": [
+      "UNI-T 1.5 Turbo 180 ch 7-DCT Luxe (Sur devis)"
+    ]
+  },
+  {
+    "brand": "CHANGAN",
+    "model": "UNI-V",
+    "rows": [
+      204
+    ],
+    "variants": [
+      "UNI-V 1.5 Turbo 188 ch 7-DCT Sport (Sur devis)"
+    ]
+  },
+  {
+    "brand": "CHERY",
+    "model": "Arrizo 6",
+    "rows": [
+      205
+    ],
+    "variants": [
+      "Arrizo 6 1.5 Turbo 147 ch CVT Comfort (Sur devis)"
+    ]
+  },
+  {
+    "brand": "CHERY",
+    "model": "Himla",
+    "rows": [
+      206
+    ],
+    "variants": [
+      "Himla Pick-up Double Cabine 4x4 (Sur devis)"
+    ]
+  },
+  {
+    "brand": "CHERY",
+    "model": "Tiggo 9 PHEV",
+    "rows": [
+      214
+    ],
+    "variants": [
+      "Tiggo 9 PHEV 2.0T Hybride Rechargeable AWD 7 Places (Coming Soon - Sur devis)"
+    ]
+  },
+  {
+    "brand": "CUPRA",
+    "model": "Formentor",
+    "rows": [
+      237,
+      238,
+      239,
+      240,
+      241
+    ],
+    "variants": [
+      "Nouveau Formentor 1.5 TSI 150 ch DSG7 V (Entrée de gamme Essence)",
+      "Nouveau Formentor 2.0 TDI 150 ch DSG7 4Drive V (Entrée / Milieu Diesel 4x4)",
+      "Nouveau Formentor 2.0 TSI 190 ch DSG7 4Drive VZ (Milieu de gamme Sport 4x4)",
+      "Nouveau Formentor 2.0 TSI 333 ch DSG7 4Drive VZ (Haut de gamme Performance)",
+      "Nouveau Formentor 1.5 e-HYBRID 272 ch DSG6 VZ (Haut de gamme Hybride PHEV)"
+    ]
+  },
+  {
+    "brand": "CUPRA",
+    "model": "Leon",
+    "rows": [
+      242,
+      243,
+      244
+    ],
+    "variants": [
+      "Nouvelle CUPRA Leon 1.5 eTSI 150 ch DSG7 V (Entrée de gamme MHEV)",
+      "Nouvelle CUPRA Leon 2.0 TSI 300 ch DSG7 VZ (Haut de gamme Sport)",
+      "Nouvelle CUPRA Leon 1.5 e-HYBRID 272 ch DSG6 VZ (Haut de gamme PHEV)"
+    ]
+  },
+  {
+    "brand": "CUPRA",
+    "model": "Terramar",
+    "rows": [
+      245,
+      246,
+      247
+    ],
+    "variants": [
+      "Nouveau CUPRA Terramar 1.5 eTSI 150 ch DSG7 V (Entrée de gamme SUV Hybride)",
+      "Nouveau CUPRA Terramar 2.0 TSI 265 ch DSG7 4Drive VZ (Milieu / Sport SUV 4x4)",
+      "Nouveau CUPRA Terramar 1.5 e-HYBRID 272 ch DSG6 VZ (Haut de gamme SUV PHEV)"
+    ]
+  },
+  {
+    "brand": "Deepal",
+    "model": "G318",
+    "rows": [
+      265,
+      266
+    ],
+    "variants": [
+      "Deepal G318 1.5T REEV 430 ch Dual Motor AWD Signature (Baroudeur 4x4)",
+      "Deepal G318 1.5T REEV 430 ch Dual Motor AWD Nomad (Haut de gamme Pneumatique)"
+    ]
+  },
+  {
+    "brand": "Deepal",
+    "model": "S05",
+    "rows": [
+      267
+    ],
+    "variants": [
+      "Deepal S05 1.5 REEV 217 ch Propulsion E-Shift (SUV Compact EREV)"
+    ]
+  },
+  {
+    "brand": "Deepal",
+    "model": "S07",
+    "rows": [
+      268
+    ],
+    "variants": [
+      "Deepal S07 1.5 REEV 238 ch Propulsion E-Shift (SUV Premium EREV)"
+    ]
+  },
+  {
+    "brand": "Dongfeng",
+    "model": "Box",
+    "rows": [
+      276,
+      277
+    ],
+    "variants": [
+      "Dongfeng Box Électrique 95 ch Batterie 31.4 kWh Comfort (100% EV)",
+      "Dongfeng Box Électrique 95 ch Batterie 42.3 kWh Luxury (100% EV)"
+    ]
+  },
+  {
+    "brand": "Dongfeng",
+    "model": "Huge",
+    "rows": [
+      278
+    ],
+    "variants": [
+      "Dongfeng Huge 1.5T Hybride HEV 245 ch 4-DHT Flagship (Grand SUV Hybride)"
+    ]
+  },
+  {
+    "brand": "Dongfeng",
+    "model": "Mage",
+    "rows": [
+      279,
+      280
+    ],
+    "variants": [
+      "Dongfeng Mage 1.5T Hybride HEV 204 ch 4-DHT Dynamic (SUV Compact Hybride)",
+      "Dongfeng Mage 1.5T Hybride HEV 204 ch 4-DHT Premium (Haut de gamme Hybride)"
+    ]
+  },
+  {
+    "brand": "Dongfeng",
+    "model": "Shine",
+    "rows": [
+      281,
+      282
+    ],
+    "variants": [
+      "Dongfeng Shine 1.5 Essence 125 ch BVM5 Comfort (Berline Compacte)",
+      "Dongfeng Shine 1.5 Essence 125 ch 6-DCT Sport (Berline BVA)"
+    ]
+  },
+  {
+    "brand": "Dongfeng",
+    "model": "Shine Max",
+    "rows": [
+      283
+    ],
+    "variants": [
+      "Dongfeng Shine Max 1.5T Hybride HEV 245 ch E-CVT Luxury (Berline Hybride)"
+    ]
+  },
+  {
+    "brand": "Exeed",
+    "model": "ES",
+    "rows": [
+      290
+    ],
+    "variants": [
+      "EXEED ES REEV 470 ch Luxury (0-100 en 4.9s / Autonomie 1190 km)"
+    ]
+  },
+  {
+    "brand": "Exeed",
+    "model": "ET",
+    "rows": [
+      291
+    ],
+    "variants": [
+      "EXEED ET REEV 470 ch 4x4 Flagship (0-100 en 4.9s / Autonomie 1180 km)"
+    ]
+  },
+  {
+    "brand": "Exeed",
+    "model": "RX",
+    "rows": [
+      292,
+      293
+    ],
+    "variants": [
+      "EXEED RX PHEV 605 ch 4x4 Luxury (0-100 en 4.9s / Autonomie 1300 km)",
+      "EXEED RX PHEV 605 ch 4x4 Flagship (CDC Suspension / Toit Panoramique)"
+    ]
+  },
+  {
+    "brand": "Exeed",
+    "model": "VX",
+    "rows": [
+      294,
+      295
+    ],
+    "variants": [
+      "EXEED VX PHEV 503 ch 3DHT 4x4 Luxury 7 places (Autonomie 1218 km)",
+      "EXEED VX PHEV 503 ch 3DHT 4x4 President 7 places (Sommet de gamme)"
+    ]
+  },
+  {
+    "brand": "Ferrari",
+    "model": "12Cilindri",
+    "rows": [
+      296
+    ],
+    "variants": [
+      "Ferrari 12Cilindri 6.5 V12 Atmosphérique 830 ch 8-DCT (Super GT Berlinetta)"
+    ]
+  },
+  {
+    "brand": "Ferrari",
+    "model": "296 GTB",
+    "rows": [
+      297
+    ],
+    "variants": [
+      "Ferrari 296 GTB 3.0 V6 Turbo Hybride PHEV 830 ch F1-DCT (Berlinetta)"
+    ]
+  },
+  {
+    "brand": "Ferrari",
+    "model": "296 GTS",
+    "rows": [
+      298
+    ],
+    "variants": [
+      "Ferrari 296 GTS 3.0 V6 Turbo Hybride PHEV 830 ch F1-DCT (Spider Toit Rigide)"
+    ]
+  },
+  {
+    "brand": "Ferrari",
+    "model": "Purosangue",
+    "rows": [
+      299
+    ],
+    "variants": [
+      "Ferrari Purosangue 6.5 V12 Atmosphérique 725 ch 4RM F1-DCT (Super SUV 4 Places)"
+    ]
+  },
+  {
+    "brand": "Ferrari",
+    "model": "Roma Spider",
+    "rows": [
+      300
+    ],
+    "variants": [
+      "Ferrari Roma Spider 3.9 V8 Bi-turbo 620 ch F1-DCT 8 (Cabriolet GT)"
+    ]
+  },
+  {
+    "brand": "Ferrari",
+    "model": "SF90 Spider",
+    "rows": [
+      301
+    ],
+    "variants": [
+      "Ferrari SF90 Spider 4.0 V8 Bi-turbo Hybride PHEV 1000 ch AWD F1-DCT"
+    ]
+  },
+  {
+    "brand": "Fiat",
+    "model": "Doblo Cargo",
+    "rows": [
+      308
+    ],
+    "variants": [
+      "Fiat Doblò Cargo 1.5 BlueHDi 100 ch Fourgon Tôlé"
+    ]
+  },
+  {
+    "brand": "Fiat",
+    "model": "Scudo",
+    "rows": [
+      309
+    ],
+    "variants": [
+      "Fiat Scudo 2.0 BlueHDi 145 ch Fourgon Tôlé Standard"
+    ]
+  },
+  {
+    "brand": "Fiat",
+    "model": "Titano",
+    "rows": [
+      310,
+      311
+    ],
+    "variants": [
+      "Fiat Titano Double Cabine 1.9 Diesel 150 ch 4x4 Endurance",
+      "Fiat Titano Simple Cabine 1.9 Diesel 150 ch 4x2 Plateau"
+    ]
+  },
+  {
+    "brand": "GAC",
+    "model": "Emkoo Hybride",
+    "rows": [
+      322,
+      323
+    ],
+    "variants": [
+      "GAC Emkoo Hybride 2.0 ATK HEV 235 ch 2-DHT Dynamic (Crossover Hybride)",
+      "GAC Emkoo Hybride 2.0 ATK HEV 235 ch 2-DHT Premium (14 ADAS / Toit Pano)"
+    ]
+  },
+  {
+    "brand": "GAC",
+    "model": "Emzoom",
+    "rows": [
+      324,
+      325
+    ],
+    "variants": [
+      "GAC Emzoom 1.5T GDI 177 ch 7-DCT Dynamic (SUV Compact)",
+      "GAC Emzoom 1.5T GDI 177 ch 7-DCT R-Style (Racing Kit & Échappement Actif)"
+    ]
+  },
+  {
+    "brand": "GAC",
+    "model": "S7 PHEV",
+    "rows": [
+      326
+    ],
+    "variants": [
+      "GAC S7 PHEV 1.5T 500 ch AWD 1-DHT Premium (160 km EV / 1020 km / Orin X)"
+    ]
+  },
+  {
+    "brand": "GWM",
+    "model": "Haval H6",
+    "rows": [
+      341
+    ],
+    "variants": [
+      "GWM Haval H6 FL 1.5 Full Hybrid HEV 243 ch DHT Supreme (SUV Familial)"
+    ]
+  },
+  {
+    "brand": "GWM",
+    "model": "Haval H7",
+    "rows": [
+      342
+    ],
+    "variants": [
+      "All-New GWM Haval H7 HEV 1.5 Turbo Hybride DHT (Grand Crossover HEV)"
+    ]
+  },
+  {
+    "brand": "GWM",
+    "model": "Haval Jolion",
+    "rows": [
+      343,
+      344
+    ],
+    "variants": [
+      "GWM Haval Jolion FL 1.5 Turbo 150 ch 7-DCT MID",
+      "GWM Haval Jolion FL 1.5 Turbo 150 ch 7-DCT TOP (Toit pano / Caméra 360 / ADAS)"
+    ]
+  },
+  {
+    "brand": "GWM",
+    "model": "Poer",
+    "rows": [
+      347
+    ],
+    "variants": [
+      "GWM Poer Pick-up 2.0 Turbo Diesel 163 ch 8-AT Double Cabine 4x4"
+    ]
+  },
+  {
+    "brand": "GWM",
+    "model": "Tank 500",
+    "rows": [
+      349
+    ],
+    "variants": [
+      "GWM Tank 500 3.0 V6 Twin-Turbo 354 ch 9-AT 4x4 Luxury 7 places"
+    ]
+  },
+  {
+    "brand": "Honda",
+    "model": "CR-V",
+    "rows": [
+      351
+    ],
+    "variants": [
+      "Honda CR-V 2.0 e:HEV Hybride 184 ch e-CVT AWD 4x4 Advance (Grand SUV Familial)"
+    ]
+  },
+  {
+    "brand": "Honda",
+    "model": "HR-V",
+    "rows": [
+      352,
+      353
+    ],
+    "variants": [
+      "Honda HR-V 1.5 e:HEV Hybride 131 ch e-CVT Advance (SUV Coupé Hybride)",
+      "Honda HR-V 1.5 e:HEV Hybride 131 ch e-CVT Advance Style (Bi-ton / Toit Pano)"
+    ]
+  },
+  {
+    "brand": "Honda",
+    "model": "Jazz",
+    "rows": [
+      354,
+      355
+    ],
+    "variants": [
+      "Honda Jazz 1.5 e:HEV Hybride 122 ch e-CVT Comfort (Citadine Hybride)",
+      "Honda Jazz 1.5 e:HEV Hybride 122 ch e-CVT Advance (Honda Sensing / Sièges Magiques)"
+    ]
+  },
+  {
+    "brand": "Isuzu",
+    "model": "D-Max",
+    "rows": [
+      396,
+      397
+    ],
+    "variants": [
+      "Isuzu Nouveau D-Max SC 4x2 (Simple Cabine 1.9 Diesel 164 ch BVM)",
+      "Isuzu Nouveau D-Max SC 4x4 (Simple Cabine 1.9 Diesel 164 ch BVM 4x4)"
+    ]
+  },
+  {
+    "brand": "JAC",
+    "model": "E30X",
+    "rows": [
+      398
+    ],
+    "variants": [
+      "JAC E30X 100% Électrique 136 ch Batterie 51.5 kWh (Autonomie 524 km)"
+    ]
+  },
+  {
+    "brand": "JAC",
+    "model": "M3 EV",
+    "rows": [
+      399
+    ],
+    "variants": [
+      "JAC M3 EV Fourgon 100% Électrique 204 ch Batterie 53.6 kWh (Charge Utile 1 Tonne)"
+    ]
+  },
+  {
+    "brand": "JAC",
+    "model": "T8",
+    "rows": [
+      400
+    ],
+    "variants": [
+      "JAC T8 Double Cabine 2.0 CTI Diesel 136 ch / 320 Nm BVM6 4x2"
+    ]
+  },
+  {
+    "brand": "JAC",
+    "model": "T8 Pro",
+    "rows": [
+      401
+    ],
+    "variants": [
+      "JAC T8 Pro Double Cabine 2.0 CTI Diesel 136 ch / 320 Nm 4x4 (Caméra 360°)"
+    ]
+  },
+  {
+    "brand": "Jaecoo",
+    "model": "Jaecoo 7",
+    "rows": [
+      402
+    ],
+    "variants": [
+      "Jaecoo 7 (J7) 1.6 Essence BVA (1598 cm³ Turbo 4x2)"
+    ]
+  },
+  {
+    "brand": "Jaecoo",
+    "model": "Jaecoo 7 PHEV",
+    "rows": [
+      403
+    ],
+    "variants": [
+      "JAECOO 7 SHS - Hybride rechargeable BVA (+300 ch / Autonomie 1300 km)"
+    ]
+  },
+  {
+    "brand": "Jaguar",
+    "model": "E-Pace",
+    "rows": [
+      404,
+      405,
+      406
+    ],
+    "variants": [
+      "Jaguar E-PACE D200 MHEV AWD R-DYNAMIC S",
+      "Jaguar E-PACE D200 MHEV AWD R-DYNAMIC SE (Toit Pano / Meridian)",
+      "Jaguar E-PACE D200 MHEV AWD R-DYNAMIC HSE (Cuir Windsor / Jantes 20\")"
+    ]
+  },
+  {
+    "brand": "Jaguar",
+    "model": "F-Pace",
+    "rows": [
+      407,
+      408,
+      409
+    ],
+    "variants": [
+      "Jaguar F-PACE D200 Diesel Mild Hybrid AWD R-DYNAMIC SE",
+      "Jaguar F-PACE P400e Plug-in Hybrid PHEV 404 ch AWD R-DYNAMIC HSE",
+      "Jaguar F-PACE SVR 5.0 V8 Supercharged 575 ch AWD Performance"
+    ]
+  },
+  {
+    "brand": "Jaguar",
+    "model": "F-Type",
+    "rows": [
+      411,
+      412
+    ],
+    "variants": [
+      "Jaguar F-TYPE R75 COUPÉ 5.0 V8 Supercharged 575 ch AWD",
+      "Jaguar F-TYPE R75 CONVERTIBLE Cabriolet 5.0 V8 Supercharged 575 ch AWD"
+    ]
+  },
+  {
+    "brand": "Jaguar",
+    "model": "I-Pace",
+    "rows": [
+      413,
+      414,
+      415
+    ],
+    "variants": [
+      "Jaguar I-PACE EV400 90 kWh 400 ch AWD R-DYNAMIC S",
+      "Jaguar I-PACE EV400 90 kWh 400 ch AWD R-DYNAMIC SE",
+      "Jaguar I-PACE EV400 90 kWh 400 ch AWD R-DYNAMIC HSE (Matrix LED / Meridian 3D)"
+    ]
+  },
+  {
+    "brand": "Jeep",
+    "model": "Renegade",
+    "rows": [
+      421
+    ],
+    "variants": [
+      "Jeep Renegade 1.5 e-Hybrid 130 ch DCT7"
+    ]
+  },
+  {
+    "brand": "Jetour",
+    "model": "Dashing",
+    "rows": [
+      424,
+      425
+    ],
+    "variants": [
+      "Jetour Dashing 1.5L Essence 156 ch DCT6",
+      "Jetour Dashing 1.6L Essence 197 ch DCT7"
+    ]
+  },
+  {
+    "brand": "Jetour",
+    "model": "T1",
+    "rows": [
+      426
+    ],
+    "variants": [
+      "Jetour T1 Hybride Rechargeable PHEV 342 ch (Batterie 26.7 kWh 4x4)"
+    ]
+  },
+  {
+    "brand": "Jetour",
+    "model": "T2",
+    "rows": [
+      427
+    ],
+    "variants": [
+      "Jetour T2 2.0L Essence 254 ch 4x4 DCT7"
+    ]
+  },
+  {
+    "brand": "Jetour",
+    "model": "T2 i-DM",
+    "rows": [
+      428
+    ],
+    "variants": [
+      "Jetour T2 i-DM Hybride Rechargeable PHEV 375 ch (Batterie 26.7 kWh 4x4 Autonomie 1000 km)"
+    ]
+  },
+  {
+    "brand": "KG Mobility",
+    "model": "Grand Musso",
+    "rows": [
+      429
+    ],
+    "variants": [
+      "KGM Grand Musso 2.2 e-XDi Diesel 202 ch BVA6 4x4 (Pick-up Double Cabine)"
+    ]
+  },
+  {
+    "brand": "KG Mobility",
+    "model": "Rexton",
+    "rows": [
+      430
+    ],
+    "variants": [
+      "KGM Rexton 2.2 e-XDi Diesel 202 ch BVA8 4x4 7 Places"
+    ]
+  },
+  {
+    "brand": "KG Mobility",
+    "model": "Tivoli",
+    "rows": [
+      431
+    ],
+    "variants": [
+      "KGM Tivoli 1.5 GDI Turbo 163 ch BVA6"
+    ]
+  },
+  {
+    "brand": "KG Mobility",
+    "model": "Torres",
+    "rows": [
+      432
+    ],
+    "variants": [
+      "KGM Torres 1.5 GDI Turbo 163 ch BVA6"
+    ]
+  },
+  {
+    "brand": "KG Mobility",
+    "model": "Torres EVX",
+    "rows": [
+      433
+    ],
+    "variants": [
+      "KGM Torres EVX 100% Électrique 207 ch (Batterie Blade 73.4 kWh Autonomie 462 km)"
+    ]
+  },
+  {
+    "brand": "KG Mobility",
+    "model": "Torres Hybrid",
+    "rows": [
+      434
+    ],
+    "variants": [
+      "KGM Torres Hybrid 1.5 Turbo HEV Hybride Auto"
+    ]
+  },
+  {
+    "brand": "Land Rover",
+    "model": "Defender",
+    "rows": [
+      451,
+      452,
+      453,
+      454
+    ],
+    "variants": [
+      "Land Rover Defender 90 D250 Diesel MHEV 249 ch AWD X-Dynamic SE",
+      "Land Rover Defender 110 D300 Diesel MHEV 300 ch AWD X-Dynamic HSE",
+      "Land Rover Defender 110 P400e Plug-in Hybrid PHEV 404 ch AWD",
+      "Land Rover Defender 130 D300 Diesel MHEV 300 ch AWD 8 Places Outbound"
+    ]
+  },
+  {
+    "brand": "Land Rover",
+    "model": "Discovery",
+    "rows": [
+      455
+    ],
+    "variants": [
+      "Land Rover Discovery D300 Diesel MHEV 300 ch AWD 7 Places Dynamic HSE"
+    ]
+  },
+  {
+    "brand": "Land Rover",
+    "model": "Discovery Sport",
+    "rows": [
+      456
+    ],
+    "variants": [
+      "Land Rover Discovery Sport D200 Diesel MHEV 204 ch AWD 5/7 Places Dynamic SE"
+    ]
+  },
+  {
+    "brand": "Land Rover",
+    "model": "Range Rover",
+    "rows": [
+      457,
+      458
+    ],
+    "variants": [
+      "Range Rover D350 3.0 Diesel MHEV 350 ch AWD Autobiography",
+      "Range Rover P550e Plug-in Hybrid PHEV 550 ch AWD Autobiography (120 km EV)"
+    ]
+  },
+  {
+    "brand": "Land Rover",
+    "model": "Range Rover Evoque",
+    "rows": [
+      459,
+      460
+    ],
+    "variants": [
+      "Range Rover Evoque D200 Diesel MHEV 204 ch AWD Dynamic SE",
+      "Range Rover Evoque P300e Plug-in Hybrid PHEV 309 ch AWD Autobiography"
+    ]
+  },
+  {
+    "brand": "Land Rover",
+    "model": "Range Rover Sport",
+    "rows": [
+      461,
+      462
+    ],
+    "variants": [
+      "Range Rover Sport D300 3.0 Diesel MHEV 300 ch AWD Dynamic SE",
+      "Range Rover Sport P460e Plug-in Hybrid PHEV 460 ch AWD Dynamic HSE"
+    ]
+  },
+  {
+    "brand": "Land Rover",
+    "model": "Range Rover Sport SV",
+    "rows": [
+      463
+    ],
+    "variants": [
+      "Range Rover Sport SV 4.4 V8 Twin-Turbo 635 ch AWD (Édition SV Performance)"
+    ]
+  },
+  {
+    "brand": "Land Rover",
+    "model": "Range Rover SV",
+    "rows": [
+      464
+    ],
+    "variants": [
+      "Range Rover SV 4.4 V8 Twin-Turbo 615 ch AWD (Luxe Ultime & Sur-Mesure)"
+    ]
+  },
+  {
+    "brand": "Land Rover",
+    "model": "Range Rover Velar",
+    "rows": [
+      465,
+      466
+    ],
+    "variants": [
+      "Range Rover Velar D200 Diesel MHEV 204 ch AWD Dynamic SE",
+      "Range Rover Velar P400e Plug-in Hybrid PHEV 404 ch AWD Autobiography"
+    ]
+  },
+  {
+    "brand": "Lexus",
+    "model": "LC",
+    "rows": [
+      473
+    ],
+    "variants": [
+      "Lexus LC 500h 3.5 V6 Multi-Stage Hybrid 359 ch Coupé"
+    ]
+  },
+  {
+    "brand": "Lexus",
+    "model": "LM",
+    "rows": [
+      474
+    ],
+    "variants": [
+      "Lexus LM 350h 2.5 Hybride HEV 250 ch E-Four Limousine VIP (4/7 Places)"
+    ]
+  },
+  {
+    "brand": "Lotus",
+    "model": "Eletre",
+    "rows": [
+      484,
+      485
+    ],
+    "variants": [
+      "Lotus Eletre Hyper-SUV 100% Électrique 603 ch AWD (Batterie 112 kWh Autonomie 600 km)",
+      "Lotus Eletre R Hyper-SUV 100% Électrique 905 ch AWD (0-100 en 2.95s / Boîte 2 Vitesses)"
+    ]
+  },
+  {
+    "brand": "Lotus",
+    "model": "Emeya",
+    "rows": [
+      486,
+      487
+    ],
+    "variants": [
+      "Lotus Emeya Hyper-GT 100% Électrique 603 ch AWD (Batterie 102 kWh Autonomie 610 km)",
+      "Lotus Emeya R Hyper-GT 100% Électrique 905 ch AWD (0-100 en 2.78s / Aérodynamique Active)"
+    ]
+  },
+  {
+    "brand": "Lotus",
+    "model": "Emira",
+    "rows": [
+      488,
+      489
+    ],
+    "variants": [
+      "Lotus Emira 2.0 Turbo AMG 360 ch DCT8 First Edition",
+      "Lotus Emira 3.5 V6 Compresseur 400 ch BVM6 First Edition (Châssis Sport)"
+    ]
+  },
+  {
+    "brand": "Lotus",
+    "model": "Evija",
+    "rows": [
+      490
+    ],
+    "variants": [
+      "Lotus Evija Hypercar 100% Électrique 2000 ch AWD (Édition Limitée Sur-Mesure)"
+    ]
+  },
+  {
+    "brand": "Lynk & Co",
+    "model": "01",
+    "rows": [
+      491
+    ],
+    "variants": [
+      "Lynk & Co 01 1.5 T Plug-in Hybrid PHEV 261 ch BVA7"
+    ]
+  },
+  {
+    "brand": "Lynk & Co",
+    "model": "02",
+    "rows": [
+      492
+    ],
+    "variants": [
+      "Lynk & Co 02 100% Électrique EV 272 ch (Batterie 66 kWh)"
+    ]
+  },
+  {
+    "brand": "Lynk & Co",
+    "model": "06",
+    "rows": [
+      493
+    ],
+    "variants": [
+      "Lynk & Co 06 1.5 Turbo Essence 181 ch BVA7 DCT"
+    ]
+  },
+  {
+    "brand": "Lynk & Co",
+    "model": "08",
+    "rows": [
+      494
+    ],
+    "variants": [
+      "Lynk & Co 08 EM-P Plug-in Hybrid 593 ch AWD Longue Autonomie"
+    ]
+  },
+  {
+    "brand": "Maserati",
+    "model": "GranCabrio",
+    "rows": [
+      503,
+      504,
+      505
+    ],
+    "variants": [
+      "Maserati GranCabrio Modena 3.0 V6 Nettuno 490 ch BVA8 AWD Cabriolet",
+      "Maserati GranCabrio Trofeo 3.0 V6 Nettuno 550 ch BVA8 AWD Cabriolet",
+      "Maserati GranCabrio Folgore 100% Électrique 761 ch AWD Cabriolet"
+    ]
+  },
+  {
+    "brand": "Maserati",
+    "model": "GranTurismo",
+    "rows": [
+      506,
+      507,
+      508
+    ],
+    "variants": [
+      "Maserati GranTurismo Modena 3.0 V6 Nettuno 490 ch BVA8 AWD",
+      "Maserati GranTurismo Trofeo 3.0 V6 Nettuno 550 ch BVA8 AWD (Châssis Corsa)",
+      "Maserati GranTurismo Folgore 100% Électrique 761 ch AWD (Tri-Moteurs 800V)"
+    ]
+  },
+  {
+    "brand": "Maserati",
+    "model": "Grecale",
+    "rows": [
+      509,
+      510,
+      511,
+      512
+    ],
+    "variants": [
+      "Maserati Grecale GT 2.0 Mild-Hybrid 300 ch BVA8 Q4 AWD",
+      "Maserati Grecale Modena 2.0 Mild-Hybrid 330 ch BVA8 Q4 AWD",
+      "Maserati Grecale Trofeo 3.0 V6 Nettuno Twin-Turbo 530 ch BVA8 Q4 AWD",
+      "Maserati Grecale Folgore 100% Électrique 558 ch AWD (Batterie 105 kWh Autonomie 500 km)"
+    ]
+  },
+  {
+    "brand": "Maserati",
+    "model": "GT2 Stradale",
+    "rows": [
+      513
+    ],
+    "variants": [
+      "Maserati GT2 Stradale Supercar Racing 3.0 V6 Nettuno 640 ch (Homologuée Route)"
+    ]
+  },
+  {
+    "brand": "Maserati",
+    "model": "MCPura",
+    "rows": [
+      514,
+      515
+    ],
+    "variants": [
+      "Maserati MCPura Coupé Supercar 3.0 V6 Nettuno 630 ch DCT8 (Monocoque Carbone)",
+      "Maserati MCPura Cielo Spyder 3.0 V6 Nettuno 630 ch DCT8 (Toit Verre Électrochrome)"
+    ]
+  },
+  {
+    "brand": "Mercedes-Benz",
+    "model": "Classe A",
+    "rows": [
+      522
+    ],
+    "variants": [
+      "Mercedes-Benz Classe A 200 d 150 ch 8G-DCT AMG Line"
+    ]
+  },
+  {
+    "brand": "Mercedes-Benz",
+    "model": "Classe G",
+    "rows": [
+      527
+    ],
+    "variants": [
+      "Mercedes-AMG G 63 4.0 V8 Bi-Turbo 585 ch 9G-TRONIC AMG Night Package"
+    ]
+  },
+  {
+    "brand": "Mercedes-Benz",
+    "model": "EQS",
+    "rows": [
+      537
+    ],
+    "variants": [
+      "Mercedes-Benz EQS 450+ 360 ch AMG Line (Batterie 108.4 kWh Autonomie 780 km)"
+    ]
+  },
+  {
+    "brand": "Mercedes-Benz",
+    "model": "EQS SUV",
+    "rows": [
+      538
+    ],
+    "variants": [
+      "Mercedes-Benz EQS SUV 450 4MATIC 360 ch AMG Line (Batterie 108.4 kWh)"
+    ]
+  },
+  {
+    "brand": "Mercedes-Benz",
+    "model": "GLA",
+    "rows": [
+      539
+    ],
+    "variants": [
+      "Mercedes-Benz GLA 200 d 150 ch 8G-DCT AMG Line"
+    ]
+  },
+  {
+    "brand": "Mercedes-Benz",
+    "model": "GLC",
+    "rows": [
+      541
+    ],
+    "variants": [
+      "Mercedes-Benz GLC 220 d 4MATIC 197 ch 9G-TRONIC AMG Line"
+    ]
+  },
+  {
+    "brand": "Mercedes-Benz",
+    "model": "Mercedes-AMG GT",
+    "rows": [
+      547
+    ],
+    "variants": [
+      "Mercedes-AMG GT 63 4MATIC+ V8 Bi-Turbo 585 ch Coupé"
+    ]
+  },
+  {
+    "brand": "Mercedes-Benz",
+    "model": "Mercedes-AMG SL",
+    "rows": [
+      548
+    ],
+    "variants": [
+      "Mercedes-AMG SL 63 4MATIC+ V8 Bi-Turbo 585 ch Roadster"
+    ]
+  },
+  {
+    "brand": "Mercedes-Benz",
+    "model": "Mercedes-Maybach Classe S",
+    "rows": [
+      549
+    ],
+    "variants": [
+      "Mercedes-Maybach Classe S 580 4MATIC V8 503 ch (Chauffeur Limousine)"
+    ]
+  },
+  {
+    "brand": "Mercedes-Benz",
+    "model": "Mercedes-Maybach GLS",
+    "rows": [
+      550
+    ],
+    "variants": [
+      "Mercedes-Maybach GLS 600 4MATIC V8 557 ch (Chauffeur SUV)"
+    ]
+  },
+  {
+    "brand": "Mercedes-Benz",
+    "model": "VLE Electric",
+    "rows": [
+      551
+    ],
+    "variants": [
+      "Mercedes-Benz VLE Electric Van (Future Navette Électrique)"
+    ]
+  },
+  {
+    "brand": "MG",
+    "model": "MG 3",
+    "rows": [
+      552,
+      553
+    ],
+    "variants": [
+      "MG 3 1.5 VTi-Tech 109 ch BVM Standard / Comfort",
+      "MG 3 1.5 VTi-Tech 109 ch BVA Luxury"
+    ]
+  },
+  {
+    "brand": "MG",
+    "model": "MG 3 Hybrid+",
+    "rows": [
+      554,
+      555,
+      556
+    ],
+    "variants": [
+      "MG 3 Hybrid+ 1.5 HEV 194 ch Standard (Batterie 1.83 kWh)",
+      "MG 3 Hybrid+ 1.5 HEV 194 ch Comfort",
+      "MG 3 Hybrid+ 1.5 HEV 194 ch Luxury"
+    ]
+  },
+  {
+    "brand": "MG",
+    "model": "MG 5",
+    "rows": [
+      557,
+      558
+    ],
+    "variants": [
+      "MG 5 Berline 1.5 VTi 114 ch CVT Standard / Comfort",
+      "MG 5 Berline 1.5 VTi 114 ch CVT Luxury"
+    ]
+  },
+  {
+    "brand": "MG",
+    "model": "MG Cyberster",
+    "rows": [
+      559,
+      560
+    ],
+    "variants": [
+      "MG Cyberster RWD 340 ch Roadster (Batterie 77 kWh Autonomie 507 km)",
+      "MG Cyberster AWD Dual Motor 510 ch Roadster 0-100 en 3.2s"
+    ]
+  },
+  {
+    "brand": "MG",
+    "model": "MG HS",
+    "rows": [
+      561,
+      562
+    ],
+    "variants": [
+      "MG HS 1.5T 162 ch 7-DCT Comfort",
+      "MG HS 1.5T 162 ch 7-DCT Luxury"
+    ]
+  },
+  {
+    "brand": "MG",
+    "model": "MG HS Hybrid+",
+    "rows": [
+      563,
+      564
+    ],
+    "variants": [
+      "MG HS Hybrid+ 1.5T PHEV 258 ch Comfort (Batterie 16.6 kWh Autonomie EV 52 km)",
+      "MG HS Hybrid+ 1.5T PHEV 258 ch Luxury"
+    ]
+  },
+  {
+    "brand": "MG",
+    "model": "MG ZS Hybrid+",
+    "rows": [
+      565,
+      566
+    ],
+    "variants": [
+      "MG ZS Hybrid+ 1.5 HEV 197 ch Standard / Comfort",
+      "MG ZS Hybrid+ 1.5 HEV 197 ch Luxury"
+    ]
+  },
+  {
+    "brand": "MINI",
+    "model": "Aceman",
+    "rows": [
+      567,
+      568
+    ],
+    "variants": [
+      "MINI Aceman E 100% Électrique 184 ch (Batterie 42.5 kWh / 310 km)",
+      "MINI Aceman SE 100% Électrique 218 ch Favoured (Batterie 54.2 kWh / 406 km)"
+    ]
+  },
+  {
+    "brand": "MINI",
+    "model": "Cooper",
+    "rows": [
+      569,
+      570,
+      571
+    ],
+    "variants": [
+      "MINI Cooper C 3 Portes 1.5T 156 ch Essential / Classic",
+      "MINI Cooper S 3 Portes 2.0T 204 ch Favoured / JCW",
+      "MINI Cooper SE 3 Portes 100% Électrique 218 ch (Batterie 54.2 kWh)"
+    ]
+  },
+  {
+    "brand": "MINI",
+    "model": "Cooper 5 Portes",
+    "rows": [
+      572,
+      573
+    ],
+    "variants": [
+      "MINI Cooper C 5 Portes 1.5T 156 ch Essential / Classic",
+      "MINI Cooper S 5 Portes 2.0T 204 ch Favoured / JCW"
+    ]
+  },
+  {
+    "brand": "MINI",
+    "model": "Countryman",
+    "rows": [
+      574,
+      575,
+      576
+    ],
+    "variants": [
+      "MINI Countryman C 1.5T MHEV 170 ch Essential / Classic",
+      "MINI Countryman D 2.0 Diesel 163 ch Favoured Line",
+      "MINI Countryman SE ALL4 100% Électrique 313 ch JCW"
+    ]
+  },
+  {
+    "brand": "Nissan",
+    "model": "Juke",
+    "rows": [
+      580,
+      581
+    ],
+    "variants": [
+      "Nissan Juke 1.0 DIG-T 114 ch DCT7 Acenta (Jantes 17 Caméra de recul)",
+      "Nissan Juke 1.0 DIG-T 114 ch DCT7 Tekna (Son BOSE Personal Plus Caméra 360)"
+    ]
+  },
+  {
+    "brand": "Nissan",
+    "model": "Magnite",
+    "rows": [
+      583,
+      584
+    ],
+    "variants": [
+      "Nissan Magnite 1.0L 100 ch BVM Acenta (Écran 8 pouces Apple CarPlay)",
+      "Nissan Magnite 1.0L Turbo 100 ch CVT Tekna (Around View Monitor 360)"
+    ]
+  },
+  {
+    "brand": "Nissan",
+    "model": "Patrol",
+    "rows": [
+      586,
+      587
+    ],
+    "variants": [
+      "Nissan Patrol 4.0 V6 275 ch BVA7 4x4 XE / Platinum City",
+      "Nissan Patrol 5.6 V8 400 ch BVA7 4x4 LE Titanium (Suspension HBMC)"
+    ]
+  },
+  {
+    "brand": "Nissan",
+    "model": "Qashqai",
+    "rows": [
+      588,
+      589
+    ],
+    "variants": [
+      "Nissan Qashqai e-POWER 190 ch N-Connecta (Navigation 12.3 pouces Caméra 360)",
+      "Nissan Qashqai e-POWER 190 ch Tekna (ProPILOT Affichage Tête Haute Jantes 19)"
+    ]
+  },
+  {
+    "brand": "Nissan",
+    "model": "X-Trail",
+    "rows": [
+      591,
+      592
+    ],
+    "variants": [
+      "Nissan X-Trail e-POWER 204 ch 7 Places Acenta (Climatisation Tri-Zone Jantes 18)",
+      "Nissan X-Trail e-POWER e-4ORCE 213 ch 7 Places Tekna (4x4 Intelligent Son BOSE)"
+    ]
+  },
+  {
+    "brand": "Omoda",
+    "model": "Omoda 3",
+    "rows": [
+      593,
+      594
+    ],
+    "variants": [
+      "Omoda 3 1.5L Essence 115 ch BVM / CVT Comfort",
+      "Omoda 3 1.5L Essence 115 ch CVT Luxury"
+    ]
+  },
+  {
+    "brand": "Omoda",
+    "model": "Omoda C5",
+    "rows": [
+      595,
+      596
+    ],
+    "variants": [
+      "Omoda C5 1.6 TGDI 186 ch DCT7 Comfort (Double Écran 10.25 pouces)",
+      "Omoda C5 1.6 TGDI 186 ch DCT7 Luxury (Caméra 360 ADAS Toit ouvrant)"
+    ]
+  },
+  {
+    "brand": "Omoda",
+    "model": "Omoda E5",
+    "rows": [
+      597,
+      598
+    ],
+    "variants": [
+      "Omoda E5 100% Électrique 204 ch Comfort (Batterie 61 kWh Autonomie 430 km)",
+      "Omoda E5 100% Électrique 204 ch Premium (Son SONY Conduite Semi-Autonome)"
+    ]
+  },
+  {
+    "brand": "Opel",
+    "model": "Astra",
+    "rows": [
+      599,
+      600
+    ],
+    "variants": [
+      "Opel Astra 1.5 Diesel 130 ch BVA8 Edition (Pure Panel Pro)",
+      "Opel Astra 1.5 Diesel 130 ch BVA8 GS Line (Sièges AGR Intelli-Vision 360)"
+    ]
+  },
+  {
+    "brand": "Opel",
+    "model": "Corsa",
+    "rows": [
+      601,
+      602,
+      603
+    ],
+    "variants": [
+      "Opel Corsa Facelift 1.2 PureTech 75 ch BVM5 Edition",
+      "Opel Corsa Facelift 1.5 Diesel 102 ch BVM6 GS Line",
+      "Opel Corsa Electric 100% Électrique 136 ch GS (Batterie 50 kWh / 357 km)"
+    ]
+  },
+  {
+    "brand": "Opel",
+    "model": "Frontera",
+    "rows": [
+      604,
+      605
+    ],
+    "variants": [
+      "Opel Frontera 1.2 Hybrid 48V 100 ch e-DCT6 Edition (SUV 5/7 Places)",
+      "Opel Frontera Electric 100% Électrique 113 ch GS (Batterie 44 kWh / 300 km)"
+    ]
+  },
+  {
+    "brand": "Opel",
+    "model": "Grandland",
+    "rows": [
+      606,
+      607
+    ],
+    "variants": [
+      "Opel Grandland 1.2 Hybrid 48V 136 ch e-DCT6 Edition",
+      "Opel Grandland Electric 100% Électrique 213 ch GS (Batterie 73 kWh / 523 km)"
+    ]
+  },
+  {
+    "brand": "Opel",
+    "model": "Mokka",
+    "rows": [
+      608,
+      609
+    ],
+    "variants": [
+      "Opel Mokka 1.2 PureTech 130 ch BVA8 Edition (Pure Panel Digital)",
+      "Opel Mokka 1.2 PureTech 130 ch BVA8 GS Line (Toit Noir Caméra 180)"
+    ]
+  },
+  {
+    "brand": "Opel",
+    "model": "Rocks Electric",
+    "rows": [
+      610
+    ],
+    "variants": [
+      "Opel Rocks Electric 8.2 ch 100% Électrique (Batterie 5.5 kWh Autonomie 75 km)"
+    ]
+  },
+  {
+    "brand": "Peugeot",
+    "model": "2008",
+    "rows": [
+      611,
+      612,
+      613
+    ],
+    "variants": [
+      "Peugeot 2008 Facelift 1.5 BlueHDi 130 ch EAT8 Active",
+      "Peugeot 2008 Facelift 1.5 BlueHDi 130 ch EAT8 Allure",
+      "Peugeot 2008 Facelift 1.5 BlueHDi 130 ch EAT8 GT"
+    ]
+  },
+  {
+    "brand": "Peugeot",
+    "model": "208",
+    "rows": [
+      614,
+      615,
+      616
+    ],
+    "variants": [
+      "Peugeot 208 Facelift 1.2 PureTech 75 ch BVM5 Active",
+      "Peugeot 208 Facelift 1.5 BlueHDi 100 ch BVM6 Allure",
+      "Peugeot 208 Facelift 1.5 BlueHDi 100 ch BVM6 GT Line"
+    ]
+  },
+  {
+    "brand": "Peugeot",
+    "model": "3008",
+    "rows": [
+      617,
+      618
+    ],
+    "variants": [
+      "Peugeot 3008 Hybrid 136 ch e-DCS6 Allure Fastback SUV (Panoramic i-Cockpit 21 pouces)",
+      "Peugeot 3008 Hybrid 136 ch e-DCS6 GT Fastback SUV (Toit Black Diamond Pixel LED)"
+    ]
+  },
+  {
+    "brand": "Peugeot",
+    "model": "308",
+    "rows": [
+      619,
+      620
+    ],
+    "variants": [
+      "Peugeot 308 Diesel 1.5 BlueHDi 130 ch EAT8 Allure (i-Cockpit 3D)",
+      "Peugeot 308 Diesel 1.5 BlueHDi 130 ch EAT8 GT (Matrix LED Driver Sport Pack)"
+    ]
+  },
+  {
+    "brand": "Peugeot",
+    "model": "408",
+    "rows": [
+      622,
+      623
+    ],
+    "variants": [
+      "Peugeot 408 1.2 PureTech 130 ch EAT8 Allure Fastback",
+      "Peugeot 408 Plug-in Hybrid 225 ch e-EAT8 GT (Batterie 12.4 kWh)"
+    ]
+  },
+  {
+    "brand": "Peugeot",
+    "model": "5008",
+    "rows": [
+      624,
+      625
+    ],
+    "variants": [
+      "Peugeot 5008 Hybrid 136 ch e-DCS6 Allure 7 Places (Grand SUV Familial)",
+      "Peugeot 5008 Hybrid 136 ch e-DCS6 GT 7 Places (Panoramic i-Cockpit 21 pouces)"
+    ]
+  },
+  {
+    "brand": "Peugeot",
+    "model": "Landtrek",
+    "rows": [
+      626
+    ],
+    "variants": [
+      "Peugeot Landtrek 1.9 Diesel 150 ch BVM6 Double Cabine 4x4 Allure"
+    ]
+  },
+  {
+    "brand": "Peugeot",
+    "model": "Partner",
+    "rows": [
+      628
+    ],
+    "variants": [
+      "Peugeot Partner Fourgon 1.5 BlueHDi 100 ch BVM6 Pro"
+    ]
+  },
+  {
+    "brand": "Peugeot",
+    "model": "Rifter",
+    "rows": [
+      629
+    ],
+    "variants": [
+      "Peugeot Rifter 1.5 BlueHDi 130 ch EAT8 Allure / GT"
+    ]
+  },
+  {
+    "brand": "Porsche",
+    "model": "718 Boxster",
+    "rows": [
+      631
+    ],
+    "variants": [
+      "Porsche 718 Boxster 2.0 Turbo 300 ch PDK Cabriolet"
+    ]
+  },
+  {
+    "brand": "Porsche",
+    "model": "911",
+    "rows": [
+      634
+    ],
+    "variants": [
+      "Porsche 911 GT3 90 F. A. Porsche 4.0 Flat-6 510 ch (Édition Hommage)"
+    ]
+  },
+  {
+    "brand": "Porsche",
+    "model": "Cayenne",
+    "rows": [
+      653
+    ],
+    "variants": [
+      "Porsche Cayenne Black Edition (Édition Spéciale)"
+    ]
+  },
+  {
+    "brand": "Porsche",
+    "model": "Taycan",
+    "rows": [
+      690
+    ],
+    "variants": [
+      "Porsche Taycan Black Edition (Édition Spéciale)"
+    ]
+  },
+  {
+    "brand": "Renault",
+    "model": "5 E-Tech",
+    "rows": [
+      701
+    ],
+    "variants": [
+      "Renault 5 E-Tech 100% Électrique (Bientôt Disponible au Maroc)"
+    ]
+  },
+  {
+    "brand": "Rox",
+    "model": "01",
+    "rows": [
+      739,
+      740
+    ],
+    "variants": [
+      "ROX 01 Luxury 7 places REEV 4x4 (1.5T + Double Moteur Électrique 476 ch - Batterie 56 kWh)",
+      "ROX 01 VIP 6 places REEV AWD (Sièges Capitaines Zéro-Gravité Massants 476 ch)"
+    ]
+  },
+  {
+    "brand": "Rox",
+    "model": "Adamas",
+    "rows": [
+      741,
+      742
+    ],
+    "variants": [
+      "ROX Adamas Luxury 7 places REEV 4x4 (Édition Spéciale Haute Personnalisation)",
+      "ROX Adamas VIP 6 places REEV AWD (Finition Prestige Ultra Luxe)"
+    ]
+  },
+  {
+    "brand": "Seat",
+    "model": "Arona",
+    "rows": [
+      743
+    ],
+    "variants": [
+      "Nouvelle SEAT Arona Crossover Urbain (Overview Officiel)"
+    ]
+  },
+  {
+    "brand": "Seat",
+    "model": "Tarraco",
+    "rows": [
+      747
+    ],
+    "variants": [
+      "SEAT Tarraco Grand SUV 7 Places (Overview Officiel)"
+    ]
+  },
+  {
+    "brand": "Skoda",
+    "model": "Fabia",
+    "rows": [
+      750
+    ],
+    "variants": [
+      "SKODA Nouvelle Fabia 1.0 TSI 110 ch DSG7 Boîte Automatique"
+    ]
+  },
+  {
+    "brand": "Skoda",
+    "model": "Kamiq",
+    "rows": [
+      751
+    ],
+    "variants": [
+      "SKODA Kamiq Crossover Urbain 1.5 TSI / TDI DSG Boîte Automatique"
+    ]
+  },
+  {
+    "brand": "Skoda",
+    "model": "Karoq",
+    "rows": [
+      752
+    ],
+    "variants": [
+      "SKODA Karoq SUV Compact 2.0 TDI 150 ch DSG7"
+    ]
+  },
+  {
+    "brand": "Skoda",
+    "model": "Kodiaq",
+    "rows": [
+      753
+    ],
+    "variants": [
+      "SKODA Kodiaq Grand SUV 7 Places 2.0 TDI 150 ch / 200 ch DSG 4x4"
+    ]
+  },
+  {
+    "brand": "Skoda",
+    "model": "Kodiaq Sportline",
+    "rows": [
+      754
+    ],
+    "variants": [
+      "SKODA Kodiaq Sportline 7 Places 2.0 TDI 200 ch DSG7 4x4 (Pack SportLine)"
+    ]
+  },
+  {
+    "brand": "Skoda",
+    "model": "Octavia",
+    "rows": [
+      755
+    ],
+    "variants": [
+      "SKODA Octavia 2.0 TDI 150 ch DSG7 Boîte Automatique"
+    ]
+  },
+  {
+    "brand": "Skoda",
+    "model": "Scala",
+    "rows": [
+      756
+    ],
+    "variants": [
+      "SKODA Scala 1.5 TSI 150 ch DSG7 / 1.6 TDI 115 ch DSG"
+    ]
+  },
+  {
+    "brand": "Skoda",
+    "model": "Superb",
+    "rows": [
+      757
+    ],
+    "variants": [
+      "SKODA Superb Grande Berline Routière 2.0 TDI 150 ch DSG7"
+    ]
+  },
+  {
+    "brand": "Soueast",
+    "model": "S05",
+    "rows": [
+      761
+    ],
+    "variants": [
+      "SOUEAST S05 SUV Urbain 1.5 Turbo Boîte Automatique"
+    ]
+  },
+  {
+    "brand": "Soueast",
+    "model": "S06",
+    "rows": [
+      762
+    ],
+    "variants": [
+      "SOUEAST S06 SUV Compact Familial 1.5T / 1.6 TGDI Boîte Auto"
+    ]
+  },
+  {
+    "brand": "Soueast",
+    "model": "S07",
+    "rows": [
+      763
+    ],
+    "variants": [
+      "SOUEAST S07 SUV Familial 7 Places 1.6 TGDI Boîte Auto"
+    ]
+  },
+  {
+    "brand": "Soueast",
+    "model": "S08",
+    "rows": [
+      764
+    ],
+    "variants": [
+      "SOUEAST S08 Grand SUV 7 Places Hybride DM / Essence Boîte Auto"
+    ]
+  },
+  {
+    "brand": "Soueast",
+    "model": "S09",
+    "rows": [
+      765
+    ],
+    "variants": [
+      "SOUEAST S09 Grand SUV Flagship 7 Places 2.0 TGDI Boîte 8AT"
+    ]
+  },
+  {
+    "brand": "Suzuki",
+    "model": "Jimny",
+    "rows": [
+      766
+    ],
+    "variants": [
+      "Suzuki Jimny 1.5 102 ch 4x4 AllGrip Pro Réducteur Tout-Terrain"
+    ]
+  },
+  {
+    "brand": "Suzuki",
+    "model": "Swift",
+    "rows": [
+      767
+    ],
+    "variants": [
+      "Nouvelle Suzuki Swift 1.2 Dualjet Mild Hybrid Boîte Auto CVT"
+    ]
+  },
+  {
+    "brand": "Tesla",
+    "model": "Cybertruck",
+    "rows": [
+      768
+    ],
+    "variants": [
+      "Tesla Cybertruck Pick-up Électrique Blindé (Exosquelette Inox / Cyberbeast AWD)"
+    ]
+  },
+  {
+    "brand": "Tesla",
+    "model": "Model 3",
+    "rows": [
+      769,
+      770,
+      771
+    ],
+    "variants": [
+      "Tesla Model 3 Propulsion (Autonomie WLTP 534 km - 0-100 en 6.2s - Coffre 682 L)",
+      "Tesla Model 3 Premium Grande Autonomie (Autonomie WLTP 750 km - 0-100 en 5.2s)",
+      "Tesla Model 3 Performance AWD (460 ch - 0-100 en 3.1s - Vmax 262 km/h)"
+    ]
+  },
+  {
+    "brand": "Tesla",
+    "model": "Model S",
+    "rows": [
+      772
+    ],
+    "variants": [
+      "Tesla Model S Berline Grande Routière (Dual Motor AWD / Plaid Tri-Motor 1020 ch)"
+    ]
+  },
+  {
+    "brand": "Tesla",
+    "model": "Model X",
+    "rows": [
+      773
+    ],
+    "variants": [
+      "Tesla Model X Grand SUV Falcon Wings (Dual Motor AWD / Plaid Tri-Motor 1020 ch)"
+    ]
+  },
+  {
+    "brand": "Tesla",
+    "model": "Model Y",
+    "rows": [
+      774,
+      775,
+      776
+    ],
+    "variants": [
+      "Tesla Model Y Propulsion (Autonomie WLTP 525 km - 5 places - Coffre 2118 L)",
+      "Tesla Model Y Premium Grande Autonomie AWD (Autonomie WLTP 622 km - 0-100 en 4.8s)",
+      "Tesla Model Y Performance AWD (Autonomie WLTP 580 km - 0-100 en 3.5s - Vmax 250 km/h)"
+    ]
+  },
+  {
+    "brand": "Volvo",
+    "model": "EC40",
+    "rows": [
+      813
+    ],
+    "variants": [
+      "Volvo EC40 Crossover Coupé 100% Électrique"
+    ]
+  },
+  {
+    "brand": "Volvo",
+    "model": "ES90",
+    "rows": [
+      814
+    ],
+    "variants": [
+      "Volvo ES90 Grande Berline Routière 100% Électrique"
+    ]
+  },
+  {
+    "brand": "Volvo",
+    "model": "EX90",
+    "rows": [
+      816
+    ],
+    "variants": [
+      "Volvo EX90 Grand SUV 7 Places 100% Électrique Flagship AWD"
+    ]
+  },
+  {
+    "brand": "Xpeng",
+    "model": "P7+",
+    "rows": [
+      822
+    ],
+    "variants": [
+      "Nouveau XPENG P7+ Grande Berline Électrique IA 800V"
+    ]
+  },
+  {
+    "brand": "Zeekr",
+    "model": "001",
+    "rows": [
+      823,
+      824,
+      825
+    ],
+    "variants": [
+      "ZEEKR 001 Long Range RWD (272 ch - Autonomie 620 km WLTP - 0-100 en 7.2s)",
+      "ZEEKR 001 Premium AWD (544 ch Dual Motors - Autonomie 580 km WLTP - 0-100 en 3.8s)",
+      "ZEEKR 001 Flagship AWD (544 ch - Suspensions Pneumatiques Actives - Yamaha 12 HP)"
+    ]
+  },
+  {
+    "brand": "Zeekr",
+    "model": "7X",
+    "rows": [
+      826,
+      827,
+      828
+    ],
+    "variants": [
+      "ZEEKR 7X Core RWD (Batterie 75 kWh - Autonomie 480 km - 0-100 en 6.0s - Recharge 10.5 min)",
+      "ZEEKR 7X Grande Autonomie RWD (Batterie 100 kWh - Autonomie 615 km - 0-100 en 6.0s)",
+      "ZEEKR 7X Privilège AWD (Dual Motors - Batterie 100 kWh - Autonomie 543 km - 0-100 en 3.8s)"
+    ]
+  },
+  {
+    "brand": "Zeekr",
+    "model": "X",
+    "rows": [
+      829,
+      830,
+      831
+    ],
+    "variants": [
+      "ZEEKR X Core RWD (272 ch Propulsion - Autonomie 445 km WLTP - 0-100 en 5.6s - Jantes 18\")",
+      "ZEEKR X Premium RWD (272 ch Propulsion - Autonomie 445 km WLTP - 0-100 en 5.6s - Jantes 19\")",
+      "ZEEKR X Flagship AWD (428 ch Dual Motors 4x4 - Autonomie 425 km WLTP - 0-100 en 3.8s - Jantes 20\")"
+    ]
+  }
+]

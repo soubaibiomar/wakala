@@ -60,6 +60,23 @@ def normalize_darija_transcript(text: str) -> str:
     return " ".join(normalized)
 
 
+def detect_transcription_language(text: str) -> str:
+    """Conservative local language detection; no user text is sent to a detector."""
+    if not text:
+        return "fr"
+    if any("\u0600" <= char <= "\u06ff" for char in text):
+        lower = text.lower()
+        return "darija" if any(term in lower for term in ("شنو", "بغيت", "واش", "عندي", "بزاف")) else "ar"
+    lower = text.lower()
+    if any(term in lower.split() for term in ("the", "what", "which", "want", "need", "car", "budget")):
+        return "en"
+    if any(term in lower.split() for term in ("je", "cherche", "voiture", "bonjour", "budget", "merci")):
+        return "fr"
+    if any(term in lower.split() for term in ("bghit", "baghi", "chhal", "tomobil", "sayara")):
+        return "darija"
+    return "fr"
+
+
 def _get_hf_headers(content_type: str = "audio/webm") -> dict:
     """Génère les headers HTTP pour l'Inference API Hugging Face."""
     headers = {"Content-Type": content_type}
@@ -179,7 +196,10 @@ async def transcrire_audio(fichier_audio: UploadFile) -> str:
     2. HuBERT Darija spécialisé (`amineouaki/hubert-darija-combined`)
     3. Whisper Groq (`whisper-large-v3-turbo`) en fallback
     """
-    audio_bytes = await fichier_audio.read()
+    # Hard cap the bytes read even when the multipart parser did not provide a size.
+    audio_bytes = await fichier_audio.read(10 * 1024 * 1024 + 1)
+    if len(audio_bytes) > 10 * 1024 * 1024:
+        return "ERROR: audio file exceeds the 10MB limit"
     filename = fichier_audio.filename or "audio.webm"
     content_type = fichier_audio.content_type or "audio/webm"
 

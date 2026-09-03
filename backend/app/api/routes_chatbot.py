@@ -19,8 +19,8 @@ async def chat(request: Request, payload: ChatRequest):
         )
         return response
     except Exception as e:
-        import traceback
-        traceback.print_exc()
+        import logging
+        logging.getLogger(__name__).exception("Chatbot request failed")
         raise HTTPException(
             status_code=503,
             detail="Assistant temporairement indisponible. Veuillez reessayer.",

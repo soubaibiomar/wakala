@@ -66,6 +66,6 @@ flowchart TD
         G --> H2["Vecteur Semantique Dense (Qdrant RAG)"]:::queryNode
         
         H1 --> I["Catalogue Neuf 4-Tier (Brands, Models, Trims)"]
-        H2 --> J["Recommandation LLM (Groq / Ollama)"]
+        H2 --> J["Recommandation LLM (OpenRouter)"]
     end
 ```

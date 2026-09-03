@@ -9,10 +9,11 @@ interface ChatWindowProps {
   messages: Message[];
   isTyping: boolean;
   error: string | null;
+  currentLanguage?: string;
   onSend: (text: string) => void;
   onCancel: () => void;
   onClear: () => void;
-  onInitLanguage?: (welcomeText: string) => void;
+  onInitLanguage?: (welcomeText: string, langCode?: string) => void;
   onClose: () => void;
 }
 
@@ -73,6 +74,7 @@ export default function ChatWindow({
   messages,
   isTyping,
   error,
+  currentLanguage,
   onSend,
   onCancel,
   onClear,
@@ -80,7 +82,7 @@ export default function ChatWindow({
   onClose,
 }: ChatWindowProps) {
   const [input, setInput] = useState('');
-  const [selectedVoiceLang, setSelectedVoiceLang] = useState('ar-MA');
+  const [selectedVoiceLang, setSelectedVoiceLang] = useState('fr-FR');
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -140,7 +142,7 @@ export default function ChatWindow({
   const handleSelectLanguage = (lang: LanguageOption) => {
     setSelectedVoiceLang(lang.voiceLang);
     if (onInitLanguage) {
-      onInitLanguage(lang.welcomeMessage);
+      onInitLanguage(lang.welcomeMessage, lang.code);
     }
   };
 
@@ -254,7 +256,8 @@ export default function ChatWindow({
       {/* Barre de critères contextuels */}
       <PreferenceBar
         lastAssistantMessage={lastAssistantMsg}
-        onSelectOption={(optionText) => {
+        currentLanguage={currentLanguage}
+        onSelectOption={(optionText: string) => {
           onSend(optionText);
         }}
         disabled={isTyping}

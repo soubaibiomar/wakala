@@ -1,18 +1,35 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef, type ReactNode, type Dispatch, type SetStateAction } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { Plus, Edit3, Trash2, Image as ImageIcon, CheckCircle2, AlertCircle, X, ShieldCheck } from 'lucide-react';
 import { vehicleService } from '../services/vehicleService';
 import { useAuth } from '../context/AuthContext';
-import type { Vehicle, VehicleFilters, FuelType, BodyType } from '../types/vehicle';
-import { FUEL_LABELS, BODY_LABELS } from '../types/vehicle';
+import type { Vehicle, VehicleFilters, FuelType, BodyType, TransmissionType } from '../types/vehicle';
+import { FUEL_LABELS, BODY_LABELS, TRANSMISSION_LABELS } from '../types/vehicle';
 import VehicleCard from '../components/vehicle-card/VehicleCard';
-import { recommendationService, type RecommendationResponse } from '../services/recommendationService';
+import type { RecommendationResponse } from '../services/recommendationService';
 import fr from '../i18n/fr';
 import './Catalogue.css';
-import PriorityTubes from '../components/priority-tubes/PriorityTubes';
-import { ALL_CRITERIA, getIntelligentCriteria } from '../utils/priorityUtils';
+import { resolveVehicleImage } from '../utils/vehicleImageResolver';
 
 const PAGE_SIZE = 12;
+
+function extractMaximumBudget(query: string): number | null {
+  const match = query.match(/(?:under|below|less than|max(?:imum)?|budget|have|avec|moins de|jusqu['’à]|≤)?\s*(\d[\d\s.,]*)\s*(k|000|mad|dhs?|dh|dirhams?|دراهم?|ألف)?/i);
+  if (!match) return null;
+  const value = Number(match[1].replace(/[\s.,]/g, ''));
+  if (!Number.isFinite(value) || value <= 0) return null;
+  const suffix = (match[2] || '').toLowerCase();
+  return suffix === 'k' || suffix === '000' || suffix === 'ألف' ? value * 1000 : value;
+}
+
+const BUDGET_BROWSE_OPTIONS = [
+  { label: 'Moins de 150 000 MAD', max: 150000, brand: 'Dacia', model: 'Sandero' },
+  { label: 'Moins de 250 000 MAD', max: 250000, brand: 'Renault', model: 'Clio' },
+  { label: 'Moins de 350 000 MAD', max: 350000, brand: 'Peugeot', model: '208' },
+  { label: 'Moins de 500 000 MAD', max: 500000, brand: 'Toyota', model: 'Corolla' },
+  { label: 'Moins de 750 000 MAD', max: 750000, brand: 'BMW', model: 'X3' },
+  { label: 'Tous les budgets', max: null, brand: 'Aston Martin', model: 'DB12' },
+];
 
 export default function Catalogue() {
   const { user } = useAuth();
@@ -162,15 +179,12 @@ export default function Catalogue() {
   
   // Keep local state for recommendations so we can clear them when filters change
   const [activeRecommendations, setActiveRecommendations] = useState<RecommendationResponse | null>(initialRecommendations || null);
+  const [catalogueResetKey, setCatalogueResetKey] = useState(0);
   
   const recMap = Object.fromEntries(
     (activeRecommendations?.items ?? []).map((item) => [item.vehicle_id, item]),
   );
 
-  const matchScores = Object.fromEntries(
-    (activeRecommendations?.items ?? []).map((item) => [item.vehicle_id, item.match_score]),
-  );
-  
   // Filter States
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFuel, setActiveFuel] = useState<FuelType | ''>('');
@@ -180,16 +194,23 @@ export default function Catalogue() {
   const [priceMax, setPriceMax] = useState('');
   const [activeSort, setActiveSort] = useState('created_at-desc');
   const [activeCondition, setActiveCondition] = useState('');  // PIVOT: default to all (was 'occasion')
+  const [yearMin, setYearMin] = useState('');
+  const [yearMax, setYearMax] = useState('');
+  const [mileageMax, setMileageMax] = useState('');
+  const [activeTransmission, setActiveTransmission] = useState<TransmissionType | ''>('');
+  const [doors, setDoors] = useState('');
+  const [seats, setSeats] = useState('');
+  const [color, setColor] = useState('');
+  const [minEnginePower, setMinEnginePower] = useState('');
+  const [is4x4, setIs4x4] = useState(false);
+  const [openFilterSections, setOpenFilterSections] = useState<Record<string, boolean>>({ availability: false, body: false, specification: false });
   const [savedSearch, setSavedSearch] = useState(false);
+  const [showAssistantHint, setShowAssistantHint] = useState(true);
   const [activeModel, setActiveModel] = useState('');
 
   const [lastQuery, setLastQuery] = useState<string | null>(null);
+  const fetchRequestRef = useRef(0);
   
-  // Priority Tubes State
-  const [activeCriteria, setActiveCriteria] = useState<{id: string, label: string, colorClass: string, value: number}[]>([]);
-  const [budget, setBudget] = useState<number | null>(null);
-  const [isUpdatingAI, setIsUpdatingAI] = useState(false);
-
   // Initialize from URL params
   useEffect(() => {
     const q = searchParams.get('q');
@@ -198,61 +219,80 @@ export default function Catalogue() {
     const isNew = searchParams.get('is_new');
     const brand = searchParams.get('brand');
     const model = searchParams.get('model');
+    const maxPrice = searchParams.get('price_max');
     
     if (fuel) setActiveFuel(fuel);
     if (body) setActiveBody(body);
     if (isNew === 'true') setActiveCondition('neuf');
     if (brand) setSearchTerm(brand);
     if (model) setActiveModel(model);
+    const queryBudget = q ? extractMaximumBudget(q) : null;
+    if (maxPrice) setPriceMax(maxPrice);
+    else if (queryBudget !== null) setPriceMax(String(queryBudget));
 
     if (q && q !== lastQuery) {
       setLastQuery(q);
       setLoading(true);
       
-      // Setup intelligent tubes
-      let initialCriteria: {id: string, label: string, colorClass: string, value: number}[] = [];
-      let urlBudget = searchParams.get('budget');
-      setBudget(urlBudget ? Number(urlBudget) : 250000);
-      
-      searchParams.forEach((value, key) => {
-        if (key.startsWith('prio_')) {
-          const id = key.replace('prio_', '');
-          const cDef = ALL_CRITERIA.find(c => c.id === id);
-          if (cDef) {
-            initialCriteria.push({ ...cDef, value: Number(value) });
-          }
-        }
-      });
-      
-      if (initialCriteria.length > 0) {
-        setActiveCriteria(initialCriteria);
-      } else {
-        setActiveCriteria(getIntelligentCriteria(null));
-      }
-
-      recommendationService.search({ query: q, page_size: 3 })
-        .then((res) => {
-          if (res && res.items && res.items.length > 0) {
-            setActiveRecommendations(res);
-          } else {
-            setActiveRecommendations(null);
-            if (q.trim().split(/\s+/).length <= 2) {
-              setSearchTerm(q);
-            }
-          }
-        })
-        .catch((err) => {
-          console.error("Erreur récupération recommandations IA:", err);
-          setActiveRecommendations(null);
-          if (q.trim().split(/\s+/).length <= 2) {
-            setSearchTerm(q);
-          }
-        });
+      // The recommendation bar and the chatbot share one qualification flow.
+      // Do not fetch three cars here: the assistant must ask its criteria first.
+      setActiveRecommendations(null);
+      if (q.trim().split(/\s+/).length <= 2) setSearchTerm(q);
     } else if (!q && lastQuery) {
+      const clearedQuery = lastQuery;
       setLastQuery(null);
       setActiveRecommendations(null);
+      // These values may have been derived from the assistant's `q` URL
+      // parameter. Once that parameter is removed by the chatbot reset, do
+      // not leave an invisible budget/brand filter constraining the catalogue.
+      if (!searchParams.has('price_max')) setPriceMax('');
+      setSearchTerm((current) => current === clearedQuery ? '' : current);
     }
   }, [searchParams, lastQuery]);
+
+  useEffect(() => {
+    const handleAssistantVisibility = (event: Event) => {
+      const isOpen = (event as CustomEvent<{ open?: boolean }>).detail?.open;
+      if (typeof isOpen === 'boolean') setShowAssistantHint(!isOpen);
+    };
+    window.addEventListener('wakala:assistant-visibility', handleAssistantVisibility);
+    return () => window.removeEventListener('wakala:assistant-visibility', handleAssistantVisibility);
+  }, []);
+
+  useEffect(() => {
+    const handleRecommendationResults = (event: Event) => {
+      const detail = (event as CustomEvent<{ cars?: Vehicle[]; total?: number; final?: boolean; empty?: boolean; reset?: boolean }>).detail;
+      if (detail?.reset) {
+        setActiveRecommendations(null);
+        setPage(1);
+        setCatalogueResetKey((current) => current + 1);
+        return;
+      }
+      // `cars` is the actual recommendation pool. Rendering is paginated
+      // later, so never use the 20-card display cap as the recommendation
+      // total.
+      const cars = detail?.cars || [];
+      if (!cars.length && !detail?.empty) return;
+      const total = typeof detail?.total === 'number' ? detail.total : cars.length;
+      setActiveRecommendations({
+        items: cars.map((car) => ({
+          vehicle_id: car.id,
+          match_score: (car as Vehicle & { match_score?: number }).match_score || 0,
+          score_breakdown: { content: 0, collaborative: 0 },
+          eight_dimension_scores: (car as Vehicle & { eight_dimension_scores?: Record<string, number> }).eight_dimension_scores,
+          total_8d_score: (car as Vehicle & { total_8d_score?: number }).total_8d_score,
+          total_8d_percent: (car as Vehicle & { total_8d_percent?: number }).total_8d_percent,
+        })),
+        total,
+        page: 1,
+        page_size: PAGE_SIZE,
+        method: 'content-based',
+      });
+      setPage(1);
+    };
+    window.addEventListener('wakala:recommendation-results', handleRecommendationResults);
+    return () => window.removeEventListener('wakala:recommendation-results', handleRecommendationResults);
+  }, []);
 
   const handleFilterChange = (setter: any, value: any) => {
     setter(value);
@@ -264,6 +304,7 @@ export default function Catalogue() {
 
   const fetchVehicles = useCallback(
     async (currentPage: number) => {
+      const requestId = ++fetchRequestRef.current;
       setLoading(true);
       setError(null);
       
@@ -275,6 +316,15 @@ export default function Catalogue() {
       if (priceMax) filters.price_max = parseInt(priceMax, 10);
       if (searchTerm) filters.brand = searchTerm; // Simplified search mapping for now
       if (activeModel) filters.model = activeModel;
+      if (yearMin) filters.year_min = parseInt(yearMin, 10);
+      if (yearMax) filters.year_max = parseInt(yearMax, 10);
+      if (mileageMax) filters.mileage_max = parseInt(mileageMax, 10);
+      if (activeTransmission) filters.transmission = activeTransmission;
+      if (doors) filters.doors = parseInt(doors, 10);
+      if (seats) filters.seats = parseInt(seats, 10);
+      if (color) filters.color = color;
+      if (minEnginePower) filters.min_engine_power = parseInt(minEnginePower, 10);
+      if (is4x4) filters.is_4x4 = true;
 
       const [sort_by, sort_order] = activeSort.split('-');
       filters.sort_by = sort_by;
@@ -291,15 +341,18 @@ export default function Catalogue() {
       try {
         if (activeRecommendations) {
           // If we have recommendations, load them safely
+          const start = (currentPage - 1) * PAGE_SIZE;
+          const pageItems = activeRecommendations.items.slice(start, start + PAGE_SIZE);
           const recommendedVehicles = await Promise.all(
-            activeRecommendations.items.map((item) =>
+            pageItems.map((item) =>
               vehicleService.getVehicleById(item.vehicle_id).catch(() => null)
             ),
           );
           const validVehicles = recommendedVehicles.filter((v): v is Vehicle => v !== null);
+          if (requestId !== fetchRequestRef.current) return;
           setVehicles(validVehicles);
-          setTotal(activeRecommendations.total || validVehicles.length);
-          setPages(Math.max(1, Math.ceil((activeRecommendations.total || validVehicles.length) / PAGE_SIZE)));
+          setTotal(activeRecommendations.total ?? validVehicles.length);
+          setPages(Math.max(1, Math.ceil((activeRecommendations.total ?? validVehicles.length) / PAGE_SIZE)));
           return;
         }
         
@@ -308,19 +361,21 @@ export default function Catalogue() {
           page: currentPage,
           page_size: PAGE_SIZE,
         });
+        if (requestId !== fetchRequestRef.current) return;
         setVehicles(res.items);
         setTotal(res.total);
         setPages(res.pages);
       } catch (err) {
+        if (requestId !== fetchRequestRef.current) return;
         console.error('Erreur chargement catalogue:', err);
         setError("Impossible de charger les véhicules. Vérifiez que le backend est lancé.");
         setVehicles([]);
         setTotal(0);
       } finally {
-        setLoading(false);
+        if (requestId === fetchRequestRef.current) setLoading(false);
       }
     },
-    [activeFuel, activeBody, city, priceMin, priceMax, searchTerm, activeModel, activeSort, activeCondition, activeRecommendations]
+    [activeFuel, activeBody, city, priceMin, priceMax, searchTerm, activeModel, yearMin, yearMax, mileageMax, activeTransmission, doors, seats, color, minEnginePower, is4x4, activeSort, activeCondition, activeRecommendations, catalogueResetKey]
   );
 
   useEffect(() => {
@@ -337,6 +392,15 @@ export default function Catalogue() {
     setActiveSort('created_at-desc');
     setActiveCondition('');
     setActiveModel('');
+    setYearMin('');
+    setYearMax('');
+    setMileageMax('');
+    setActiveTransmission('');
+    setDoors('');
+    setSeats('');
+    setColor('');
+    setMinEnginePower('');
+    setIs4x4(false);
     setPage(1);
     setActiveRecommendations(null);
     setLastQuery(null);
@@ -365,7 +429,6 @@ export default function Catalogue() {
           <div className="catalogue__sidebar-top">
             <div className="catalogue__save-search">
               <div className="catalogue__save-search-info">
-                <span className="catalogue__save-icon">⭐</span>
                 <span>Sauvegarder la recherche</span>
               </div>
               <label className="catalogue__toggle">
@@ -377,7 +440,7 @@ export default function Catalogue() {
                 <span className="catalogue__toggle-slider"></span>
               </label>
             </div>
-            {(activeFuel || activeBody || city || priceMin || priceMax || searchTerm || activeCondition) && (
+            {(activeFuel || activeBody || city || priceMin || priceMax || searchTerm || activeCondition || yearMin || yearMax || mileageMax || activeTransmission || doors || seats || color || minEnginePower || is4x4) && (
               <button className="catalogue__clear-btn" onClick={handleClearFilters}>
                 Effacer
               </button>
@@ -386,7 +449,6 @@ export default function Catalogue() {
 
           <div className="catalogue__filter-block">
             <div className="catalogue__search-input-wrapper">
-              <span className="catalogue__search-icon">🔍</span>
               <input 
                 type="text" 
                 placeholder="Que recherchez-vous ?" 
@@ -394,6 +456,33 @@ export default function Catalogue() {
                 value={searchTerm}
                 onChange={(e) => handleFilterChange(setSearchTerm, e.target.value)}
               />
+            </div>
+          </div>
+
+          <div className="catalogue__filter-block catalogue__filter-block--state">
+            <span className="catalogue__label">État du véhicule</span>
+            <div className="catalogue__choice-group" role="group" aria-label="État du véhicule">
+              <button
+                type="button"
+                className={`catalogue__choice ${activeCondition === '' ? 'catalogue__choice--active' : ''}`}
+                onClick={() => handleFilterChange(setActiveCondition, '')}
+              >
+                Tous
+              </button>
+              <button
+                type="button"
+                className={`catalogue__choice ${activeCondition === 'neuf' ? 'catalogue__choice--active' : ''}`}
+                onClick={() => handleFilterChange(setActiveCondition, 'neuf')}
+              >
+                Neufs
+              </button>
+              <button
+                type="button"
+                className={`catalogue__choice ${activeCondition === 'occasion' ? 'catalogue__choice--active' : ''}`}
+                onClick={() => handleFilterChange(setActiveCondition, 'occasion')}
+              >
+                Occasion
+              </button>
             </div>
           </div>
 
@@ -433,9 +522,8 @@ export default function Catalogue() {
           <div className="catalogue__filter-block">
             <label className="catalogue__label">Ville - Secteur</label>
             <div className="catalogue__select-wrapper">
-              <span className="catalogue__input-prefix-icon">📍</span>
               <select 
-                className="catalogue__select catalogue__select--with-icon"
+                className="catalogue__select"
                 value={city}
                 onChange={(e) => handleFilterChange(setCity, e.target.value)}
               >
@@ -448,6 +536,78 @@ export default function Catalogue() {
               </select>
             </div>
           </div>
+
+          <FilterSection
+            title="Disponibilité & âge"
+            sectionKey="availability"
+            openSections={openFilterSections}
+            setOpenSections={setOpenFilterSections}
+          >
+            <div className="catalogue__advanced-grid">
+              <label>Année min.</label>
+              <label>Année max.</label>
+              <select value={yearMin} onChange={(e) => handleFilterChange(setYearMin, e.target.value)}>
+                <option value="">Toutes</option>
+                {[2026, 2025, 2024, 2023, 2022, 2021, 2020].map((year) => <option key={year} value={year}>{year}</option>)}
+              </select>
+              <select value={yearMax} onChange={(e) => handleFilterChange(setYearMax, e.target.value)}>
+                <option value="">Toutes</option>
+                {[2026, 2025, 2024, 2023, 2022, 2021, 2020].map((year) => <option key={year} value={year}>{year}</option>)}
+              </select>
+            </div>
+            <label className="catalogue__field-label" htmlFor="mileage-max">Kilométrage maximum</label>
+            <div className="catalogue__input-with-suffix">
+              <input id="mileage-max" type="number" min="0" placeholder="Illimité" value={mileageMax} onChange={(e) => handleFilterChange(setMileageMax, e.target.value)} />
+              <span>km</span>
+            </div>
+          </FilterSection>
+
+          <FilterSection
+            title="Carrosserie & motorisation"
+            sectionKey="body"
+            openSections={openFilterSections}
+            setOpenSections={setOpenFilterSections}
+          >
+            <label className="catalogue__field-label">Boîte de vitesses</label>
+            <select value={activeTransmission} onChange={(e) => handleFilterChange(setActiveTransmission, e.target.value as TransmissionType)}>
+              <option value="">Toutes les boîtes</option>
+              {Object.entries(TRANSMISSION_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            </select>
+            <label className="catalogue__field-label">Puissance minimale</label>
+            <select value={minEnginePower} onChange={(e) => handleFilterChange(setMinEnginePower, e.target.value)}>
+              <option value="">Toutes les puissances</option>
+              <option value="100">100 ch et plus</option>
+              <option value="130">130 ch et plus</option>
+              <option value="160">160 ch et plus</option>
+              <option value="200">200 ch et plus</option>
+            </select>
+            <label className="catalogue__check-row">
+              <input type="checkbox" checked={is4x4} onChange={(e) => handleFilterChange(setIs4x4, e.target.checked)} />
+              Transmission intégrale (4x4)
+            </label>
+          </FilterSection>
+
+          <FilterSection
+            title="Spécifications"
+            sectionKey="specification"
+            openSections={openFilterSections}
+            setOpenSections={setOpenFilterSections}
+          >
+            <div className="catalogue__advanced-grid">
+              <label>Portes</label>
+              <label>Places</label>
+              <select value={doors} onChange={(e) => handleFilterChange(setDoors, e.target.value)}>
+                <option value="">Toutes</option>
+                {[2, 3, 4, 5].map((value) => <option key={value} value={value}>{value}</option>)}
+              </select>
+              <select value={seats} onChange={(e) => handleFilterChange(setSeats, e.target.value)}>
+                <option value="">Toutes</option>
+                {[2, 4, 5, 7, 8, 9].map((value) => <option key={value} value={value}>{value}</option>)}
+              </select>
+            </div>
+            <label className="catalogue__field-label" htmlFor="vehicle-color">Couleur</label>
+            <input id="vehicle-color" type="text" placeholder="Ex. blanc, noir, gris" value={color} onChange={(e) => handleFilterChange(setColor, e.target.value)} />
+          </FilterSection>
 
           <div className="catalogue__filter-block">
             <label className="catalogue__label">Prix</label>
@@ -542,56 +702,39 @@ export default function Catalogue() {
             <span className="catalogue__main-count">1 - {vehicles.length} sur {total} annonces</span>
           </div>
 
-          {activeRecommendations && (
-            <div className="catalogue__ai-banner" style={{ display: 'block' }}>
-              <div className="catalogue__ai-banner-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <span className="catalogue__ai-banner-badge">✨ Match IA Wakala</span>
-                  <p className="catalogue__ai-banner-text">
-                    Résultats optimisés et classés par pertinence pour : <strong>"{searchParams.get('q') || 'votre recherche'}"</strong>
-                  </p>
-                </div>
-                <button 
-                  className="catalogue__ai-banner-reset" 
-                  onClick={handleClearFilters}
-                  title="Revenir à la vue générale"
-                >
-                  Fermer ✕
-                </button>
+          {!activeRecommendations && !activeFuel && !activeBody && !city && !priceMin && !priceMax && !searchTerm && !activeModel && (
+            <section className="catalogue__budget-browser" aria-labelledby="budget-browser-title">
+              <div className="catalogue__budget-heading">
+                <span className="catalogue__budget-kicker">EXPLORER LE CATALOGUE</span>
+                <h2 id="budget-browser-title">Parcourir par budget</h2>
               </div>
-              
-              <div className="catalogue__ai-priorities">
-                <h3>Ajustez vos priorités</h3>
-                <PriorityTubes 
-                  criteria={activeCriteria}
-                  budget={budget}
-                  onCriteriaChange={(idx, val) => {
-                    const newC = [...activeCriteria];
-                    newC[idx].value = val;
-                    setActiveCriteria(newC);
-                  }}
-                  onBudgetChange={setBudget}
-                />
-                <div style={{ textAlign: 'center' }}>
-                  <button 
-                    className="catalogue__ai-priorities-btn"
+              <div className="catalogue__budget-grid">
+                {BUDGET_BROWSE_OPTIONS.map((option) => (
+                  <button
+                    type="button"
+                    className="catalogue__budget-card"
+                    key={option.label}
                     onClick={() => {
-                      setIsUpdatingAI(true);
-                      const prioText = activeCriteria.map(c => `${c.label}:${c.value}%`).join(', ');
-                      const fullQuery = `${searchParams.get('q')} Priorités strictes: ${prioText}. Budget max: ${budget} MAD`;
-                      recommendationService.search({ query: fullQuery, page_size: 3 })
-                        .then(res => {
-                          if (res?.items) setActiveRecommendations(res);
-                        })
-                        .finally(() => setIsUpdatingAI(false));
+                      handleFilterChange(setPriceMax, option.max ? String(option.max) : '');
+                      setPriceMin('');
                     }}
-                    disabled={isUpdatingAI}
                   >
-                    {isUpdatingAI ? 'Mise à jour en cours...' : 'Mettre à jour les recommandations'}
+                    <span className="catalogue__budget-image">
+                      <img
+                        src={resolveVehicleImage(option.brand, option.model)}
+                        alt=""
+                        aria-hidden="true"
+                        onError={(event) => {
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.src = '/assets/car-side-fallback.svg';
+                        }}
+                      />
+                    </span>
+                    <span className="catalogue__budget-label">{option.label}</span>
                   </button>
-                </div>
+                ))}
               </div>
-            </div>
+            </section>
           )}
 
           {error ? (
@@ -626,11 +769,12 @@ export default function Catalogue() {
                     <VehicleCard 
                       vehicle={v} 
                       animationDelay={0} 
-                      matchScore={matchScores[v.id]} 
                       isGrouped={activeCondition === 'neuf' && !activeModel}
                       keyFacts={recMap[v.id]?.key_facts}
                       budgetMargin={recMap[v.id]?.budget_margin}
                       bestVersionName={recMap[v.id]?.best_version_name}
+                      eightDimensionScores={recMap[v.id]?.eight_dimension_scores}
+                      total8dScore={recMap[v.id]?.total_8d_score}
                     />
 
                     {/* Admin Action Buttons for each vehicle card */}
@@ -919,7 +1063,67 @@ export default function Catalogue() {
           </div>
         </div>
       )}
+      {showAssistantHint && (
+        <aside className="catalogue__assistant-hint" aria-label="Assistant de recherche">
+          <button
+            type="button"
+            className="catalogue__assistant-close"
+            aria-label="Fermer le message de l'assistant"
+            onClick={() => setShowAssistantHint(false)}
+          >
+            <X size={15} aria-hidden="true" />
+          </button>
+          <img src="/assets/chatlogo.png" alt="" className="catalogue__assistant-avatar" />
+          <p
+            role="button"
+            tabIndex={0}
+            onClick={() => {
+              setShowAssistantHint(false);
+              window.dispatchEvent(new CustomEvent('wakala:open-chat-from-hint'));
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                setShowAssistantHint(false);
+                window.dispatchEvent(new CustomEvent('wakala:open-chat-from-hint'));
+              }
+            }}
+          >
+            Je peux vous aider à trouver la voiture idéale. Une question&nbsp;?
+          </p>
+        </aside>
+      )}
     </div>
+  );
+}
+
+function FilterSection({
+  title,
+  sectionKey,
+  openSections,
+  setOpenSections,
+  children,
+}: {
+  title: string;
+  sectionKey: string;
+  openSections: Record<string, boolean>;
+  setOpenSections: Dispatch<SetStateAction<Record<string, boolean>>>;
+  children: ReactNode;
+}) {
+  const isOpen = openSections[sectionKey];
+  return (
+    <section className={`catalogue__filter-section ${isOpen ? 'catalogue__filter-section--open' : ''}`}>
+      <button
+        type="button"
+        className="catalogue__filter-section-toggle"
+        aria-expanded={isOpen}
+        onClick={() => setOpenSections((current) => ({ ...current, [sectionKey]: !current[sectionKey] }))}
+      >
+        <span>{title}</span>
+        <span aria-hidden="true">{isOpen ? '−' : '+'}</span>
+      </button>
+      {isOpen && <div className="catalogue__filter-section-content">{children}</div>}
+    </section>
   );
 }
 

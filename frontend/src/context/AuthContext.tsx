@@ -4,8 +4,8 @@
  * Fournit :
  *   useAuth() → { user, token, isAuthenticated, login, register, logout, loading }
  *
- * Le token JWT est stocké en mémoire (state) ET dans localStorage
- * pour survivre aux rechargements de page.
+ * Le token JWT est conservé uniquement en mémoire pour éviter son exposition
+ * aux scripts injectés dans le navigateur.
  */
 
 import {
@@ -18,6 +18,7 @@ import {
 } from 'react';
 import type { User, LoginPayload, RegisterPayload, TokenResponse } from '../types/user';
 import { authService } from '../services/authService';
+import { setSessionToken, clearSessionToken } from '../services/api';
 
 // ─── Interface du contexte ────────────────────────────────────
 
@@ -37,51 +38,19 @@ export const AuthContext = createContext<AuthState | undefined>(undefined);
 
 // ─── Provider ─────────────────────────────────────────────────
 
-const TOKEN_KEY = 'wakala_token';
-const USER_KEY = 'wakala_user';
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Restaurer la session depuis localStorage au montage
   useEffect(() => {
-    const storedToken = localStorage.getItem(TOKEN_KEY);
-    const storedUser = localStorage.getItem(USER_KEY);
-
-    if (storedToken && storedUser) {
-      try {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      } catch {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
-      }
-    }
     setLoading(false);
   }, []);
-
-  // Persister le token à chaque changement
-  useEffect(() => {
-    if (token) {
-      localStorage.setItem(TOKEN_KEY, token);
-    } else {
-      localStorage.removeItem(TOKEN_KEY);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
-    } else {
-      localStorage.removeItem(USER_KEY);
-    }
-  }, [user]);
 
   const login = async (payload: LoginPayload): Promise<User> => {
     const response: TokenResponse = await authService.login(payload);
     setToken(response.access_token);
+    setSessionToken(response.access_token);
     setUser(response.user);
     return response.user;
   };
@@ -89,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const googleLogin = async (tokenStr: string, rememberMe?: boolean): Promise<User> => {
     const response: TokenResponse = await authService.googleLogin(tokenStr, rememberMe);
     setToken(response.access_token);
+    setSessionToken(response.access_token);
     setUser(response.user);
     return response.user;
   };
@@ -101,15 +71,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password: payload.password,
     });
     setToken(response.access_token);
+    setSessionToken(response.access_token);
     setUser(response.user);
     return newUser;
   };
 
   const logout = () => {
     setToken(null);
+    clearSessionToken();
     setUser(null);
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
   };
 
   const value = useMemo<AuthState>(

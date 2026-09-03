@@ -15,9 +15,10 @@ class VectorStore:
     @property
     def client(self) -> QdrantClient:
         if self._client is None:
-            self._client = QdrantClient(
-                host=settings.QDRANT_HOST,
-                port=settings.QDRANT_PORT,
+            self._client = (
+                QdrantClient(url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY)
+                if settings.QDRANT_URL
+                else QdrantClient(host=settings.QDRANT_HOST, port=settings.QDRANT_PORT)
             )
         return self._client
 

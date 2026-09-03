@@ -72,7 +72,7 @@ class ResilienceLoop:
                 
         if is_drift:
             logger.warning(f"[{source_name}] Branch (a) STRUCTURAL DRIFT detected. Failed fields: {failed_fields}")
-            # Do NOT backoff/pause for drift! Just update health score and invoke Ollama repair.
+            # Do NOT backoff/pause for drift! Update health score and invoke selector repair.
             state = self.state_manager.get_state(source_name)
             new_health = max(0, state["selector_health_score"] - 10)
             self.state_manager.record_drift(source_name, new_health)

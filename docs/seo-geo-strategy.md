@@ -93,7 +93,7 @@ Tester ces requêtes tous les mois dans **ChatGPT (GPT-4o/Search)**, **Perplexit
 
 ## 6. Gouvernance & Garde-Fous de Génération Assistée par IA
 
-Pour toute génération de contenu (descriptifs de marques, synthèses de comparatifs, questions de FAQ) utilisant un modèle LLM (ex: Ollama local `qwen3:8b`) :
+Pour toute génération de contenu (descriptifs de marques, synthèses de comparatifs, questions de FAQ) utilisant un modèle LLM cloud (via OpenRouter) :
 1. **Zéro invention** : Ne jamais inventer une puissance moteur, un volume de coffre ou une note EuroNCAP. Si la donnée est absente de la base de données, omettre la mention plutôt que d'extrapoler.
 2. **Relecture humaine obligatoire** : Toute fiche ou article généré doit faire l'objet d'une validation humaine par l'équipe éditoriale Wakala avant publication (statut `draft` vers `published`).
 3. **Prix en MAD impératif** : Toute mention de tarif doit être explicitement libellée en MAD (Dirham Marocain).
