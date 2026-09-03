@@ -16,7 +16,7 @@ export const getSessionToken = () => sessionToken;
 export const clearSessionToken = () => { sessionToken = null; };
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://originally-demonstrated-multi-pressed.trycloudflare.com/api',
+  baseURL: import.meta.env.VITE_API_URL || 'https://spirit-learn-inns-paul.trycloudflare.com/api',
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
