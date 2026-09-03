@@ -172,7 +172,7 @@ export default function TechnologyPage() {
               Développeur ? Consultez notre documentation API interactive pour intégrer Wakala dans vos projets.
             </p>
             <a
-              href="http://localhost:8000/docs"
+              href="/docs"
               target="_blank"
               rel="noreferrer"
               className="btn btn--primary btn--lg"

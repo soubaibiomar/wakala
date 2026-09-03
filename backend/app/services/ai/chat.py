@@ -296,11 +296,19 @@ def detect_language(text: str, history: Optional[List[Dict[str, str]]] = None, e
     if any(p in t for p in darija_patterns):
         return "darija_lat"
 
+    if history and (len(words) <= 2 or t in {"diesel", "essence", "oui", "non", "ok", "d'accord"} or re.match(r'^\d+[\s\w]*$', t)):
+        for prev in reversed(history):
+            if prev.get("role") == "user":
+                prev_text = prev.get("content", "")
+                prev_lang = detect_language(prev_text, history=None)
+                if prev_lang != "french":
+                    return prev_lang
+
+    if re.search(r'\b(hello|hi|hey|i want|i need|looking for|what is|which car)\b', t) or len(words.intersection(ENGLISH_KEYWORDS)) >= 2:
+        return "english"
+
     if words.intersection(FRENCH_KEYWORDS) or any(t.startswith(kw) for kw in ['bonjour', 'salut', 'coucou', 'bonsoir', 'je cherche', 'quels sont', 'quel est', 'combien', 'comment', 'pourquoi', 'est-ce']):
         return "french"
-
-    if len(words.intersection(ENGLISH_KEYWORDS)) >= 2 or any(t.startswith(kw) for kw in ['hello', 'hi ', 'hey ', 'how ', 'what ', 'where ', 'which ', 'i want', 'i need', 'looking for', 'tell me']):
-        return "english"
 
     if re.search(r'[\u0400-\u04FF]', text) or words.intersection(RUSSIAN_KEYWORDS):
         return "russian"
@@ -421,13 +429,20 @@ def is_specific_search_request(message: str, max_price: Optional[int], history: 
     # Condition C: User explicitly demands final recommendations after providing at least budget or body style
     if has_explicit_rec and (has_budget or has_body or has_fuel):
         return True
+
+    # Condition D: User is answering narrowing question or following up on previous recommendations
+    if history:
+        for m in history:
+            if m.get("role") == "assistant" and ("CAR_RECOMMENDATION" in m.get("content", "") or "sélection" in m.get("content", "").lower() or "recommand" in m.get("content", "").lower()):
+                return True
         
     return False
 
 def build_system_prompt(detected_lang: str, context: str, is_car_search: bool = False) -> str:
     target_lang_name = LANGUAGE_NAMES.get(detected_lang, "the exact same language as the user's query")
     
-    rec_rule_darija_lat = """4. CATALOGUE VEHICLES: When recommending specific cars from the CONTEXT, include the JSON block:
+    rec_rule_darija_lat = """4. CATALOGUE VEHICLES & RECOMMANDATION FINALE (2 TAL 3 D LES TOMOBILAT):
+- Mnin t-recommender des voitures mn l-CONTEXT, khtar 2 wla 3 d les modeles mnasbin w dir l-bloc JSON pour chaque voiture:
 ```json
 {
   "type": "CAR_RECOMMENDATION",
@@ -437,13 +452,40 @@ def build_system_prompt(detected_lang: str, context: str, is_car_search: bool = 
   "year": 2022,
   "price": 140000
 }
-```""" if is_car_search else "4. CONSULTATIVE DISCOVERY: When the user is exploring buying a car without enough details, do NOT output fake JSON blocks or recommend random cars. First inspect the structured profile and its covered/missing dimensions. Select the single missing dimension by how much they distinguish the remaining vehicles, never by a fixed question order. Ask exactly one concise question per message and never repeat a covered dimension."
+```
+- HBES L-AS2ILA : Mnin t-3tih had 2 wla 3 d les voitures, 3teberhom natija niha2iya (final result) w matb9ach tsewel as2ila d la qualification. Gol lih ychouf les details, y-reserver essai wla y-twasel m3a l-vendeur.
+- ILA BGHITI T-HESSER F TOMOBILA WEHDA : Ila banti lik bli b9at ghir nuqta wehda (bhal boite auto/manuelle wla coffre) bach t-khtar tomobila wehda par excellence binathum, teqder tsewel STRICTEMENT soual wahed idafi. Mn be3d mat-hdedha, 3tih l-khtiyar l-nihai w matzid ta soual.""" if is_car_search else "4. CONSULTATIVE DISCOVERY: When the user is exploring buying a car without enough details, do NOT output fake JSON blocks or recommend random cars. First inspect the structured profile and its covered/missing dimensions. Select the single missing dimension by how much they distinguish the remaining vehicles, never by a fixed question order. Ask exactly one concise question per message and never repeat a covered dimension."
 
-    rec_rule_darija_ar = "4. عند التوصية بسيارات من السياق أرفق كود JSON الخاص بكل سيارة." if is_car_search else "4. الاستشارة والاكتشاف قبل التوصية: لا تصدر كتل JSON أو ترشيحات عشوائية. حلل ملف الاحتياجات والأبعاد المغطاة والناقصة، ثم اختر بُعداً واحداً ناقصاً حسب قدرتهما على التمييز بين السيارات المتبقية، وليس حسب ترتيب ثابت. اطرح سؤالاً واحداً فقط ولا تكرر بُعداً تمت الإجابة عنه."
+    rec_rule_darija_ar = """4. عند التوصية بسيارات من السياق أرفق كود JSON الخاص بكل سيارة (ترشيح 2 إلى 3 سيارات كنتيجة نهائية):
+```json
+{
+  "type": "CAR_RECOMMENDATION",
+  "id": "ID",
+  "brand": "BRAND",
+  "model": "MODEL",
+  "year": 2022,
+  "price": 140000
+}
+```
+- التوقف عن طرح الأسئلة: عند تقديم هذه السيارات (2 إلى 3)، اعتبرها النتيجة النهائية وتوقف عن طرح أسئلة استكشافية أو أسئلة تأهيل. اختم بدعوة العميل للاطلاع على تفاصيل السيارة، أو حجز موعد لتجربة القيادة، أو التواصل مع البائع.
+- حصر الاختيار في سيارة واحدة: إذا رأيت أن هناك معياراً فاصلاً ومحدداً (مثل علبة السرعات أوتوماتيك/يدوي أو سعة الصندوق) يمكن أن يحسم الاختيار نحو سيارة واحدة مثالية بين هذه الخيارات، يمكنك طرح سؤال إضافي واحد فقط لحسم الاختيار، وبعدها تقدم السيارة الفائزة وتتوقف نهائياً عن طرح الأسئلة.""" if is_car_search else "4. الاستشارة والاكتشاف قبل التوصية: لا تصدر كتل JSON أو ترشيحات عشوائية. حلل ملف الاحتياجات والأبعاد المغطاة والناقصة، ثم اختر بُعداً واحداً ناقصاً حسب قدرتهما على التمييز بين السيارات المتبقية، وليس حسب ترتيب ثابت. اطرح سؤالاً واحداً فقط ولا تكرر بُعداً تمت الإجابة عنه."
 
-    rec_rule_ar = "4. عند التوصية بسيارات من السياق أرفق كود JSON الخاص بها." if is_car_search else "4. الاستشارة والتشخيص قبل التوصية: لا تدرج كتل JSON أو اقتراحات عشوائية. حلل الحالة المنظمة، اختر بُعداً أو بُعدين ناقصين الأكثر تمييزاً للسيارات المتبقية، ثم صغ سؤالاً واحداً فقط. لا تكرر بُعداً تمت الإجابة عنه ولا تتبع ترتيباً ثابتاً."
+    rec_rule_ar = """4. عند التوصية بسيارات من السياق أرفق كود JSON الخاص بها (ترشيح 2 إلى 3 سيارات كنتيجة نهائية):
+```json
+{
+  "type": "CAR_RECOMMENDATION",
+  "id": "ID",
+  "brand": "BRAND",
+  "model": "MODEL",
+  "year": 2022,
+  "price": 140000
+}
+```
+- التوقف عن طرح الأسئلة: بمجرد ترشيح هذه السيارات (2 إلى 3)، اعتبرها النتيجة النهائية ولا تطرح مزيداً من أسئلة الاستكشاف والتأهيل. اختم بدعوة العميل لمعاينة تفاصيل السيارة، أو حجز موعد تجربة القيادة، أو التواصل مع البائع.
+- تضييق الاختيار إلى سيارة واحدة: إذا وجدت فارقاً جوهرياً وحاسماً يمكن من خلاله تضييق الاختيار إلى سيارة واحدة نهائية مثالية، يجوز لك طرح سؤال حاسم واحد إضافي فقط لتحديد السيارة الأنسب، وبعد ذلك تعرض النتيجة النهائية دون طرح أي أسئلة أخرى.""" if is_car_search else "4. الاستشارة والتشخيص قبل التوصية: لا تدرج كتل JSON أو اقتراحات عشوائية. حلل الحالة المنظمة، اختر بُعداً أو بُعدين ناقصين الأكثر تمييزاً للسيارات المتبقية، ثم صغ سؤالاً واحداً فقط. لا تكرر بُعداً تمت الإجابة عنه ولا تتبع ترتيباً ثابتاً."
 
-    rec_rule_fr = """4. VÉHICULES DU CATALOGUE : Lorsque tu recommandes des véhicules spécifiques à partir du CONTEXTE, insère le bloc JSON standard :
+    rec_rule_fr = """4. VÉHICULES DU CATALOGUE & SÉLECTION FINALE (2 À 3 VOITURES) :
+- Lorsque tu recommandes des véhicules spécifiques à partir du CONTEXTE, sélectionne les 2 ou 3 véhicules les plus adaptés et insère pour chacun le bloc JSON standard :
 ```json
 {
   "type": "CAR_RECOMMENDATION",
@@ -453,9 +495,12 @@ def build_system_prompt(detected_lang: str, context: str, is_car_search: bool = 
   "year": 2022,
   "price": 140000
 }
-```""" if is_car_search else "4. CONSULTATION ET QUALIFICATION DU PROJET : Lorsqu'un utilisateur souhaite acheter un véhicule sans avoir précisé ses critères complets, N'ÉMETS AUCUN bloc JSON et ne suggère aucun véhicule au hasard. Analyse le profil structuré, sélectionne une seule dimension manquante selon leur pouvoir discriminant dans le stock restant, puis formule exactement une question. Ne répète jamais une dimension déjà couverte et ne suis pas un ordre chronologique fixe."
+```
+- ARRÊT DES QUESTIONS : Dès que tu présentes ces 2 ou 3 véhicules, considère-les comme ta SÉLECTION FINALE / RÉSULTAT FINAL et arrête de poser des questions de découverte ou de qualification. Invite le client à consulter la fiche détaillée, planifier un essai ou contacter le vendeur.
+- EXCEPTION UNIQUE (AFFINAGE À 1 VOITURE) : Si et seulement si tu constates qu'un critère discriminant précis (ex: boîte automatique vs manuelle, volume de coffre en valises, ou budget vs consommation) permet d'isoler UNE SEULE voiture finale idéale parmi ces 2 ou 3 options, tu peux poser STRICTEMENT UNE question supplémentaire décisive pour départager. Une fois cette précision apportée, présente le résultat final et n'ajoute plus aucune question.""" if is_car_search else "4. CONSULTATION ET QUALIFICATION DU PROJET : Lorsqu'un utilisateur souhaite acheter un véhicule sans avoir précisé ses critères complets, N'ÉMETS AUCUN bloc JSON et ne suggère aucun véhicule au hasard. Analyse le profil structuré, sélectionne une seule dimension manquante selon leur pouvoir discriminant dans le stock restant, puis formule exactement une question. Ne répète jamais une dimension déjà couverte et ne suis pas un ordre chronologique fixe."
 
-    rec_rule_en = """4. CATALOGUE VEHICLES: When recommending specific vehicles from the CONTEXT, insert the standard JSON block:
+    rec_rule_en = """4. CATALOGUE VEHICLES & FINAL SELECTION (2 TO 3 CARS):
+- When recommending specific vehicles from the CONTEXT, select the 2 or 3 best matching cars and insert the standard JSON block for each:
 ```json
 {
   "type": "CAR_RECOMMENDATION",
@@ -465,7 +510,19 @@ def build_system_prompt(detected_lang: str, context: str, is_car_search: bool = 
   "year": 2022,
   "price": 140000
 }
-```""" if is_car_search else "4. CONSULTATIVE DIAGNOSIS: When a user inquires about buying or finding a car without specific parameters, do NOT output any JSON blocks or random vehicle picks. Inspect the structured profile and its covered/missing dimensions, select one missing dimension by discriminating power in the remaining pool, then ask exactly one concise question. Never repeat a covered dimension and never follow a fixed turn-by-turn order."
+```
+- STOP ASKING QUESTIONS: Once you recommend these 2 or 3 cars, consider them as the FINAL RESULT and STOP asking qualification or discovery questions. Conclude by inviting the user to view vehicle details, schedule a test drive, or contact the seller.
+- NARROWING DOWN TO 1 CAR (SINGLE QUESTION): IF and only if you see that a specific decisive differentiator (e.g. automatic vs manual transmission, trunk suitcase space, or running cost) can narrow the selection down to ONE single best car, you may ask EXACTLY ONE additional targeted question to decide. Once that preference is clarified, present the final car and stop asking questions.""" if is_car_search else "4. CONSULTATIVE DIAGNOSIS: When a user inquires about buying or finding a car without specific parameters, do NOT output any JSON blocks or random vehicle picks. Inspect the structured profile and its covered/missing dimensions, select one missing dimension by discriminating power in the remaining pool, then ask exactly one concise question. Never repeat a covered dimension and never follow a fixed turn-by-turn order."
+
+    loop_rule_darija_lat = "5. NTIJA NIHA2IYA W HBES L-AS2ILA : Had 2 wla 3 d les tomobilat li 3titih homa l-khtiyar l-nihai. Matb9ach tsewel as2ila khrin d l-qualification. Ila ban lik bli teqder t-hesser f tomobila wehda ghir b soual wahed mouhim, sewel STRICTEMENT soual wahed bach tkhtar tomobila l-ideal. Sinon, matzid ta soual w gol lih ychouf les details wla y-reserver essai." if is_car_search else "5. DISCOVERY LOOP (Analyse → Sélection → Formulation) : Pose STRICTEMENT UNE question ciblée à partir des dimensions manquantes du profil. Ne répète jamais une dimension couverte et ne suis pas un ordre fixe. N'écris JAMAIS de questionnaire."
+
+    loop_rule_darija_ar = "5. النتيجة النهائية والتوقف عن الأسئلة: السيارات (2 إلى 3) المرشحة تمثل النتيجة النهائية للاختيار. توقف تماماً عن طرح أسئلة التأهيل أو الاستكشاف. إذا رأيت إمكانية لحصر الاختيار في سيارة واحدة مثالية عبر معيار حاسم، اطرح سؤالاً إضافياً واحداً فقط، وإلا فلا تطرح أي سؤال وادعُ العميل لمعاينة السيارة أو تجربة القيادة." if is_car_search else "5. حلقة الاكتشاف: حلل الأبعاد المغطاة والناقصة، اختر بُعداً واحداً فقط الأكثر تمييزاً، ثم اطرح سؤالاً واحداً فقط. لا تكرر بُعداً تمت الإجابة عنه ولا تستخدم ترتيباً ثابتاً."
+
+    loop_rule_ar = "5. النتيجة النهائية والتوقف عن الأسئلة: تشكل السيارات الـ 2 إلى 3 المرشحة النتيجة النهائية لعملية الاختيار. توقف عن طرح أسئلة التأهيل والاستكشاف العامة. يجوز لك فقط طرح سؤال حاسم واحد إضافي إذا كان كفيلاً بتضييق الاختيار إلى سيارة واحدة نهائية مثالية، وإلا فاكتفِ بالنتيجة دون طرح أسئلة وادعُ العميل لمعاينة التفاصيل أو حجز موعد للتجربة." if is_car_search else "5. حلقة التشخيص: حلل الأبعاد المغطاة والناقصة، اختر بُعداً واحداً فقط الأكثر تمييزاً، ثم اطرح سؤالاً واحداً فقط. لا تكرر بُعداً تمت الإجابة عنه ولا تستخدم ترتيباً ثابتاً."
+
+    loop_rule_fr = "6. RÉSULTAT FINAL & FIN DES QUESTIONS : Les 2 ou 3 véhicules présentés constituent ta sélection finale. Arrête de poser des questions de découverte ou de qualification. Si et seulement si tu identifies un critère discriminant majeur permettant d'isoler LA seule voiture idéale parmi les 2-3, tu peux poser STRICTEMENT UNE question supplémentaire de départage. Sinon, ne pose aucune question et invite le client à consulter les détails ou planifier un essai." if is_car_search else "6. BOUCLE DE DÉCOUVERTE : Analyse les dimensions couvertes et manquantes, sélectionne une seule dimension selon leur pouvoir discriminant dans le stock restant, puis formule exactement une question. Ne répète aucune dimension couverte et ne suis pas un ordre fixe. Ne présente JAMAIS de questionnaire multiple."
+
+    loop_rule_en = "6. FINAL RESULT & STOP ASKING QUESTIONS: The 2 to 3 recommended vehicles constitute your final result. Stop asking discovery or qualification questions. If and only if you identify a decisive factor that can narrow down from these 2-3 cars to ONE single winning car, you may ask EXACTLY ONE additional targeted question to make that final cut. Otherwise, ask no further questions and invite the user to view details or book a test drive." if is_car_search else "6. DISCOVERY LOOP: Analyze covered and missing dimensions, select one missing dimension by its discriminating power in the remaining pool, and formulate exactly one concise question. Never repeat a covered dimension and never follow a fixed order. Never present a multi-question questionnaire."
 
     if detected_lang == "darija_lat":
         return f"""You are the expert automotive consultant for the Wakala platform in Morocco.
@@ -480,7 +537,7 @@ CRITICAL RULES:
 3. COFFRE ET VALISES : Pour qualifier le besoin du client, demande toujours la capacité en nombre de valises, jamais en litres. Pour une fiche technique, tu peux mentionner les litres uniquement avec leur équivalence en valises (ex: 'Coffre fih 440 L, yhez lik 3 tal 4 d les valises').
 4. DOMAIN EXPERTISE: Answer the user's specific automotive question directly with full technical clarity based on the CONTEXT.
 {rec_rule_darija_lat}
-5. DISCOVERY LOOP (Analyse → Sélection → Formulation) : Pose STRICTEMENT UNE question ciblée à partir des dimensions manquantes du profil. Ne répète jamais une dimension couverte et ne suis pas un ordre fixe. N'écris JAMAIS de questionnaire.
+{loop_rule_darija_lat}
 6. CRITICAL OUTPUT CONSTRAINT:
    - Output ONLY the direct final response to the user in Moroccan Darija.
    - NEVER output internal reasoning, thinking tags (<think>...</think>), or chain-of-thought steps.
@@ -499,7 +556,7 @@ CRITICAL RULES:
 3. سعة الصندوق وحقائب السفر: عند تأهيل العميل، اسأل عن مساحة الأمتعة بعدد حقائب السفر وليس باللتر. وفي المواصفات التقنية، لا تذكر اللترات إلا مع المعادل العملي بعدد الحقائب (مثال: 'صندوق بسعة 440 لتر، يهز ليك من 3 حتى 4 ديال الفاليزات').
 4. خبرة شاملة: أجب بدقة وعمق عن أي سؤال يخص قطاع السيارات اعتماداً على المعلومات في السياق.
 {rec_rule_darija_ar}
-5. حلقة الاكتشاف: حلل الأبعاد المغطاة والناقصة، اختر بُعداً واحداً فقط الأكثر تمييزاً، ثم اطرح سؤالاً واحداً فقط. لا تكرر بُعداً تمت الإجابة عنه ولا تستخدم ترتيباً ثابتاً.
+{loop_rule_darija_ar}
 6. الالتزام بالمخرجات المباشرة:
    - أخرج فقط النص النهائي الموجه للعميل دون أي مسودة تفكير أو وسوم <think>.
 
@@ -517,7 +574,7 @@ CRITICAL RULES:
 3. سعة الصندوق وحقائب السفر: عند تأهيل العميل، اسأل عن مساحة الأمتعة بعدد حقائب السفر وليس باللتر. وعند الحديث عن المواصفات التقنية، اذكر اللترات فقط مع المعادل العملي بعدد الحقائب (مثال: 'صندوق بسعة 450 لتر، يتسع لحوالي 3 إلى 4 حقائب سفر').
 4. موسوعية قطاع السيارات: أجب بمعلومات تقنية واقتصادية دقيقة ومفصلة حول أي موضوع في عالم السيارات بناءً على السياق.
 {rec_rule_ar}
-5. حلقة التشخيص: حلل الأبعاد المغطاة والناقصة، اختر بُعداً واحداً فقط الأكثر تمييزاً، ثم اطرح سؤالاً واحداً فقط. لا تكرر بُعداً تمت الإجابة عنه ولا تستخدم ترتيباً ثابتاً.
+{loop_rule_ar}
 6. الالتزام بالمخرجات النهائية المباشرة:
    - أخرج فقط النص النهائي الموجه للعميل دون أي مسودة تفكير أو وسوم تفكير.
 
@@ -538,7 +595,7 @@ RÈGLES STRICTES ET OBLIGATOIRES :
    - Fournis des réponses techniques, fiables, précises et autoritaires sur l'ensemble du secteur automobile et du marché marocain basées sur le CONTEXTE ci-dessous.
 5. STRUCTURE : Rédige des réponses claires, structurées et aérées avec titres en gras et puces si nécessaire.
 {rec_rule_fr}
-6. BOUCLE DE DÉCOUVERTE : Analyse les dimensions couvertes et manquantes, sélectionne une seule dimension selon leur pouvoir discriminant dans le stock restant, puis formule exactement une question. Ne répète aucune dimension couverte et ne suis pas un ordre fixe. Ne présente JAMAIS de questionnaire multiple.
+{loop_rule_fr}
 7. CONTRAINTE DE SORTIE :
    - Rédige UNIQUEMENT ta réponse finale directement adressée à l'utilisateur.
    - Ne divulgue JAMAIS tes réflexions internes, listes d'analyse ou balises <think>...</think>.
@@ -561,7 +618,7 @@ MANDATORY RULES:
    - Provide highly accurate, authoritative, technical, and practical insights on ANY question concerning the automotive sector globally and in Morocco based on the CONTEXT below.
 5. STRUCTURE: Use well-formatted bullet points, numbered lists, and bold titles for clarity.
 {rec_rule_en}
-6. DISCOVERY LOOP: Analyze covered and missing dimensions, select one missing dimension by its discriminating power in the remaining pool, and formulate exactly one concise question. Never repeat a covered dimension and never follow a fixed order. Never present a multi-question questionnaire.
+{loop_rule_en}
 7. CRITICAL OUTPUT CONSTRAINT:
    - Output ONLY your direct, final response for the user in English.
    - NEVER output internal thinking, reasoning steps, checklists, chain-of-thought, or <think> tags.
@@ -583,7 +640,7 @@ MANDATORY RULES:
    - Provide highly accurate, authoritative, technical, and practical insights on ANY question concerning the automotive sector globally and in Morocco based on the CONTEXT below.
 5. STRUCTURE: Use well-formatted bullet points, numbered lists, and bold titles for clarity.
 {rec_rule_en}
-6. DISCOVERY LOOP: Analyze covered and missing dimensions, select one missing dimension by its discriminating power in the remaining pool, and formulate exactly one concise question. Never repeat a covered dimension and never follow a fixed order. Never present a multi-question questionnaire.
+{loop_rule_en}
 7. CRITICAL OUTPUT CONSTRAINT:
    - Output ONLY your direct, final response for the user in {target_lang_name}.
    - NEVER output internal thinking, reasoning steps, checklists, chain-of-thought, or <think> tags.
@@ -873,7 +930,7 @@ OUT_OF_DOMAIN_RESPONSES = {
     'darija_lat': "Ana mkhssas ghir f tomobilat. Sowelni 3la tomobil, moteur, ssiانة, salam, chra wela comparaison dyal les modeles.",
 }
 
-async def retrieve_vehicles(query: str, max_price: Optional[float] = None, top_k: int = 6) -> str:
+async def retrieve_vehicles(query: str, max_price: Optional[float] = None, top_k: int = 3) -> str:
     qdrant = get_qdrant_client()
     clean_query = normalize_multilingual_query_terms(query)
     
@@ -899,7 +956,7 @@ async def retrieve_vehicles(query: str, max_price: Optional[float] = None, top_k
             collection_name=settings.QDRANT_COLLECTION,
             query_vector=query_vector,
             query_filter=query_filter,
-            limit=top_k
+            limit=top_k * 3
         )
     except Exception:
         return "Aucun véhicule correspondant dans la base de données actuelle."
@@ -922,8 +979,21 @@ async def retrieve_vehicles(query: str, max_price: Optional[float] = None, top_k
         price = payload.get('price', '')
         city = payload.get('city', 'Maroc')
         fuel = payload.get('fuel_type', '')
+        transmission = payload.get('transmission', '')
+        body_type = payload.get('body_type', '')
         
-        context_str += f"- ID: {hit.id} | {brand} {model} ({year}) | Prix: {price} MAD | Ville: {city} | Carburant: {fuel}\n"
+        specs = [f"Prix: {price} MAD", f"Ville: {city}"]
+        if fuel:
+            specs.append(f"Carburant: {fuel}")
+        if transmission:
+            specs.append(f"Boîte: {transmission}")
+        if body_type:
+            specs.append(f"Carrosserie: {body_type}")
+        
+        specs_str = " | ".join(specs)
+        context_str += f"- ID: {hit.id} | {brand} {model} ({year}) | {specs_str}\n"
+        if len(seen_signatures) >= top_k:
+            break
     
     return context_str if context_str else "Aucun véhicule correspondant dans la base de données actuelle."
 
@@ -1003,7 +1073,7 @@ Silsilat d l-as2ila soual b soual :
 3. Etape 3 (Carburant) : Ila 3refna l-usage, sewlo 3la l-moteur li kayfdel (Mazot, Lisans, Hybride, wla Electrique).
 4. Etape 4 (Boite) : Ila 3refna l-carburant, sewlo 3la la boite (Automatique wla Manuelle).
 5. Etape 5 (Carrosserie) : Ila 3refna la boite, sewlo 3la l-format (SUV, Citadine, Berline).
-6. Etape 6 (Recommandation finale) : Mnin ykounou l-ma3loumat kamlin, 3tih les modeles mn l-catalogue m3a l-coffre b l-valisat w l-bloc JSON.
+6. Etape 6 (Recommandations finales) : Mnin ykounou l-ma3loumat kamlin, 3tih 2 tal 3 d les modeles mn l-catalogue k natija nihaiya m3a l-coffre b l-valisat w l-bloc JSON. Hbes l-as2ila d l-qualification, wla sewel soual wahed akhar ila kan ghadi ykhelih ykhtar tomobila wehda nihaiya.
 
 Qawa3id sSarima :
 - Sewel STRICTEMENT soual wahed f kol risala.
@@ -1018,7 +1088,7 @@ Qawa3id sSarima :
 3. المرحلة 3 (نوع الوقود): إذا عُرف الاستعمال، اسأل فقط عن نوع المحرك المفضل (مازوط، ليسانص، إيبريد، أو كهربائي).
 4. المرحلة 4 (علبة السرعات): إذا حُدد الوقود، اسأل فقط عن علبة السرعات (أوتوماتيك أو مانييل).
 5. المرحلة 5 (نوع الهيكل): إذا حُددت علبة السرعات، اسأل فقط عن فئة السيارة (SUV عائلية، سيتادين للمدينة، أو بيرلين).
-6. المرحلة 6 (التوصية النهائية): بعد اكتمال المعايير، رشح أفضل السيارات المناسبة من الكتالوج مع ذكر سعة الصندوق بعدد الفاليزات وإدراج كود JSON.
+6. المرحلة 6 (التوصية والنتيجة النهائية): بعد اكتمال المعايير، رشح أفضل 2 إلى 3 سيارات مناسبة من الكتالوج كنتيجة نهائية مع ذكر سعة الصندوق بعدد الفاليزات وإدراج كود JSON. توقف عن طرح الأسئلة، أو اطرح سؤالاً إضافياً واحداً فقط إذا كان سيحسم الاختيار لسيارة واحدة نهائية.
 
 شروط صارمة:
 - اطرح سؤالاً واحداً فقط في كل رسالة بالدارجة المغربية.
@@ -1033,7 +1103,7 @@ Qawa3id sSarima :
 3. الخطوة 3 (نوع الوقود): إذا عُرفت طبيعة الاستعمال، اسأل فقط عن نوع المحرك والوقود المفضل (ديزل اقتصادي، بنزين، هجين/هايبرد، أو كهربائي بالكامل).
 4. الخطوة 4 (ناقل الحركة): إذا حُدد الوقود، اسأل فقط عن نوع ناقل الحركة (أوتوماتيكي أو يدوي).
 5. الخطوة 5 (فئة السيارة): إذا حُدد ناقل الحركة، اسأل فقط عن نوع الهيكل المفضل (دفع رباعي / SUV، سيدان مريحة، أو سيارة مدينة مدمجة).
-6. الخطوة 6 (الترشيحات النهائية): عند اكتمال كافة المعايير، قدم ترشيحات دقيقة من الكتالوج مع تعليل تقني وحجم الصندوق بعدد حقائب السفر وإدراج كتل JSON.
+6. الخطوة 6 (الترشيحات والنتيجة النهائية): عند اكتمال كافة المعايير، قدم أفضل 2 إلى 3 سيارات من الكتالوج كنتيجة نهائية مع تعليل تقني وحجم الصندوق بعدد حقائب السفر وإدراج كتل JSON. توقف عن طرح أسئلة التأهيل، أو اطرح سؤالاً إضافياً واحداً فقط إذا كان كفيلاً بحسم الاختيار لسيارة واحدة نهائية.
 
 قواعد قطعية:
 - اطرح دائماً سؤالاً واحداً فقط في كل رسالة باللغة العربية الفصحى.
@@ -1048,7 +1118,7 @@ SÉQUENCE STRICTE DE QUALIFICATION TOUR PAR TOUR :
 3. Étape 3 (Carburant) : Si l'usage est connu mais pas le carburant, demande UNIQUEMENT sa préférence de motorisation (Diesel, Essence, Hybride ou Électrique).
 4. Étape 4 (Boîte de vitesses) : Si le carburant est connu mais pas la boîte, demande UNIQUEMENT son choix de transmission (Boîte automatique ou Boîte manuelle).
 5. Étape 5 (Carrosserie) : Si la boîte est connue mais pas le format, demande UNIQUEMENT sa préférence de carrosserie (SUV, Berline, Citadine compacte).
-6. Étape 6 (Recommandations finales) : Une fois les critères réunis, présente les véhicules pertinents du catalogue avec arguments techniques, équivalence coffre en valises et blocs JSON de recommandation.
+6. Étape 6 (Recommandations finales) : Une fois les critères réunis, présente les 2 à 3 véhicules pertinents du catalogue comme résultat final avec arguments techniques, équivalence coffre en valises et blocs JSON de recommandation. Arrête de poser des questions de découverte, ou pose au maximum une seule question supplémentaire si elle permet de départager et d'isoler une seule voiture finale.
 
 RÈGLES IMPÉRATIVES :
 - Pose STRICTEMENT UNE SEULE question par message en français.
@@ -1063,7 +1133,7 @@ STRICT TURN-BY-TURN DISCOVERY SEQUENCE:
 3. Turn 3 (Fuel): If usage is known but fuel is missing, ask ONLY about their preferred fuel type (Diesel, Petrol, Hybrid, or EV).
 4. Turn 4 (Transmission): If fuel is known but gearbox is missing, ask ONLY for their transmission preference (Automatic or Manual).
 5. Turn 5 (Body Style): If transmission is known but car type is missing, ask ONLY for their preferred body style (SUV, Sedan, Hatchback/City car).
-6. Turn 6 (Final Recommendations): Once criteria are clear, present tailored vehicle options from the catalogue with full technical reasons, suitcase capacity for the trunk, and JSON recommendation blocks.
+6. Turn 6 (Final Recommendations): Once criteria are clear, present 2 to 3 tailored vehicle options from the catalogue as the final result with full technical reasons, suitcase capacity for the trunk, and JSON recommendation blocks. Stop asking qualification questions, or ask at most one single additional question if it directly narrows down to one single car.
 
 STRICT CONSTRAINTS:
 - Ask STRICTLY ONE question per response in English.

@@ -95,6 +95,7 @@ from app.api.routes_consent import router as consent_router
 # ─── Application FastAPI ───────────────────────────────────────
 
 app = FastAPI(
+    root_path="/api",
     title="Wakala API",
     lifespan=lifespan,
     description=(
@@ -132,7 +133,8 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:5173",
         "http://localhost:8000",
-        "https://wakala-jzdd.vercel.app",   
+        "https://wakala-jzdd.vercel.app",
+        "https://*.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],

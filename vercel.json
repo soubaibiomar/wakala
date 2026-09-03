@@ -1,0 +1,16 @@
+{
+  "services": {
+    "my_frontend": {
+      "root": "frontend",
+      "framework": "vite"
+    },
+    "my_backend": {
+      "root": "backend",
+      "entrypoint": "app/main.py",
+      "runtime": "container"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "my_backend" }
+  ]
+}

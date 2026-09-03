@@ -137,8 +137,8 @@ export default function Catalogue() {
     setIsSubmittingVehicle(true);
     try {
       const url = editingVehicleId 
-        ? `http://localhost:8000/api/v1/admin/vehicles/${editingVehicleId}` 
-        : 'http://localhost:8000/api/v1/admin/vehicles';
+        ? `/api/v1/admin/vehicles/${editingVehicleId}` 
+        : '/api/v1/admin/vehicles';
       const method = editingVehicleId ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
@@ -161,7 +161,7 @@ export default function Catalogue() {
     const confirmDelete = window.confirm(`Supprimer définitivement ${v.brand} ${v.model} (${v.version || ''}) du catalogue ?`);
     if (!confirmDelete) return;
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/admin/vehicles/${v.id}`, {
+      const res = await fetch(`/api/v1/admin/vehicles/${v.id}`, {
         method: 'DELETE'
       });
       const data = await res.json();

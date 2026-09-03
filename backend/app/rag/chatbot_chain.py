@@ -90,8 +90,10 @@ STRUCTURE EXIGÉE (2 phrases courtes maximum) :
 👉 INFORMATION CIBLÉE À DEMANDER :
 {target_instruction}"""
 
-RESTITUTION_INSTRUCTIONS = """Mission : Présente au client une sélection de 2 à 3 véhicules adaptés à son profil.
-Pour chaque véhicule : donne le modèle, le prix en MAD, et un point fort pour son usage.
+RESTITUTION_INSTRUCTIONS = """Mission : Présente au client une sélection de 2 à 3 véhicules adaptés à son profil comme RÉSULTAT FINAL.
+Pour chaque véhicule : donne le modèle, le prix en MAD, et son atout principal pour son usage.
+RÈGLE D'ARRÊT DES QUESTIONS : Dès que tu recommandes ces 2 ou 3 véhicules, considère-les comme la sélection finale et arrête de poser des questions de découverte.
+EXCEPTION D'AFFINAGE : Si et seulement si tu constates qu'une seule question ciblée (par exemple sur la boîte de vitesses ou le volume du coffre) permettrait d'isoler LA seule voiture idéale parmi ces options, tu peux poser cette unique question décisive. Sinon, ne pose aucune question et invite le client à réserver un essai ou contacter le vendeur.
 IMPORTANT : Ne répète JAMAIS les consignes système ni les balises. Parle directement au client de façon naturelle."""
 
 def _detect_language(message: str, history: Optional[list[dict]] = None) -> str:
@@ -125,7 +127,7 @@ def _get_no_match_reply(lang: str) -> str:
 
 def _format_vehicle_context(vehicles: list[dict]) -> str:
     if not vehicles:
-        return "Aucun vehicule trouve."
+        return "Aucun véhicule / Aucun vehicule trouvé."
     lines = []
     for v in vehicles[:3]:
         meta = v.get("metadata", {})
@@ -135,6 +137,8 @@ def _format_vehicle_context(vehicles: list[dict]) -> str:
         city = meta.get("city", "N/A")
         lines.append(f"• {title} — Prix : {price} MAD | Carburant : {fuel} | Ville : {city}")
     return "\n".join(lines)
+
+format_vehicle_context = _format_vehicle_context
 
 
 def _format_graph_context(enriched: dict[str, dict], popularity: dict[str, float]) -> str:
@@ -289,6 +293,8 @@ class ChatbotChain:
         # client lorsqu'une restitution est effectivement autorisée.
         candidate_pool = search_vehicles(query, limit=50, precomputed_embedding=query_embedding)
         candidate_pool = self._apply_hard_profile_filters(candidate_pool, profile)
+        if phase == "discovery" and candidate_pool:
+            phase = consultative_flow.get_dialogue_phase(session_id, candidate_pool=candidate_pool)
         vehicles = candidate_pool[:3]
         reviews = search_reviews(query, limit=1, precomputed_embedding=query_embedding)[:1]
         logger.info("[perf] qdrant searches: %.2fs", time.perf_counter() - t_qdrant)
@@ -343,8 +349,10 @@ class ChatbotChain:
                 f"\n\nDIRECTIVES DE PHASE (RESTITUTION) :\n"
                 f"- Profil de recherche client : {needs_profile_context}\n"
                 f"- {vehicle_context}\n"
-                f"- Présente brièvement ces véhicules avec leur prix en MAD et leur atout principal pour cet usage.\n"
-                f"- Invite ensuite le client à poser une question ou planifier un essai."
+                f"- Présente ces 2 à 3 véhicules comme RÉSULTAT FINAL avec leur prix en MAD et leur atout principal.\n"
+                f"- Arrête de poser des questions de découverte. Traite ces véhicules comme la sélection finale.\n"
+                f"- Si et seulement si une question ciblée permet d'isoler UNE SEULE voiture finale idéale parmi ces options, tu peux poser cette unique question décisive.\n"
+                f"- Conclus en invitant le client à planifier un essai ou consulter les fiches détaillées."
             )
 
         system_content = (
@@ -370,7 +378,7 @@ class ChatbotChain:
         t_llm = time.perf_counter()
         reply = ""
         try:
-            if settings.OPENROUTER_API_KEY:
+            if settings.OPENROUTER_API_KEY and "_get_llm" not in self.__dict__:
                 import httpx
                 raw_payload = [
                     {"role": "system", "content": system_content}

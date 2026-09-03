@@ -34,7 +34,7 @@ export const chatbotService = {
     language?: string
   ) => {
     // Determine the base URL from the Axios instance or env
-    const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const baseURL = import.meta.env.VITE_API_URL || '/api';
     
     try {
       const headers: Record<string, string> = {
@@ -88,7 +88,7 @@ export const chatbotService = {
   
   /** Récupérer l'historique des sessions de chat de l'utilisateur */
   getChatHistory: async () => {
-    const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const baseURL = import.meta.env.VITE_API_URL || '/api';
     const token = getSessionToken();
     if (!token) return [];
     

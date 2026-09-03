@@ -156,6 +156,45 @@ describe('FastApiRecommendationClient recommendation logic', () => {
     expect(result.map((vehicle) => vehicle.id)).toEqual(['high', 'low', 'unknown']);
   });
 
+  it('filters strictly for 5-star NCAP vehicles when Note NCAP maximale is selected', async () => {
+    const client = new FastApiRecommendationClient();
+    const candidateCars = [
+      car({ id: 'two-stars', ncap_rating: '2★', model: 'Low' }),
+      car({ id: 'three-stars', ncap_rating: '3★', model: 'Mid' }),
+      car({ id: 'five-stars', ncap_rating: '5★ (Euro NCAP 2022)', model: 'High' }),
+    ];
+    mockGetVehicles.mockResolvedValue({ items: candidateCars, pages: 1 });
+    const result = await client.applyAnswer('Note NCAP maximale', history('Note NCAP maximale'), candidateCars);
+    expect(result.map((vehicle) => vehicle.id)).toEqual(['five-stars']);
+  });
+
+  it('filters strictly for >= 4-star NCAP vehicles when Bonne sécurité is selected', async () => {
+    const client = new FastApiRecommendationClient();
+    const candidateCars = [
+      car({ id: 'two-stars', ncap_rating: '2★', model: 'Low' }),
+      car({ id: 'four-stars', ncap_rating: '4★ (Euro NCAP 2024)', model: 'Good' }),
+      car({ id: 'five-stars', ncap_rating: '5★ (Euro NCAP 2022)', model: 'Top' }),
+    ];
+    mockGetVehicles.mockResolvedValue({ items: candidateCars, pages: 1 });
+    const result = await client.applyAnswer('Bonne sécurité', history('Bonne sécurité'), candidateCars);
+    expect(result.map((vehicle) => vehicle.id)).toEqual(['five-stars', 'four-stars']);
+  });
+
+  it('consults and prioritizes the currently recommended candidate cars when filtering by safety', async () => {
+    const client = new FastApiRecommendationClient();
+    const instantCars = [
+      car({ id: 'suv-instant-safe', ncap_rating: '5★ (Euro NCAP 2023)', model: 'Instant SUV' }),
+      car({ id: 'suv-instant-untested', ncap_rating: 'NT (Non testé)', model: 'Untested SUV' }),
+    ];
+    const otherCatalogueCars = [
+      car({ id: 'other-car-5stars', ncap_rating: '5★ (Euro NCAP 2022)', model: 'Other Car' }),
+    ];
+    mockGetVehicles.mockResolvedValue({ items: otherCatalogueCars, pages: 1 });
+    const result = await client.applyAnswer('Note NCAP maximale', history('Note NCAP maximale'), instantCars);
+    expect(result.map((vehicle) => vehicle.id)).toEqual(['suv-instant-safe']);
+  });
+
+
   it('uses the full catalogue when a direct body filter misses the current shortlist', async () => {
     const client = new FastApiRecommendationClient();
     const suv = car({ id: 'suv', body_type: 'suv' });

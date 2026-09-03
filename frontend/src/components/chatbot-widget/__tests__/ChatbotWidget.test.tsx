@@ -11,6 +11,7 @@ vi.mock('../../../services/api', () => ({
     post: vi.fn().mockResolvedValue({ data: { reply: 'Test reply', sources: [] } }),
     interceptors: { request: { use: vi.fn() }, response: { use: vi.fn() } },
   },
+  getSessionToken: vi.fn().mockReturnValue(null),
 }));
 
 vi.mock('../chatbot.module.css', () => ({ default: {} }));

@@ -26,7 +26,7 @@ export function useVoiceAssistant({ language, history, onResult }: UseVoiceAssis
       form.append('audio', blob, 'wakala-voice.webm');
       form.append('language', language);
       form.append('history_json', JSON.stringify(history.slice(-30)));
-      const configuredBase = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      const configuredBase = import.meta.env.VITE_API_URL || '/api';
       const endpoint = configuredBase.endsWith('/api') ? `${configuredBase}/voice/assistant` : `${configuredBase}/api/voice/assistant`;
       const token = getSessionToken();
       const response = await fetch(endpoint, { method: 'POST', body: form, headers: token ? { Authorization: `Bearer ${token}` } : undefined });

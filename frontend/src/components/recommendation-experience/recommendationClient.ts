@@ -94,6 +94,8 @@ function extractBrandPreference(text: string): BrandPreference | null {
 }
 
 const safetyPreferencePattern = /\b(safe|safest|safety|security|secure|sécurité|securite|sûr|sûre|sûreté|crash|ncap|airbag|السلامة|آمن|أمان)\b/i;
+const maxNcapPreferencePattern = /(?:highest ncap|note ncap maximale|ncap maximale|note maximale|highest ncap rating|5\s*(?:stars?|étoiles?|★)|أعلى تقييم|أعلى نقطة)/i;
+const goodNcapPreferencePattern = /(?:good safety|bonne s[eé]curit[eé]|4\s*(?:stars?|étoiles?|★)|سلامة جيدة|سلامة مزيانة)/i;
 
 // Age and gender describe the client profile, not vehicle catalogue fields.
 // Recognise them so a natural request such as "a car for 22 years old" starts
@@ -263,7 +265,7 @@ function dynamicQuestion(language: ChatLanguage, history: ChatTurn[], remainingC
   const selectableDimensions = dimensionCandidates
     .filter((candidate) => !candidate.covered && candidate !== pendingDimension)
     .map((candidate) => ({ ...candidate, diversity: new Set(candidate.values).size }))
-    .filter((candidate) => candidate.diversity > 1 || candidate.key === 'securite');
+    .filter((candidate) => candidate.diversity > 1 || (!remainingCars.length && candidate.key === 'securite'));
   const selectedDimension = [...selectableDimensions].sort((a, b) => b.diversity - a.diversity || a.priority - b.priority)[0]?.key;
 
   if (!hasSpace && (hasAny(text, [/\b(family|famille|children|kids|baby|poussette|trunk|boot|coffre|luggage|bagages|3a2ila)\b/i]) || remainingCars.some((car) => (car.seats || 5) >= 7) || hasWideTrunkRange)) return {
@@ -613,9 +615,67 @@ export class FastApiRecommendationClient implements RecommendationClient {
       return sortForSafety(catalogueMatches, safetyRequested);
     }
 
-    // Safety is an explicit ranking criterion. Do not let semantic search
-    // replace the complete candidate pool with an arbitrary first page:
-    // compare every available NCAP rating and keep the highest scores first.
+    // Safety is an explicit ranking and filtering criterion.
+    // When the user specifies "Note NCAP maximale" (5★) or "Bonne sécurité" (>= 4★),
+    // we must strictly filter for vehicles satisfying the requested NCAP rating.
+    const isMaxSafety = maxNcapPreferencePattern.test(answer) || (userTurns > 1 && maxNcapPreferencePattern.test(historyText));
+    const isGoodSafety = goodNcapPreferencePattern.test(answer) || (userTurns > 1 && goodNcapPreferencePattern.test(historyText));
+
+    if (isMaxSafety || isGoodSafety) {
+      if (requestedBrand && !scopedRemainingCars.length) return [];
+
+      // 1. Priorité absolue : consulter et filtrer les voitures recommandées à l'instant T
+      if (scopedRemainingCars.length > 0) {
+        const currentSafeMatches = scopedRemainingCars.filter((car) => {
+          const score = getNcapScore(car);
+          return isMaxSafety ? score === 5 : score >= 4;
+        });
+
+        // Si des voitures de l'instant T répondent au critère, on garde et classe celles-ci
+        if (currentSafeMatches.length > 0) {
+          return sortForSafety(currentSafeMatches, true);
+        }
+
+        // Si l'utilisateur voulait la sécurité max mais que la sélection actuelle n'a pas de 5★,
+        // on conserve en priorité les voitures de l'instant T qui ont au moins 4★
+        if (isMaxSafety) {
+          const currentFourStars = scopedRemainingCars.filter((car) => getNcapScore(car) >= 4);
+          if (currentFourStars.length > 0) {
+            return sortForSafety(currentFourStars, true);
+          }
+        }
+
+        // Si aucune des voitures de l'instant n'a 4+ étoiles, on trie celles de l'instant par score de sécurité
+        const ratedCars = scopedRemainingCars.filter((car) => getNcapScore(car) > 0);
+        if (ratedCars.length > 0) {
+          return sortForSafety(ratedCars, true);
+        }
+      }
+
+      // 2. Si le groupe de l'instant était vide, chercher dans le catalogue avec les contraintes existantes
+      const allVehicles = await loadAllCatalogueVehicles();
+      const constrainedCatalogue = applyConversationConstraints(allVehicles, historyText);
+
+      const catalogueSafeMatches = constrainedCatalogue.filter((car) => {
+        const score = getNcapScore(car);
+        return isMaxSafety ? score === 5 : score >= 4;
+      });
+
+      if (catalogueSafeMatches.length > 0) {
+        return sortForSafety(catalogueSafeMatches, true);
+      }
+
+      if (isMaxSafety) {
+        const fallbackFourStars = constrainedCatalogue.filter((car) => getNcapScore(car) >= 4);
+        if (fallbackFourStars.length > 0) {
+          return sortForSafety(fallbackFourStars, true);
+        }
+      }
+
+      const fallbackPool = scopedRemainingCars.length ? scopedRemainingCars : constrainedCatalogue;
+      return sortForSafety(fallbackPool, true);
+    }
+
     if (safetyRequested) {
       if (requestedBrand && !scopedRemainingCars.length) return [];
       const safetyPool = scopedRemainingCars.length
@@ -750,6 +810,18 @@ function applyConversationConstraints(cars: Car[], userText: string): Car[] {
       const suitcases = Math.round(trunkLiters / LITERS_PER_SUITCASE);
       return suitcases >= suitcaseRange.min && suitcases <= suitcaseRange.max;
     });
+  }
+  if (maxNcapPreferencePattern.test(userText)) {
+    const fiveStarCars = constrained.filter((car) => getNcapScore(car) === 5);
+    if (fiveStarCars.length) {
+      constrained = fiveStarCars;
+    } else {
+      const fourStarCars = constrained.filter((car) => getNcapScore(car) >= 4);
+      if (fourStarCars.length) constrained = fourStarCars;
+    }
+  } else if (goodNcapPreferencePattern.test(userText)) {
+    const safeCars = constrained.filter((car) => getNcapScore(car) >= 4);
+    if (safeCars.length) constrained = safeCars;
   }
   return constrained;
 }

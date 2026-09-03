@@ -19,7 +19,7 @@ export default function Profile() {
   const getAvatarUrl = (url?: string) => {
     if (!url) return undefined;
     if (url.startsWith('http')) return url;
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const baseUrl = import.meta.env.VITE_API_URL || '/api';
     return `${baseUrl.replace('/api', '')}${url}`;
   };
 

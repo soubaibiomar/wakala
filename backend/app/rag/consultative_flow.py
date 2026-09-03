@@ -259,9 +259,14 @@ class ConsultativeFlow:
         profile = self.get_profile(session_id)
         return "restitution" if profile.is_complete else "discovery"
 
-    def get_dialogue_phase(self, session_id: str) -> str:
+    def get_dialogue_phase(self, session_id: str, candidate_pool: Optional[list[dict]] = None) -> str:
         """Phase utilisée par le chatbot : découverte ou restitution réelle."""
-        return "restitution" if self.get_profile(session_id).ready_for_recommendation else "discovery"
+        profile = self.get_profile(session_id)
+        if profile.ready_for_recommendation:
+            return "restitution"
+        if candidate_pool is not None and 1 <= len(candidate_pool) <= 3 and profile.is_complete:
+            return "restitution"
+        return "discovery"
 
     def _dimension_priority_order(self, profile: NeedsProfile) -> list[str]:
         """Retourne les dimensions pertinentes avant les dimensions génériques."""

@@ -33,7 +33,7 @@ export function MaintenanceTimeline({ carId }: { carId: string }) {
   const getFullReceiptUrl = (url?: string) => {
     if (!url) return '';
     if (url.startsWith('http')) return url;
-    const baseApi = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    const baseApi = import.meta.env.VITE_API_URL || '/api';
     const serverOrigin = baseApi.replace(/\/api\/?$/, '');
     return `${serverOrigin}${url.startsWith('/') ? '' : '/'}${url}`;
   };
