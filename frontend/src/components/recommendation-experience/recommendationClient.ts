@@ -95,6 +95,13 @@ function extractBrandPreference(text: string): BrandPreference | null {
 
 const safetyPreferencePattern = /\b(safe|safest|safety|security|secure|sécurité|securite|sûr|sûre|sûreté|crash|ncap|airbag|السلامة|آمن|أمان)\b/i;
 
+// Age and gender describe the client profile, not vehicle catalogue fields.
+// Recognise them so a natural request such as "a car for 22 years old" starts
+// the discovery flow instead of being sent to the semantic search as an
+// over-constrained query.
+const agePreferencePattern = /\b(?:\d{1,3}\s*(?:years?[- ]?old|ans?|an|3am))\b|\b(?:age|âge)\s*[:：-]?\s*\d{1,3}\b|\b\d{1,3}\s*(?:عام|سنة)\b|\b(?:عام|سنة)\s*\d{1,3}\b|\b3omr\w*\s*\d{1,3}\b|\b(?:i['’]?m|i am|j['’]?ai|j ai|عمري|عندي)\s*\d{1,3}\b/i;
+const genderPreferencePattern = /\b(?:woman|women|female|man|men|male|girl|boy|femme|homme|fille|garçon|lmra|l\s*mra|mra|raj[e]?l|l\s*raj[e]?l)\b|(?:للمرأة|للمرا|للنساء|لرجل|للراجل|للرجال)/i;
+
 function getNcapScore(car: Pick<Car, 'ncap_rating'>): number {
   const rating = String(car.ncap_rating || '').replace(',', '.');
   const match = rating.match(/(?:^|\s)([0-5](?:\.\d+)?)\s*(?:\/\s*5|(?:stars?|étoiles?))?/i);
@@ -152,6 +159,10 @@ const nonLatinIntentPattern = /(?:بغيت\s+(?:نشري|طوموبيل)|باغ�
 // Keep technical questions out of this path: they should remain chatbot-only.
 const budgetSearchPattern = /(?:\b(?:car|cars|vehicle|voiture|voitures|véhicule|tomobil|tomobila|سيارة|سيارات)\b[^\d]{0,24}|\b(?:budget|prix|price|have|j'ai|عندي)\b[^\d]{0,24})\d[\d\s.,]*(?:k|mad|dhs?|dh|dirhams?|درهم|دراهم|ألف)?\b/i;
 const brandRequestPattern = /\b(?:want|need|looking\s+for|search(?:ing)?\s+for|show\s+me|find\s+me|buy|acheter|cherche|recherche|je\s+veux|je\s+cherche|بغيت|باغي|كنقلب)\b/i;
+
+function hasProfilePreference(text: string): boolean {
+  return agePreferencePattern.test(text) || genderPreferencePattern.test(text);
+}
 
 function hasAny(text: string, patterns: RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(text));
@@ -398,7 +409,8 @@ export class FastApiRecommendationClient implements RecommendationClient {
     // Keep intent detection local. A second LLM request here made every
     // ordinary chat message wait for the slowest service in the stack.
     const isBrandPurchase = brandRequestPattern.test(message) && Boolean(extractBrandPreference(message));
-    return intentPattern.test(message) || nonLatinIntentPattern.test(message) || budgetSearchPattern.test(message) || isBrandPurchase;
+    return intentPattern.test(message) || nonLatinIntentPattern.test(message) || budgetSearchPattern.test(message)
+      || hasProfilePreference(message) || isBrandPurchase;
   }
 
   async getNextQuestion(history: ChatTurn[], remainingCars: Car[]): Promise<NextQuestion | null> {
@@ -464,6 +476,9 @@ export class FastApiRecommendationClient implements RecommendationClient {
     const bodyPreference = extractBodyPreference(answer);
     const fuelPreference = extractFuelPreference(answer);
     const answerBrand = extractBrandPreference(answer);
+    const profilePreferenceOnly = hasProfilePreference(answer)
+      && !budgetRange && !suitcaseRange && !bodyPreference && !fuelPreference
+      && !extractTransmissionPreference(answer) && !answerBrand;
     const requestedBrand = extractBrandPreference(
       history.filter((turn) => turn.role === 'user').map((turn) => turn.content).join(' '),
     );
@@ -473,6 +488,15 @@ export class FastApiRecommendationClient implements RecommendationClient {
     const scopedRemainingCars = requestedBrand
       ? remainingCars.filter((car) => normalizeBrandText(car.brand) === normalizeBrandText(requestedBrand.name))
       : remainingCars;
+
+    // There is deliberately no gender or age column in the catalogue. Keep
+    // these preferences as conversational context and continue asking useful
+    // objective questions; never turn them into a stereotype-based hard filter
+    // or let them produce an accidental zero-result recommendation.
+    if (profilePreferenceOnly) {
+      const profilePool = scopedRemainingCars.length ? scopedRemainingCars : await loadAllCatalogueVehicles();
+      return sortForSafety(profilePool, safetyRequested);
+    }
 
     // A requested brand is a hard constraint, not a semantic hint. Query the
     // catalogue directly so an unavailable brand produces zero results rather

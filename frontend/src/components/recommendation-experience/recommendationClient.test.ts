@@ -55,9 +55,29 @@ describe('FastApiRecommendationClient recommendation logic', () => {
     'best car for city', 'which vehicle fits me', 'recommend a hybrid car',
     'I need a manual vehicle', 'show me a sedan', 'most secure vehicle',
     'tonobile dyal 3a2ila', 'tomobile dyal l3a2ila',
+    'a car for 22 years old', 'voiture pour une femme de 30 ans',
+    'سيارة لرجل عمره 35 سنة', 'tomobil l wa7ed 3omro 22 3am',
   ])('detects recommendation intent for scenario: %s', async (message) => {
     const client = new FastApiRecommendationClient();
     await expect(client.detectRecommendationIntent(message)).resolves.toBe(true);
+  });
+
+  it('understands age and gender context without producing zero recommendations', async () => {
+    const client = new FastApiRecommendationClient();
+    const available = [car({ id: 'context-car' })];
+    mockGetVehicles.mockResolvedValue({ items: available, pages: 1 });
+
+    const result = await client.applyAnswer(
+      'a car for 22 years old',
+      [{ role: 'user', content: 'a car for 22 years old' }],
+      [],
+    );
+
+    expect(result).toEqual(available);
+    await expect(client.getNextQuestion(
+      [{ role: 'user', content: 'voiture pour une femme de 30 ans' }],
+      available,
+    )).resolves.toMatchObject({ question: expect.stringContaining('budget') });
   });
 
   it('keeps a French family-car request inside the one-question flow', async () => {

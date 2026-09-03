@@ -128,7 +128,12 @@ app.mount("/uploads/avatars", StaticFiles(directory="uploads/avatars"), name="av
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8000",
+        "https://wakala-jzdd.vercel.app",   
+    ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept", "X-Webhook-Signature", "X-Webhook-Timestamp"],
