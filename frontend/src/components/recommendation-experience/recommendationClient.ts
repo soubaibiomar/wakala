@@ -71,9 +71,26 @@ function extractBrandPreference(text: string): BrandPreference | null {
     .filter((candidate) => candidate.alias.length > 1)
     .sort((a, b) => b.alias.length - a.alias.length);
 
-  return candidates.find((candidate) => (
+  const knownBrand = candidates.find((candidate) => (
     new RegExp(`(?:^| )${escapeRegExp(candidate.alias)}(?:$| )`, 'i').test(normalizedText)
-  )) || null;
+  ));
+  if (knownBrand) return knownBrand;
+
+  // Keep an explicitly requested, unknown make strict as well. This prevents
+  // a request such as "I want a Lamborghini" from silently becoming a full
+  // catalogue recommendation when that make is not available locally.
+  const genericVehicleTerms = new Set([
+    'car', 'cars', 'vehicle', 'vehicles', 'suv', 'model', 'models',
+    'voiture', 'voitures', 'vehicule', 'vehicules', 'véhicule', 'véhicules',
+    'family', 'familiale', 'familial', 'electric', 'electrique', 'hybrid',
+    'hybride', 'diesel', 'essence', 'safe', 'safest', 'secure', 'hybride',
+  ]);
+  const unknownMatch = normalizedText.match(/(?:^| )(?:(?:i|je) )?(?:want|need|buy|looking for|show me|find me|cherche|recherche|acheter|veux|cherche) (?:a|an|the|une|un|une voiture|un vehicule|voiture|véhicule)? ?([a-z][a-z-]+)(?:$| )/i);
+  const unknownBrand = unknownMatch?.[1];
+  if (unknownBrand && !genericVehicleTerms.has(unknownBrand)) {
+    return { name: unknownBrand, apiValue: unknownBrand };
+  }
+  return null;
 }
 
 const safetyPreferencePattern = /\b(safe|safest|safety|security|secure|sécurité|securite|sûr|sûre|sûreté|crash|ncap|airbag|السلامة|آمن|أمان)\b/i;
@@ -127,8 +144,8 @@ export interface LanguageAwareRecommendationClient extends RecommendationClient 
 // Route only car-finding requests to the recommendation tool. Automotive
 // knowledge questions (engines, maintenance, gearboxes, safety, etc.) belong
 // to the chatbot expert and must not start a discovery questionnaire.
-const intentPattern = /\b(cherche|recherche|trouve|propose|recommande|choisir|choisis|conseil|acheter|achat|buy|recommend|suggest|choose|choosing|advice|looking\s+for|want\s+to\s+buy|want\s+(?:a\s+|an\s+|the\s+)?(?:[a-z-]+\s+){0,3}(?:car|suv|vehicle)|need\s+(?:a\s+)?(?:[a-z-]+\s+){0,3}(?:car|suv|vehicle)|find\s+me|show\s+me|help\s+me\s+choose|which\s+(?:car|suv|vehicle|model)|what\s+(?:car|suv|vehicle)\s+(?:should|can|fits)|best\s+(?:car|suv|vehicle)|safest\s+(?:car|suv|vehicle)|most\s+secure\s+(?:car|suv|vehicle)|(?:car|suv|vehicle)\s+for|family\s+car|family\s+vehicle|city\s+car|je\s+veux\s+acheter|je\s+veux\s+une\s+voiture|voiture\s+familiale?|véhicule\s+familial|voiture\s+pour|quel(?:le)?\s+voiture|quelle\s+voiture|meilleur(?:e)?\s+voiture|budget\s+(?:de|maximum|max)|mon\s+budget|bghit\s+(?:nchri|tomobil)|baghi\s+(?:nchri|tomobil)|kanqleb\s+3la|بغيت\s+(?:نشري|طوموبيل)|شراء|أبحث|أريد\s+(?:سيارة|طوموبيل)|ساعدني\s+(?:في\s+)?اختيار)\b/i;
-const nonLatinIntentPattern = /(?:بغيت\s+(?:نشري|طوموبيل)|باغي\s+(?:نشري|طوموبيل)|كنقلب\s+على|kanqleb\s+3la|شراء|أبحث|أريد\s+(?:سيارة|طوموبيل)|ساعدني\s+(?:في\s+)?اختيار)/i;
+const intentPattern = /\b(cherche|recherche|trouve|propose|recommande|choisir|choisis|conseil|acheter|achat|buy|recommend|suggest|choose|choosing|advice|looking\s+for|want\s+to\s+buy|want\s+(?:a\s+|an\s+|the\s+)?(?:[a-z-]+\s+){0,3}(?:car|suv|vehicle)|need\s+(?:a\s+)?(?:[a-z-]+\s+){0,3}(?:car|suv|vehicle)|find\s+me|show\s+me|help\s+me\s+choose|which\s+(?:car|suv|vehicle|model)|what\s+(?:car|suv|vehicle)\s+(?:should|can|fits)|best\s+(?:car|suv|vehicle)|safest\s+(?:car|suv|vehicle)|most\s+secure\s+(?:car|suv|vehicle)|(?:car|suv|vehicle)\s+for|family\s+car|family\s+vehicle|city\s+car|je\s+veux\s+acheter|je\s+veux\s+une\s+voiture|voiture\s+familiale?|véhicule\s+familial|voiture\s+pour|quel(?:le)?\s+voiture|quelle\s+voiture|meilleur(?:e)?\s+voiture|budget\s+(?:de|maximum|max)|mon\s+budget|bghit\s+(?:nchri|tomobil)|baghi\s+(?:nchri|tomobil)|kanqleb\s+3la|tomobil(?:e|a)?\s+dyal|tonobile\s+dyal|3a2ila|بغيت\s+(?:نشري|طوموبيل)|شراء|أبحث|أريد\s+(?:سيارة|طوموبيل)|ساعدني\s+(?:في\s+)?اختيار)\b/i;
+const nonLatinIntentPattern = /(?:بغيت\s+(?:نشري|طوموبيل)|باغي\s+(?:نشري|طوموبيل)|كنقلب\s+على|kanqleb\s+3la|tomobil(?:e|a)?\s+dyal|tonobile\s+dyal|3a2ila|شراء|أبحث|أريد\s+(?:سيارة|طوموبيل)|ساعدني\s+(?:في\s+)?اختيار)/i;
 
 // A direct request such as "car 300000dhs" is already a buying/search
 // request even when it does not contain an explicit verb like "recommend".
@@ -147,13 +164,13 @@ function profileText(history: ChatTurn[]): string {
 function dynamicQuestion(language: ChatLanguage, history: ChatTurn[], remainingCars: Car[]): NextQuestion | null {
   const text = profileText(history);
   const lastUserAnswer = [...history].reverse().find((turn) => turn.role === 'user')?.content || '';
-  const budgetQuestionAsked = history.some((turn) => turn.role === 'assistant' && /budget|prix|price|ميزانية/i.test(turn.content));
+  const budgetQuestionAsked = history.some((turn) => turn.role === 'assistant' && /budget|prix|price|ميزاني/i.test(turn.content));
   // Do not treat unrelated numeric answers (for example, "22 years old") as
   // a budget. Once the budget question has been asked, a bare number is a
   // valid answer because the user may enter just the MAD amount.
-  const hasExplicitBudget = /\b(?:budget|prix|price|mad|dhs?|dh|dirhams?|درهم|دراهم)\b/i.test(text)
+  const hasExplicitBudget = /\b(?:budget|prix|price|mad|dhs?|dh|dirhams?|درهم|دراهم)\b|ميزاني/i.test(text)
     || /\d[\d\s.,]*\s*(?:k|mad|dhs?|dirhams?|درهم|دراهم|ألف)\b/i.test(text)
-    || /(?:under|below|less than|moins de|jusqu['’à]|between|entre)\s*\d/i.test(text);
+    || /(?:under|below|less than|moins de|jusqu['’à]|between|entre|بين)\s*\d/i.test(text);
   const hasBudget = hasExplicitBudget
     || (budgetQuestionAsked && /\d/.test(lastUserAnswer));
   const hasUsage = hasAny(text, [/\b(city|ville|urban|highway|autoroute|motorway|mixed|mixte|daily|quotidien|commut|family trip|long trip|both|mostly city|mostly highway|city commute|highway driving)\b/i, /\b(مدينة|طريق|سفر|مخلط|يومي|العائلة|بجوج)\b/]);
@@ -182,11 +199,19 @@ function dynamicQuestion(language: ChatLanguage, history: ChatTurn[], remainingC
 
   if (!hasBudget) return {
     question: language === 'en' ? 'What is your maximum budget in MAD?' : language === 'ar' ? 'ما هي ميزانيتك القصوى بالدرهم؟' : language === 'darija' ? 'شحال هي الميزانية القصوى ديالك بالدرهم؟' : 'Quel est votre budget maximum en MAD ?',
-    options: [{ label: 'Under 200,000 MAD' }, { label: '200,000–300,000 MAD' }, { label: 'Over 300,000 MAD' }],
+    // Budget is always selected with the adaptive range bar. Suggestions are
+    // reserved for the non-numeric preferences that follow.
+    options: [],
   };
   if (!hasUsage) return {
     question: language === 'en' ? 'How will you mainly use the car: city driving, highways, or a mix of both?' : language === 'ar' ? 'كيف ستستعمل السيارة غالباً: داخل المدينة، في الطريق السيار، أم الاثنين؟' : language === 'darija' ? 'فين غادي تستعمل الطوموبيل أكثر: فالمدينة، فالطريق السيار، ولا بجوج؟' : 'Vous roulerez surtout en ville, sur autoroute ou dans les deux ?',
-    options: [{ label: language === 'en' ? 'Mostly city' : 'Ville' }, { label: language === 'en' ? 'Mostly highway' : 'Autoroute' }, { label: language === 'en' ? 'Both' : 'Mixte' }],
+    options: language === 'en'
+      ? [{ label: 'Mostly city' }, { label: 'Mostly highway' }, { label: 'Both' }]
+      : language === 'ar'
+        ? [{ label: 'داخل المدينة' }, { label: 'في الطريق السيار' }, { label: 'الاثنين' }]
+        : language === 'darija'
+          ? [{ label: 'فالمدينة' }, { label: 'فالطريق السيار' }, { label: 'بجوج' }]
+          : [{ label: 'Ville' }, { label: 'Autoroute' }, { label: 'Mixte' }],
   };
   const trunkValues = remainingCars.map((car) => car.trunk_volume_l).filter((value): value is number => Number.isFinite(value));
   const trunkMin = trunkValues.length ? Math.min(...trunkValues) : 0;
@@ -230,7 +255,7 @@ function dynamicQuestion(language: ChatLanguage, history: ChatTurn[], remainingC
     .filter((candidate) => candidate.diversity > 1 || candidate.key === 'securite');
   const selectedDimension = [...selectableDimensions].sort((a, b) => b.diversity - a.diversity || a.priority - b.priority)[0]?.key;
 
-  if (!hasSpace && (hasAny(text, [/\b(family|famille|children|kids|baby|poussette|trunk|boot|coffre|luggage|bagages)\b/i]) || remainingCars.some((car) => (car.seats || 5) >= 7) || hasWideTrunkRange)) return {
+  if (!hasSpace && (hasAny(text, [/\b(family|famille|children|kids|baby|poussette|trunk|boot|coffre|luggage|bagages|3a2ila)\b/i]) || remainingCars.some((car) => (car.seats || 5) >= 7) || hasWideTrunkRange)) return {
     question: language === 'en' ? 'How much luggage space do you need, in suitcases?' : language === 'ar' ? 'كم من مساحة الأمتعة تحتاج، بعدد الحقائب؟' : language === 'darija' ? 'شحال من بلاصة ديال الباݣاج كتحتاج، بعدد الفاليزات؟' : 'De combien de place pour les bagages avez-vous besoin, en valises ?',
     options: hasWideSuitcaseRange ? [] : suitcaseChoices(language, suitcaseMin, suitcaseMax),
     ...(hasWideSuitcaseRange ? { rangeBounds: { min: suitcaseMin, max: suitcaseMax, step: 1, label: language === 'en' ? 'Suitcase capacity' : language === 'ar' ? 'سعة الحقائب' : language === 'darija' ? 'سعة الفاليزات' : 'Capacité en valises' } } : {}),
@@ -238,7 +263,13 @@ function dynamicQuestion(language: ChatLanguage, history: ChatTurn[], remainingC
 
   if (selectedDimension === 'securite') return {
     question: language === 'en' ? 'How important is certified safety and a high NCAP rating to you?' : language === 'ar' ? 'ما مدى أهمية السلامة المعتمدة ونتيجة NCAP المرتفعة؟' : language === 'darija' ? 'شحال مهمة عندك السلامة ونتيجة NCAP؟' : 'Quelle importance accordez-vous à la sécurité certifiée et à une bonne note NCAP ?',
-    options: [{ label: language === 'en' ? 'Highest NCAP rating' : 'Note NCAP maximale' }, { label: language === 'en' ? 'Good safety' : 'Bonne sécurité' }],
+    options: language === 'en'
+      ? [{ label: 'Highest NCAP rating' }, { label: 'Good safety' }]
+      : language === 'ar'
+        ? [{ label: 'أعلى تقييم NCAP' }, { label: 'سلامة جيدة' }]
+        : language === 'darija'
+          ? [{ label: 'أعلى نقطة NCAP' }, { label: 'سلامة مزيانة' }]
+          : [{ label: 'Note NCAP maximale' }, { label: 'Bonne sécurité' }],
   };
   if (selectedDimension === 'cout_reel') return {
     question: language === 'en' ? 'Would you prioritize lower fuel consumption and running costs?' : language === 'ar' ? 'هل تفضل استهلاكاً وتكاليف تشغيل أقل؟' : language === 'darija' ? 'كتفضل الصرف ومصاريف الاستعمال يكونو قليلين؟' : 'Souhaitez-vous privilégier une consommation et des coûts d’usage réduits ?',
@@ -249,7 +280,13 @@ function dynamicQuestion(language: ChatLanguage, history: ChatTurn[], remainingC
   };
   if (selectedDimension === 'praticite_urbaine') return {
     question: language === 'en' ? 'For city driving, do you prefer a compact car that is easy to park?' : language === 'ar' ? 'للاستعمال داخل المدينة، هل تفضل سيارة صغيرة وسهلة الركن؟' : language === 'darija' ? 'فالمدينة، كتفضل طوموبيل صغيرة وساهلة فالباركينغ؟' : 'Pour la ville, préférez-vous une voiture compacte et facile à garer ?',
-    options: [{ label: language === 'en' ? 'Yes, compact' : 'Oui, compacte' }, { label: language === 'en' ? 'More space' : 'Plus d’espace' }],
+    options: language === 'en'
+      ? [{ label: 'Yes, compact' }, { label: 'More space' }]
+      : language === 'ar'
+        ? [{ label: 'نعم، سيارة صغيرة' }, { label: 'مساحة أكبر' }]
+        : language === 'darija'
+          ? [{ label: 'آه، صغيرة' }, { label: 'بلاصة أكثر' }]
+          : [{ label: 'Oui, compacte' }, { label: 'Plus d’espace' }],
   };
   if (selectedDimension === 'performance') return {
     question: language === 'en' ? 'Do you prioritize power and acceleration over lower running costs?' : language === 'ar' ? 'هل تفضل القوة والتسارع على انخفاض تكاليف التشغيل؟' : language === 'darija' ? 'كتفضل القوة والتسارع ولا مصاريف قليلة؟' : 'Privilégiez-vous la puissance et les reprises plutôt que les coûts d’usage réduits ?',
@@ -260,11 +297,23 @@ function dynamicQuestion(language: ChatLanguage, history: ChatTurn[], remainingC
   };
   if (selectedDimension === 'ecologie') return {
     question: language === 'en' ? 'Is hybrid or electric power a priority for you?' : language === 'ar' ? 'هل المحرك الهجين أو الكهربائي أولوية بالنسبة لك؟' : language === 'darija' ? 'واش الهجين ولا الكهربائي أولوية عندك؟' : 'La motorisation hybride ou électrique est-elle une priorité pour vous ?',
-    options: [{ label: language === 'en' ? 'Yes' : 'Oui' }, { label: language === 'en' ? 'No preference' : 'Pas de préférence' }],
+    options: language === 'en'
+      ? [{ label: 'Yes' }, { label: 'No preference' }]
+      : language === 'ar'
+        ? [{ label: 'نعم' }, { label: 'لا أفضلية' }]
+        : language === 'darija'
+          ? [{ label: 'آه' }, { label: 'ما عنديش تفضيل' }]
+          : [{ label: 'Oui' }, { label: 'Pas de préférence' }],
   };
   if (selectedDimension === 'motricite') return {
     question: language === 'en' ? 'Do you need four-wheel drive or genuine off-road capability?' : language === 'ar' ? 'هل تحتاج إلى دفع رباعي وقدرات حقيقية للطرق الوعرة؟' : language === 'darija' ? 'واش كتحتاج الدفع الرباعي ولا قدرات فالطرق الوعرة؟' : 'Avez-vous besoin d’une transmission intégrale ou de capacités tout-terrain ?',
-    options: [{ label: language === 'en' ? 'Yes' : 'Oui' }, { label: language === 'en' ? 'No preference' : 'Pas de préférence' }],
+    options: language === 'en'
+      ? [{ label: 'Yes' }, { label: 'No preference' }]
+      : language === 'ar'
+        ? [{ label: 'نعم' }, { label: 'لا أفضلية' }]
+        : language === 'darija'
+          ? [{ label: 'آه' }, { label: 'ما عنديش تفضيل' }]
+          : [{ label: 'Oui' }, { label: 'Pas de préférence' }],
   };
 
   if (!hasFuel && fuels.size > 1) return {
@@ -280,8 +329,14 @@ function dynamicQuestion(language: ChatLanguage, history: ChatTurn[], remainingC
     options: [...bodies].slice(0, 4).map((body) => ({ label: body, value: body })),
   };
   if (!hasPriority) return {
-    question: language === 'en' ? 'What matters most to you: economy, safety, comfort, or performance?' : language === 'ar' ? 'ما الأولوية الأهم لك: الاقتصاد، السلامة، الراحة أم الأداء؟' : language === 'darija' ? 'Achno l-awlawiya l-mohimma: l-iqtisad, salam, الراحة wla performance؟' : 'Quelle est votre priorité : économie, sécurité, confort ou performance ?',
-    options: [{ label: language === 'en' ? 'Economy' : 'Économie' }, { label: language === 'en' ? 'Safety' : 'Sécurité' }, { label: language === 'en' ? 'Comfort' : 'Confort' }, { label: language === 'en' ? 'Performance' : 'Performance' }],
+    question: language === 'en' ? 'What matters most to you: economy, safety, comfort, or performance?' : language === 'ar' ? 'ما الأولوية الأهم لك: الاقتصاد، السلامة، الراحة أم الأداء؟' : language === 'darija' ? 'شنو هي الحاجة اللي مهمة عندك أكثر: الاقتصاد، السلامة، الراحة ولا الأداء؟' : 'Quelle est votre priorité : économie, sécurité, confort ou performance ?',
+    options: language === 'en'
+      ? [{ label: 'Economy' }, { label: 'Safety' }, { label: 'Comfort' }, { label: 'Performance' }]
+      : language === 'ar'
+        ? [{ label: 'الاقتصاد' }, { label: 'السلامة' }, { label: 'الراحة' }, { label: 'الأداء' }]
+        : language === 'darija'
+          ? [{ label: 'الاقتصاد' }, { label: 'السلامة' }, { label: 'الراحة' }, { label: 'الأداء' }]
+          : [{ label: 'Économie' }, { label: 'Sécurité' }, { label: 'Confort' }, { label: 'Performance' }],
   };
   // All supported criteria are complete. The caller should present the final
   // shortlist instead of asking an empty, generic question.
@@ -302,7 +357,7 @@ function extractMaximumBudget(query: string): number | null {
 }
 
 function extractBudgetRange(query: string): { min: number; max: number } | null {
-  const match = query.match(/(?:between|entre)\s*(\d[\d\s.,]*)\s*(?:and|et|[-–])\s*(\d[\d\s.,]*)/i);
+  const match = query.match(/(?:between|entre|بين)\s*(\d[\d\s.,]*)\s*(?:and|et|و|[-–])\s*(\d[\d\s.,]*)/i);
   if (!match) return null;
   const min = Number(match[1].replace(/[\s.,]/g, ''));
   const max = Number(match[2].replace(/[\s.,]/g, ''));
@@ -352,7 +407,7 @@ export class FastApiRecommendationClient implements RecommendationClient {
     // Budget is the first qualification step. Keep it available even when a
     // semantic search has temporarily returned a very small candidate set;
     // otherwise the UI shows a budget prompt without its preference control.
-    if (/budget|prix|ميزانية/i.test(question.question)) {
+    if (/budget|prix|ميزاني/i.test(question.question)) {
       // Keep the preference bar tied to the candidates currently visible in
       // the catalogue. Zero-price records are placeholders and are ignored.
       let prices = remainingCars
@@ -398,8 +453,8 @@ export class FastApiRecommendationClient implements RecommendationClient {
     const previousAssistantQuestion = [...history]
       .reverse()
       .find((turn) => turn.role === 'assistant')?.content || '';
-    const budgetAnswerContext = /\b(budget|price|prix|mad|dhs?|dh|dirhams?|درهم|دراهم)\b/i.test(answer)
-      || /budget|prix|price|ميزانية/i.test(previousAssistantQuestion);
+    const budgetAnswerContext = /\b(budget|price|prix|mad|dhs?|dh|dirhams?|درهم|دراهم)\b|ميزاني/i.test(answer)
+      || /budget|prix|price|ميزاني/i.test(previousAssistantQuestion);
     // “between 3 and 13” is also used by the suitcase control. Require
     // budget context before interpreting a numeric range as a price range.
     const budgetRange = budgetAnswerContext ? extractBudgetRange(answer) : null;
@@ -407,6 +462,7 @@ export class FastApiRecommendationClient implements RecommendationClient {
     const suitcaseRange = extractSuitcaseRange(answer);
     const suitcaseMinimum = extractSuitcaseMinimum(answer);
     const bodyPreference = extractBodyPreference(answer);
+    const fuelPreference = extractFuelPreference(answer);
     const answerBrand = extractBrandPreference(answer);
     const requestedBrand = extractBrandPreference(
       history.filter((turn) => turn.role === 'user').map((turn) => turn.content).join(' '),
@@ -460,6 +516,21 @@ export class FastApiRecommendationClient implements RecommendationClient {
       return sortForSafety(response.items.slice(0, 3), safetyRequested);
     }
 
+    // A single answer can contain several hard filters (for example,
+    // "electric SUV"). Apply them together so the second criterion cannot
+    // accidentally reintroduce petrol or unrelated body styles.
+    if (bodyPreference && fuelPreference) {
+      const matches = scopedRemainingCars.filter((car) => (
+        normalizeBodyType(car.body_type) === bodyPreference && car.fuel_type === fuelPreference
+      ));
+      if (matches.length) return sortForSafety(matches, safetyRequested);
+      const catalogueMatches = applyConversationConstraints(
+        await loadAllCatalogueVehicles(),
+        history.filter((turn) => turn.role === 'user').map((turn) => turn.content).join(' '),
+      ).filter((car) => normalizeBodyType(car.body_type) === bodyPreference && car.fuel_type === fuelPreference);
+      return sortForSafety(catalogueMatches, safetyRequested);
+    }
+
     if (suitcaseRange) {
       const matchesCurrentPool = scopedRemainingCars.filter((car) => {
         const trunkLiters = Number(car.trunk_volume_l);
@@ -497,7 +568,6 @@ export class FastApiRecommendationClient implements RecommendationClient {
       return sortForSafety(catalogueMatches, safetyRequested);
     }
 
-    const fuelPreference = extractFuelPreference(answer);
     if (fuelPreference) {
       const currentMatches = scopedRemainingCars.filter((car) => car.fuel_type === fuelPreference);
       if (currentMatches.length) return sortForSafety(currentMatches, safetyRequested);

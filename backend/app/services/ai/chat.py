@@ -1158,7 +1158,7 @@ async def chat_stream(message: str, history: List[Dict[str, str]], language: Opt
                 "english": "I can help with your automotive question. Could you clarify what you need?",
                 "arabic": "يمكنني مساعدتك في سؤالك عن السيارات. هل يمكنك توضيح حاجتك؟",
                 "darija_ar": "نقدر نعاونك فالسؤال ديالك على السيارات. واش تقدر توضح ليا الحاجة ديالك؟",
-                "darija_lat": "N9der n3awnek f sou2al dyalek 3la tomobilat. Wach t9der توضح l7aja dyalek?",
+                "darija_lat": "N9der n3awnek f sou2al dyalek 3la tomobilat. Wach t9der twadda7 l7aja dyalek?",
             }.get(detected_lang, "I can help with your automotive question. Could you clarify what you need?")
         stream_source = _stream_openrouter_direct(raw_messages, fallback_text)
     else:

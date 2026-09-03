@@ -6,6 +6,7 @@ import { ChatBubbleIcon } from './ChatBubbleIcon';
 import { ChatPanel } from './ChatPanel';
 import { CarResultsPanel } from './CarResultsPanel';
 import { recommendationService } from '../../services/recommendationService';
+import { vehicleService } from '../../services/vehicleService';
 import { recommendationClient, type Car, type ChatLanguage, type ChatTurn, type RecommendationClient, type QuestionOption } from './recommendationClient';
 import './recommendation-experience.css';
 
@@ -88,7 +89,10 @@ export default function RecommendationExperience({ client = recommendationClient
 
   const send = useCallback(async (message: string, languageOverride?: ChatLanguage, userMessageAlreadyShown = false) => {
     const detectedLanguage = detectLanguage(message);
-    const activeLanguage = languageOverride || detectedLanguage || language;
+    // Once the user explicitly selected a language, keep the whole
+    // questionnaire in that language. Automatic detection is only a
+    // fallback for the initial free-text message.
+    const activeLanguage = languageOverride || language || detectedLanguage;
     if (!activeLanguage) return;
     if (activeLanguage !== language) {
       setLanguage(activeLanguage);
@@ -122,7 +126,25 @@ export default function RecommendationExperience({ client = recommendationClient
         setMode('widget');
       }
       const isContinuation = /\b(back to|continue|resume|go back|return to|recommendation|recommandation|recommenc|reprendre|retour|نكمل|نرجعو|نعاودو|التوصية)\b/i.test(message);
-      const filtered = isContinuation ? candidateCars : await client.applyAnswer(message, nextHistory, candidateCars);
+      let filtered = isContinuation ? candidateCars : await client.applyAnswer(message, nextHistory, candidateCars);
+      // Broad family/use-case requests are discovery starters, not catalogue
+      // filters. Preserve the initial catalogue when semantic matching cannot
+      // resolve Arabizi such as "tonobile dyal 3a2ila". Strict brand requests
+      // still remain strict and may return zero matches.
+      const isBroadDiscoveryRequest = /\b(family|famille|familiale|familial|children|kids|3a2ila|l3a2ila)\b|(?:tomobil|tomobile|tonobile)\s+dyal/i.test(message);
+      if (!filtered.length && !recommendationActive && isBroadDiscoveryRequest && !candidateCars.length && !initialCars.length) {
+        const catalogue = await vehicleService.getVehicles({ page: 1, page_size: 100 });
+        filtered = catalogue.items;
+      }
+      if (!filtered.length && !recommendationActive && isBroadDiscoveryRequest) {
+        const discoveryPool = candidateCars.length ? candidateCars : initialCars.length ? initialCars : cars;
+        if (discoveryPool.length) filtered = discoveryPool;
+      }
+      // A range control refines the current shortlist. If the pool is
+      // temporarily stale and returns no rows, keep the last valid pool so
+      // the questionnaire can continue instead of stopping here.
+      const isRangeAnswer = /(?:between|entre|بين)\s*\d[\d\s.,]*\s*(?:and|et|و|[-–])\s*\d[\d\s.,]*/i.test(message);
+      if (!filtered.length && isRangeAnswer && candidateCars.length) filtered = candidateCars;
       if (!filtered.length) {
         // Do not turn an empty filter result into a fake final recommendation.
         // Keep the last visible cars so the client can widen the range.
@@ -278,7 +300,8 @@ export default function RecommendationExperience({ client = recommendationClient
 }
 
 function detectLanguage(message: string): ChatLanguage | null {
-  if (/[؀-ۿ]/.test(message)) return /(?:شنو|بغيت|واش|tomobil|سيارة)/i.test(message) ? 'darija' : 'ar';
+  if (/[؀-ۿ]/.test(message)) return /(?:شنو|بغيت|واش|طوموبيل|ديال|فين)/i.test(message) ? 'darija' : 'ar';
+  if (/\b(?:tomobil|tomobile|tonobile|tomobila|dyal|3a2ila|bghit|baghi|ch7al|fin|wach|salam|labas)\b/i.test(message)) return 'darija';
   if (/\b(the|what|which|want|need|car|budget|recommend)\b/i.test(message)) return 'en';
   if (/[àâçéèêëîïôùûüÿœ]|\b(je|cherche|voiture|budget|bonjour|merci|quel)\b/i.test(message)) return 'fr';
   return null;

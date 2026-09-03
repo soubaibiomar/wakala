@@ -54,6 +54,7 @@ describe('FastApiRecommendationClient recommendation logic', () => {
     'أبحث عن سيارة', 'بغيت طوموبيل', 'budget 300000 MAD', 'car under 250000 dhs',
     'best car for city', 'which vehicle fits me', 'recommend a hybrid car',
     'I need a manual vehicle', 'show me a sedan', 'most secure vehicle',
+    'tonobile dyal 3a2ila', 'tomobile dyal l3a2ila',
   ])('detects recommendation intent for scenario: %s', async (message) => {
     const client = new FastApiRecommendationClient();
     await expect(client.detectRecommendationIntent(message)).resolves.toBe(true);
@@ -73,6 +74,42 @@ describe('FastApiRecommendationClient recommendation logic', () => {
     );
     expect(question?.question).toContain('budget');
     expect(question?.question).not.toContain('deux');
+  });
+
+  it('recognizes Latin Darija family-car requests', async () => {
+    const client = new FastApiRecommendationClient();
+    client.setLanguage('darija');
+    await expect(client.detectRecommendationIntent('tonobile dyal 3a2ila')).resolves.toBe(true);
+    const question = await client.getNextQuestion(
+      [{ role: 'user', content: 'tonobile dyal 3a2ila' }],
+      [car(), car({ body_type: 'monospace', trunk_volume_l: 700 })],
+    );
+    expect(question?.question).toContain('الميزانية');
+  });
+
+  it('advances after an Arabic budget range instead of repeating the budget control', async () => {
+    const client = new FastApiRecommendationClient();
+    client.setLanguage('darija');
+    const question = await client.getNextQuestion([
+      { role: 'user', content: 'tonobile dyal 3a2ila' },
+      { role: 'assistant', content: 'شحال هي الميزانية القصوى ديالك بالدرهم؟' },
+      { role: 'user', content: 'الميزانية بين 263900 و39578300 درهم' },
+      { role: 'assistant', content: 'فين غادي تستعمل الطوموبيل أكثر؟' },
+      { role: 'user', content: 'Ville' },
+    ], [car({ body_type: 'monospace', trunk_volume_l: 700 }), car({ body_type: 'suv', trunk_volume_l: 500 })]);
+    expect(question?.question).toContain('الفاليزات');
+    expect(question?.question).not.toContain('الميزانية');
+  });
+
+  it('localizes usage choices in Darija', async () => {
+    const client = new FastApiRecommendationClient();
+    client.setLanguage('darija');
+    const question = await client.getNextQuestion([
+      { role: 'user', content: 'tonobile dyal 3a2ila' },
+      { role: 'assistant', content: 'شحال هي الميزانية القصوى ديالك بالدرهم؟' },
+      { role: 'user', content: 'الميزانية بين 263900 و39578300 درهم' },
+    ], [car(), car({ body_type: 'monospace', trunk_volume_l: 700 })]);
+    expect(question?.options?.map((option) => option.label)).toEqual(['فالمدينة', 'فالطريق السيار', 'بجوج']);
   });
 
   it('keeps the requested brand when a later answer is applied', async () => {
@@ -105,6 +142,27 @@ describe('FastApiRecommendationClient recommendation logic', () => {
     mockGetVehicles.mockResolvedValue({ items: [suv], pages: 1 });
     const result = await client.applyAnswer('I want an SUV', history('I want an SUV'), [car({ body_type: 'berline' })]);
     expect(result.map((vehicle) => vehicle.id)).toEqual(['suv']);
+  });
+
+  it('applies body and fuel constraints together from one request', async () => {
+    const client = new FastApiRecommendationClient();
+    const electricSuv = car({ id: 'electric-suv', body_type: 'suv', fuel_type: 'electrique' });
+    const petrolSuv = car({ id: 'petrol-suv', body_type: 'suv', fuel_type: 'essence' });
+    const electricSedan = car({ id: 'electric-sedan', body_type: 'berline', fuel_type: 'electrique' });
+    const result = await client.applyAnswer(
+      'I need an electric SUV',
+      history('I need an electric SUV'),
+      [electricSuv, petrolSuv, electricSedan],
+    );
+    expect(result.map((vehicle) => vehicle.id)).toEqual(['electric-suv']);
+  });
+
+  it('keeps an unavailable explicitly requested brand from falling back to the catalogue', async () => {
+    mockGetVehicles.mockResolvedValue({ items: [], pages: 0 });
+    const client = new FastApiRecommendationClient();
+    const result = await client.applyAnswer('I want a Lamborghini', history('I want a Lamborghini'), [car()]);
+    expect(result).toEqual([]);
+    expect(mockGetVehicles).toHaveBeenCalledWith(expect.objectContaining({ brand: 'lamborghini' }));
   });
 
   it('reapplies all prior constraints when a later fuel answer misses the shortlist', async () => {

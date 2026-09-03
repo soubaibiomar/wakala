@@ -33,7 +33,7 @@ export function ChatPanel({ messages, options, busy = false, onSend, language, o
   const isMultiSelectQuestion = /what matters most|which priorities|quelle est votre priorit[ée]|priorit[ée].*(?:compte|important)|ما الأولوية|الأولوية|awlawiya/i.test(lastAssistantMessage);
   // Keep the fallback object stable. Recreating it on every render caused
   // the synchronization effect below to reset the sliders after every drag.
-  const effectiveRangeBounds = rangeBounds || (/budget|prix|ميزانية/i.test(lastAssistantMessage)
+  const effectiveRangeBounds = rangeBounds || (/budget|prix|ميزاني/i.test(lastAssistantMessage)
     ? FALLBACK_BUDGET_RANGE
     : null);
   const isBudgetRange = effectiveRangeBounds?.label === 'Budget catalogue';
@@ -235,7 +235,7 @@ function rangeLabel(label: string, language: ChatLanguage): string {
     en: 'Catalogue budget',
     fr: 'Budget catalogue',
     ar: 'ميزانية الكتالوج',
-    darija: 'Budget dyal catalogue',
+    darija: 'الميزانية ديال الكتالوج',
   }[language];
 }
 
