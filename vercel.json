@@ -1,23 +1,17 @@
-{
-    "services": {
-        "my_frontend": {
-            "root": "frontend",
-            "framework": "vite"
-        },
-        "my_backend": {
-            "root": "backend",
-            "entrypoint": "Dockerfile.vercel",
-            "runtime": "container"
-        }
+﻿{
+  "services": {
+    "my_frontend": {
+      "root": "frontend",
+      "framework": "vite"
     },
-    "rewrites": [
-        {
-            "source": "/api/(.*)",
-            "destination": "my_backend"
-        },
-        {
-            "source": "/((?!api/).*)",
-            "destination": "/index.html"
-        }
-    ]
+    "my_backend": {
+      "root": "backend",
+      "entrypoint": "Dockerfile.vercel",
+      "runtime": "container"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "my_backend" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
 }
