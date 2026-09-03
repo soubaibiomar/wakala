@@ -7,7 +7,6 @@
 #   → pip install torch --index-url https://download.pytorch.org/whl/cu121
 # ═══════════════════════════════════════════════════════════════
 
---extra-index-url https://download.pytorch.org/whl/cpu
 
 # ─── Core API ──────────────────────────────────────────────────
 # Framework web async, validation, docs OpenAPI automatique
@@ -15,8 +14,6 @@ fastapi==0.115.0
 uvicorn[standard]==0.30.6
 pydantic==2.9.1
 pydantic-settings==2.5.2
-python-multipart==0.0.9          # Upload fichiers (images véhicules)
-email-validator==2.2.0           # Validation EmailStr dans Pydantic
 
 # ─── Authentification ──────────────────────────────────────────
 # JWT + hashing mot de passe (bcrypt)
@@ -28,9 +25,6 @@ google-auth==2.35.0
 # ─── Base de données — PostgreSQL ─────────────────────────────
 # ORM async (asyncpg) + migrations (Alembic)
 sqlalchemy==2.0.35
-asyncpg==0.29.0                  # Driver async PostgreSQL
-alembic==1.13.2                  # Migrations de schéma
-psycopg2-binary           # Driver sync (pour Alembic / scripts)
 
 # ─── Base de données — Neo4j (graphe) ─────────────────────────
 # Client Python pour les requêtes Cypher + GDS
@@ -60,7 +54,6 @@ openpyxl
 # YOLO (ultralytics) pour la détection de dommages,
 # imagehash pour la détection de photos dupliquées
 ultralytics==8.2.100
-opencv-python-headless==4.10.0.84  # Headless = pas de dépendance GTK (serveur)
 imagehash==4.3.1
 Pillow==10.4.0
 
@@ -68,14 +61,11 @@ Pillow==10.4.0
 # transformers pour les modèles de sentiment pré-entraînés
 # torch CPU-only (voir commentaire en haut pour GPU)
 transformers==4.44.2
-torch==2.4.1+cpu                     # CPU-only par défaut
 
 # ─── Kafka — Streaming d'événements ──────────────────────────
 confluent-kafka==2.5.3
 
 # ─── Utilitaires ──────────────────────────────────────────────
-python-dotenv==1.0.1             # Chargement .env
-httpx==0.27.2                    # Client HTTP async (appels inter-services)
 fastapi-mail
 slowapi==0.1.9
 
