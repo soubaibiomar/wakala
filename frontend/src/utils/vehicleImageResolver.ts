@@ -16,12 +16,15 @@ export const CATALOGUE_IMAGE_FALLBACK = '/assets/car-side-fallback.svg';
 // covered-car placeholder. These are only used for Ferrari until the provider
 // has transparent studio coverage for these model names.
 const CURATED_MODEL_IMAGES: Record<string, string> = {
-  'ferrari|12cilindri': 'https://www.ferraribeverlyhills.com/_next/image?q=90&url=https%3A%2F%2Fvrrb-prod-s3.s3.us-west-1.amazonaws.com%2Fstrapi%2Fda580f22_0ff7_4070_9055_8d03b975b89d_b4c0709fc4.jpg&w=1080',
-  'ferrari|296 gtb': 'https://ph-classic-prod-images.s3.amazonaws.com/nimg/44336/06_296_GTB_side.jpg',
-  'ferrari|296 gts': 'https://web.imgstore.it/b402371cdb774f79ad0f4bb130ff2fc4.jpg',
-  'ferrari|purosangue': 'https://images.91wheels.com/assets/c_images/gallery/ferrari/purosangue/ferrari-purosangue-2-1767871315.png?q=40&w=800',
-  'ferrari|roma spider': 'https://www.latribuneauto.com/media/cache/resolve/vehicule_slider/photos/FERRARI/Roma%20Spider/FERR-ROMS-CA-23-146130/04%20Ferrari%20Roma%20Spider%202023%20Exterieur%20Profil.jpg',
-  'ferrari|sf90 spider': 'https://cdn.ferrari.com/cms/network/media/img/resize/5fad6036e1bd8b32c9642ff0-sf90_spider_design_intro_v00_mobile_out',
+  'ferrari|12cilindri': '/assets/cars/ferrari/12cilindri.webp',
+  'ferrari|296 gtb': '/assets/cars/ferrari/296-gtb.webp',
+  'ferrari|296 gts': '/assets/cars/ferrari/296-gts.webp',
+  'ferrari|purosangue': '/assets/cars/ferrari/purosangue.webp',
+  'ferrari|roma': '/assets/cars/ferrari/roma.webp',
+  'ferrari|roma spider': '/assets/cars/ferrari/roma-spider.webp',
+  'ferrari|sf90': '/assets/cars/ferrari/sf90.webp',
+  'ferrari|sf90 stradale': '/assets/cars/ferrari/sf90.webp',
+  'ferrari|sf90 spider': '/assets/cars/ferrari/sf90-spider.webp',
 };
 
 function isUsableImage(value: string): boolean {
