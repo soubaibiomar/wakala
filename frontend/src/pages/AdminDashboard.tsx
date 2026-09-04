@@ -169,6 +169,10 @@ export default function AdminDashboard() {
       setPwdFeedback({ message: 'Le mot de passe doit contenir au moins 8 caractères.', type: 'error' });
       return;
     }
+    if (!/[A-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      setPwdFeedback({ message: 'Le mot de passe doit contenir une majuscule et un chiffre.', type: 'error' });
+      return;
+    }
     if (newPassword !== confirmPassword) {
       setPwdFeedback({ message: 'Les nouveaux mots de passe ne correspondent pas.', type: 'error' });
       return;
@@ -176,8 +180,8 @@ export default function AdminDashboard() {
 
     try {
       setPwdLoading(true);
-      const res = await api.post('/api/auth/change-password', {
-        old_password: oldPassword,
+      const res = await api.post('/auth/change-password', {
+        current_password: oldPassword,
         new_password: newPassword,
         confirm_password: confirmPassword,
       });

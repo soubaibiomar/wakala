@@ -26,7 +26,6 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://localhost:5173",
         "https://wakala-jzdd.vercel.app",
-        "https://*.vercel.app",
     ]
 
     # ─── Emails (SMTP) ─────────────────────────────────────────
@@ -153,8 +152,10 @@ class Settings(BaseSettings):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        if not self.SECRET_KEY and self.APP_ENV != "development":
+            raise ValueError("SECRET_KEY must be configured outside development")
         if not self.SECRET_KEY:
-            self.SECRET_KEY = "wakala-build-placeholder-secret-key-32-chars-long"
+            self.SECRET_KEY = "wakala-development-only-secret-key"
         if self.APP_ENV != "development" and self.DEBUG:
             raise ValueError("DEBUG must be false outside development")
 

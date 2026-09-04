@@ -31,10 +31,7 @@ try:
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 except ImportError:
     bcrypt = None
-    class DummyCrypt:
-        def hash(self, secret: str) -> str: return "hashed_" + secret
-        def verify(self, secret: str, hash_val: str) -> bool: return hash_val == "hashed_" + secret
-    pwd_context = DummyCrypt()
+    pwd_context = None
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -45,12 +42,16 @@ from app.core.config import settings
 
 def hash_password(password: str) -> str:
     """Hash un mot de passe en clair."""
-    return pwd_context.hash(password[:72])
+    if pwd_context is None:
+        raise RuntimeError("Password hashing dependency is not installed")
+    return pwd_context.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Vérifie un mot de passe contre son hash."""
-    return pwd_context.verify(plain_password[:72], hashed_password)
+    if pwd_context is None:
+        raise RuntimeError("Password hashing dependency is not installed")
+    return pwd_context.verify(plain_password, hashed_password)
 
 
 # ─── JWT ───────────────────────────────────────────────────────

@@ -127,7 +127,7 @@ def test_feature_matrix():
     vehicles = make_vehicles()
     matrix = build_feature_matrix(vehicles)
     assert matrix.shape[0] == len(vehicles), "Toutes les lignes"
-    assert matrix.shape[1] == 7, "7 features"
+    assert matrix.shape[1] == 6, "6 features (sans kilométrage pour VN)"
     assert not np.any(np.isnan(matrix)), "Pas de NaN dans la matrice"
     assert np.allclose(matrix.mean(axis=0)[:3], 0, atol=1), "Features normalisées"
     print(f"  [OK] Matrice features : {matrix.shape}, centrée-réduite")

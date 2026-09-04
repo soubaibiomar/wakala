@@ -30,7 +30,7 @@ interface CarSectionProps {
   id: string;
   tag: string;
   title: string;
-  subtitle: string;
+  subtitle?: string;
   fetchParams: {
     page_size: number;
     sort_by: string;
@@ -113,9 +113,11 @@ function CarSection({ id, tag, title, subtitle, fetchParams, emptyMessage }: Car
           <div className="home-featured__header-left">
             <span className="home-featured__tag">{tag}</span>
             <h2 className="home-featured__title">{title}</h2>
-            <p className="home-featured__subtitle">
-              {subtitle}
-            </p>
+            {subtitle && (
+              <p className="home-featured__subtitle">
+                {subtitle}
+              </p>
+            )}
           </div>
           <Link to="/catalogue" className="home-featured__see-all">
             Voir tout →
@@ -171,124 +173,8 @@ function CarSection({ id, tag, title, subtitle, fetchParams, emptyMessage }: Car
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Features Section — Suite d'Outils Intelligents Wakala
-// ═══════════════════════════════════════════════════════════════
-
-function FeaturesSection() {
-  const tools = [
-    {
-      tag: 'Taxes & Douane',
-      title: 'Simulateur de Dédouanement',
-      desc: 'Calculez instantanément les droits de douane, la TVA et la taxe de luxe selon le barème officiel marocain en vigueur.',
-      badge: 'Barème 2026',
-      link: '/dedouanement',
-      linkText: 'Calculer mes frais',
-      accent: '#10b981',
-    },
-    {
-      tag: 'Conseil Intelligent',
-      title: 'Conseiller IA & Recherche Vocale',
-      desc: 'Exprimez vos critères en Darija ou Français. Notre IA diagnostique vos besoins et extrait les fiches certifiées du catalogue.',
-      badge: 'Multilingue • Sans Hallucination',
-      link: '/chat',
-      linkText: 'Consulter l’IA',
-      accent: '#f59e0b',
-    },
-    {
-      tag: 'Outil Décisionnel',
-      title: 'Comparateur Technique Multicritères',
-      desc: 'Mettez en concurrence jusqu’à 4 véhicules côte à côte : consommation réelle, volume de coffre, puissance fiscale et équipements.',
-      badge: '+30 Critères Comparés',
-      link: '/comparateur',
-      linkText: 'Lancer la comparaison',
-      accent: '#6366f1',
-    },
-    {
-      tag: 'Valorisation Marché',
-      title: 'Argus & Cote Prédictive',
-      desc: 'Évaluez la juste valeur marchande de chaque modèle grâce à notre algorithme basé sur l’historique des transactions réelles au Maroc.',
-      badge: 'Modèle Machine Learning',
-      link: '/catalogue',
-      linkText: 'Explorer les cotes',
-      accent: '#0ea5e9',
-    },
-    {
-      tag: 'Sécurité & Prévention',
-      title: 'Audit & Fiabilité Moteurs',
-      desc: 'Identifiez en amont les motorisations et boîtes de vitesses à risque (PureTech, TCe, THP, DSG sèches) avant votre achat.',
-      badge: 'Base Pannes Constructeurs',
-      link: '/chat?q=Quels+moteurs+eviter+en+occasion',
-      linkText: 'Vérifier un moteur',
-      accent: '#ec4899',
-    },
-    {
-      tag: 'Catalogue Officiel',
-      title: 'Fiches Techniques Constructeurs',
-      desc: 'Consultez les caractéristiques officielles, dimensions, finitions, motorisations et tarifs neufs de chaque marque au Maroc.',
-      badge: 'Toutes Marques Maroc',
-      link: '/marque',
-      linkText: 'Consulter les fiches',
-      accent: '#8b5cf6',
-    },
-  ];
-
-  return (
-    <section className="home-features" id="features">
-      <div className="home-features__inner">
-        <motion.div
-          className="home-features__header"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <span className="home-features__tag">Suite d'Outils Intelligents</span>
-          <h2 className="home-features__title">
-            L'Automobile en toute <span className="text-gradient">clarté</span>.
-          </h2>
-          <p className="home-features__subtitle">
-            Des outils interactifs exclusifs pour estimer, comparer, dédouaner et choisir votre véhicule en toute indépendance.
-          </p>
-        </motion.div>
-
-        <div className="home-features__grid">
-          {tools.map((tool, i) => (
-            <motion.div
-              key={tool.title}
-              className="home-features__card"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.45, delay: i * 0.07 }}
-              style={{ '--feature-accent': tool.accent } as React.CSSProperties}
-            >
-              <div className="home-features__card-top">
-                <span className="home-features__card-tag" style={{ color: tool.accent }}>
-                  {tool.tag}
-                </span>
-                <span className="home-features__card-badge">{tool.badge}</span>
-              </div>
-
-              <h3 className="home-features__card-title">{tool.title}</h3>
-              <p className="home-features__card-desc">{tool.desc}</p>
-
-              <div className="home-features__card-footer">
-                <Link to={tool.link} className="home-features__card-link" style={{ color: tool.accent }}>
-                  <span>{tool.linkText}</span>
-                  <span className="home-features__card-arrow">→</span>
-                </Link>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
 // Section Marques (Fiches Techniques)
 // ═══════════════════════════════════════════════════════════════
-
 
 function BrandsSection() {
   return (
@@ -341,11 +227,9 @@ export default function Home() {
         id="new-vehicles"
         tag="Neufs"
         title="Véhicules Neufs"
-        subtitle="Derniers modèles neufs ajoutés, analysés par notre IA."
         fetchParams={{ page_size: 15, sort_by: 'created_at', sort_order: 'desc' }}
         emptyMessage="Aucun véhicule neuf disponible."
       />
-      <FeaturesSection />
     </>
   );
 }

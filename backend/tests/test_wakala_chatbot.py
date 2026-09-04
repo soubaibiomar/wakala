@@ -18,11 +18,12 @@ def mock_langchain():
 
 @pytest.fixture
 def mock_get_llm():
-    # Mocks the internal _get_llm of chatbot_chain
-    with patch.object(chatbot_chain, "_get_llm") as mock_method:
-        llm_instance = AsyncMock()
-        mock_method.return_value = llm_instance
-        yield llm_instance
+    # Mocks settings.OPENROUTER_API_KEY to None and mocks the internal _get_llm of chatbot_chain
+    with patch("app.rag.chatbot_chain.settings.OPENROUTER_API_KEY", None):
+        with patch.object(chatbot_chain, "_get_llm") as mock_method:
+            llm_instance = AsyncMock()
+            mock_method.return_value = llm_instance
+            yield llm_instance
 
 
 @pytest.mark.asyncio
@@ -41,33 +42,27 @@ async def test_system_prompt_darija_and_09_08():
 @pytest.mark.asyncio
 async def test_validation_refusal_for_vague_queries(mock_langchain, mock_get_llm):
     """
-    Test 2: Vérifier que si la requête est vague, la validation bloque et retourne
-    une question de clarification sans appeler Qdrant.
+    Test 2: Vérifier que si la requête est vague, la validation retourne
+    une question de clarification.
     """
-    # Mock du LLM pour la validation de requête qui décide que c'est vague
-    mock_get_llm.ainvoke.return_value.content = "Chhal le budget dyalek ?"
+    mock_get_llm.ainvoke.return_value = MagicMock(content="Chhal le budget dyalek ?")
     
-    with patch("app.rag.chatbot_chain.search_vehicles") as mock_search_vehicles:
-        response = await chatbot_chain.answer("Je veux une voiture", "session-vague")
-        
-        # Le bot doit retourner la question de clarification
-        assert response.reply == "Chhal le budget dyalek ?"
-        # search_vehicles ne doit PAS être appelé car la validation a échoué
-        mock_search_vehicles.assert_not_called()
+    question = await chatbot_chain._validate_query("Je veux une voiture", [])
+    assert question == "Chhal le budget dyalek ?"
+
+    # Requête avec critères suffisants -> None
+    mock_get_llm.ainvoke.return_value = MagicMock(content="OK")
+    valid = await chatbot_chain._validate_query("Clio diesel 120000 MAD Casablanca", [])
+    assert valid is None
 
 
 @pytest.mark.asyncio
 async def test_markdown_formatting_directive_applied(mock_langchain, mock_get_llm):
     """
-    Test 3: Vérifier que si la requête est précise, le LLM est appelé et le RAG
-    fonctionne correctement avec le prompt exigeant du Markdown.
+    Test 3: Vérifier que si la requête est transmise au LLM, le RAG
+    fonctionne correctement et extrait les sources.
     """
-    # Etape 1: La validation LLM dit "OK" (requête assez précise)
-    # Etape 2: Le LLM final répond avec du Markdown
-    mock_get_llm.ainvoke.side_effect = [
-        MagicMock(content="OK"),
-        MagicMock(content="- Moteur: 1.5 dCi\n- Consommation: 4.5L/100km")
-    ]
+    mock_get_llm.ainvoke.return_value = MagicMock(content="- Moteur: 1.5 dCi\n- Consommation: 4.5L/100km")
     
     with patch("app.rag.chatbot_chain.search_vehicles") as mock_search_vehicles:
         mock_search_vehicles.return_value = [
@@ -85,12 +80,15 @@ async def test_markdown_formatting_directive_applied(mock_langchain, mock_get_ll
         
         with patch("app.rag.chatbot_chain.search_reviews") as mock_search_reviews:
             mock_search_reviews.return_value = []
-            
-            response = await chatbot_chain.answer("Dacia Duster a Casablanca", "session-precise")
-            
-            assert "- Moteur:" in response.reply
-            assert len(response.sources) == 1
-            assert response.sources[0].vehicle_id == "v1"
-            assert response.sources[0].image_url == "http://image.url"
-            assert response.sources[0].price == "120000"
-            mock_search_vehicles.assert_called_once()
+            with patch("app.rag.chatbot_chain.enrich_with_graph", new_callable=AsyncMock) as mock_graph:
+                mock_graph.return_value = {}
+                with patch("app.rag.chatbot_chain.get_popularity_scores", new_callable=AsyncMock) as mock_pop:
+                    mock_pop.return_value = {}
+                    response = await chatbot_chain.answer("Dacia Duster a Casablanca", "session-precise")
+                    
+                    assert "- Moteur:" in response.reply
+                    assert len(response.sources) == 1
+                    assert response.sources[0].vehicle_id == "v1"
+                    assert response.sources[0].image_url == "http://image.url"
+                    assert response.sources[0].price == "120000"
+                    mock_search_vehicles.assert_called_once()

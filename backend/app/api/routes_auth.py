@@ -292,7 +292,9 @@ async def reset_password(
     summary="Modifier le mot de passe du compte connecté",
     description="Permet à un utilisateur (admin, concessionnaire, acheteur) authentifié de changer son mot de passe.",
 )
+@limiter.limit("5/minute")
 async def change_password(
+    request: Request,
     payload: ChangePasswordRequest,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],

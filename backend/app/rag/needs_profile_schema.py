@@ -28,38 +28,49 @@ PRIORITY_ALIASES: dict[str, str] = {
     # Espace
     "espace": "espace", "space": "espace", "coffre": "espace", "luggage": "espace",
     "place": "espace", "grand": "espace", "spacieux": "espace", "famille": "espace",
-    "bagages": "espace",
+    "bagages": "espace", "مساحة": "espace", "صندوق": "espace", "أمتعة": "espace",
+    "حقائب": "espace", "فاليزات": "espace", "عائلة": "espace", "العائلة": "espace",
+    "واسعة": "espace", "كبير": "espace",
     # Sécurité
     "securite": "securite", "sécurité": "securite", "safety": "securite", "airbag": "securite",
     "ncap": "securite", "sûr": "securite", "safe": "securite",
     "enfant": "securite", "bebe": "securite", "bébé": "securite",
+    "سلامة": "securite", "السلامة": "securite", "أمان": "securite", "الامان": "securite",
+    "حماية": "securite", "أطفال": "securite",
     # Coût réel
     "economique": "cout_reel", "économique": "cout_reel",
     "consommation": "cout_reel", "consumption": "cout_reel", "conso": "cout_reel",
     "low consumption": "cout_reel", "fuel economy": "cout_reel",
     "pas cher à l'usage": "cout_reel", "entretien": "cout_reel",
-    "économie": "cout_reel",
+    "économie": "cout_reel", "استهلاك": "cout_reel", "توفير": "cout_reel",
+    "تكاليف": "cout_reel", "مصاريف": "cout_reel", "اقتصادية": "cout_reel", "صيانة": "cout_reel",
     # Prix d'accès
     "prix": "prix_acces", "budget": "prix_acces", "abordable": "prix_acces",
     "rkhis": "prix_acces", "pas cher": "prix_acces",
+    "ثمن": "prix_acces", "سعر": "prix_acces", "ميزانية": "prix_acces", "رخيص": "prix_acces", "مناسب": "prix_acces",
     # Praticité urbaine
     "ville": "praticite_urbaine", "city": "praticite_urbaine", "urban": "praticite_urbaine", "urbain": "praticite_urbaine",
     "parking": "praticite_urbaine", "manoeuvre": "praticite_urbaine",
     "mdina": "praticite_urbaine", "citadine": "praticite_urbaine",
+    "مدينة": "praticite_urbaine", "المدينة": "praticite_urbaine", "وسط المدينة": "praticite_urbaine",
+    "صغيرة": "praticite_urbaine", "سيتادين": "praticite_urbaine",
     # Performance
     "performance": "performance", "puissance": "performance",
     "rapide": "performance", "sportif": "performance",
     "chevaux": "performance", "moteur": "performance",
+    "قوة": "performance", "سرعة": "performance", "تسارع": "performance", "محرك": "performance", "رياضية": "performance",
     # Écologie
     "ecologique": "ecologie", "écologique": "ecologie",
     "electrique": "ecologie", "électrique": "ecologie", "electric": "ecologie",
     "vert": "ecologie", "co2": "ecologie", "hybride": "ecologie",
     "environnement": "ecologie",
+    "بيئة": "ecologie", "بيئي": "ecologie", "كهربائي": "ecologie", "كهربائية": "ecologie", "هجين": "ecologie",
     # Motricité
     "4x4": "motricite", "tout terrain": "motricite",
     "offroad": "motricite", "piste": "motricite",
     "montagne": "motricite", "boue": "motricite",
     "traction": "motricite",
+    "دفع رباعي": "motricite", "وعرة": "motricite", "طرق وعرة": "motricite", "جبلية": "motricite", "مسالك": "motricite",
 }
 
 

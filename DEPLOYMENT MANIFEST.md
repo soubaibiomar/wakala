@@ -325,29 +325,7 @@ qdrant_client = (
 
 Appliquer le même choix URL/API key à `backend/app/core/qdrant_client.py` et `backend/app/rag/vector_store.py`, qui utilisent encore actuellement `host/port` locaux.
 
-## 9. Suppression Ollama
-
-La recherche effectuée sur le dépôt ne trouve plus de référence `ollama` ou `qwen`. Les éléments retirés sont :
-
-- service et volume Ollama de `docker-compose.yml` ;
-- variables Ollama des fichiers `.env` ;
-- imports/clients Ollama et fallback local ;
-- ancien normalizer et test Ollama du data pipeline ;
-- références historiques dans la documentation et les diagrammes.
-
-Contrôle à exécuter :
-
-```bash
-rg -n -i "\\bollama\\b|qwen|OLLAMA_HOST|OLLAMA_MODEL|OLLAMA_BASE_URL" . \
-  -g '!**/.git/**' \
-  -g '!**/node_modules/**' \
-  -g '!**/__pycache__/**' \
-  -g '!**/dist/**'
-```
-
-Résultat attendu : aucune ligne.
-
-## 10. Smoke tests
+## 9. Smoke tests
 
 ### Backend
 
@@ -371,7 +349,7 @@ Réponse health attendue :
 5. Tester le catalogue puis le chatbot.
 6. Une erreur CORS signifie que l’origine Vercel manque dans `CORS_ORIGINS`.
 
-## 11. Script de préparation local
+## 10. Script de préparation local
 
 ```bash
 set -euo pipefail
@@ -389,14 +367,9 @@ npm run type-check
 npm run build
 
 cd ..
-if rg -n -i "\\bollama\\b|qwen|OLLAMA_HOST|OLLAMA_MODEL|OLLAMA_BASE_URL" . \
-  -g '!**/.git/**' -g '!**/node_modules/**' -g '!**/__pycache__/**' -g '!**/dist/**'; then
-  echo "Old local-LLM references found" >&2
-  exit 1
-fi
 ```
 
-## 12. Tableau final
+## 11. Tableau final
 
 | Service | Plateforme | URL / chaîne | Identifiants admin |
 |---|---|---|---|

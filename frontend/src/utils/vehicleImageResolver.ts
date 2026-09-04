@@ -53,12 +53,11 @@ function getCarwowSideImage(brand: string, model: string): string {
 
 export function resolveVehicleImage(brand?: string, model?: string, currentImages?: Array<{ file_path: string }>): string {
   // 1. Check if vehicle already has a valid scraped/uploaded image (excluding broken unsplash or generic placeholders)
-  if (currentImages && currentImages.length > 0 && currentImages[0]?.file_path) {
-    const p = currentImages[0].file_path;
-    const isGeneric = p.includes('placeholder') || p.includes('example.com');
-    if (!isGeneric && isUsableImage(p)) {
-      return p;
-    }
+  if (currentImages && currentImages.length > 0) {
+    const usableImage = currentImages
+      .map((image) => image?.file_path?.trim())
+      .find((p): p is string => Boolean(p) && !p.toLowerCase().includes('placeholder') && !p.toLowerCase().includes('example.com') && isUsableImage(p));
+    if (usableImage) return usableImage;
   }
 
   const b = (brand || '').toLowerCase().trim();

@@ -1,6 +1,6 @@
 # ═══════════════════════════════════════════════════════════════
 # Wakala — Docker Compose
-# Services: PostgreSQL, Neo4j, Qdrant, Kafka, Scraper Producer
+# Services: PostgreSQL, Qdrant, MailHog, backend, scheduler, frontend
 # ═══════════════════════════════════════════════════════════════
 
 services:
@@ -24,34 +24,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # ─── Neo4j ─────────────────────────────────────────────────
-  neo4j:
-    image: neo4j:5.23-community
-    container_name: wakala-neo4j
-    restart: unless-stopped
-    environment:
-      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-neo4j_secret_password}
-      # Keep the credential available to the container healthcheck as well.
-      # NEO4J_AUTH is only consumed during database initialization.
-      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-neo4j_secret_password}
-      NEO4J_PLUGINS: '["graph-data-science"]'
-      NEO4J_dbms_security_procedures_unrestricted: "gds.*"
-      NEO4J_dbms_security_procedures_allowlist: "gds.*"
-      NEO4J_server_config_strict__validation_enabled: "false"
-    ports:
-      - "127.0.0.1:7474:7474" # Browser
-      - "127.0.0.1:7687:7687" # Bolt
-    volumes:
-      - neo4j_data:/data
-      - neo4j_logs:/logs
-      - ./database/neo4j/cypher_scripts:/var/lib/neo4j/import
-    healthcheck:
-      test: [ "CMD-SHELL", "cypher-shell -u neo4j -p \"$${NEO4J_PASSWORD}\" 'RETURN 1' || exit 1" ]
-      interval: 15s
-      timeout: 20s
-      retries: 10
-      start_period: 120s
 
   # ─── Qdrant ────────────────────────────────────────────────
   qdrant:
@@ -78,69 +50,6 @@ services:
       - "127.0.0.1:1025:1025" # SMTP server
       - "127.0.0.1:8025:8025" # Web UI
 
-  # ─── Kafka (KRaft mode — modern, no Zookeeper needed) ───────
-  kafka:
-    image: confluentinc/cp-kafka:7.7.0
-    container_name: wakala-kafka
-    restart: unless-stopped
-    environment:
-      KAFKA_NODE_ID: 1
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
-      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092'
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_PROCESS_ROLES: 'broker,controller'
-      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
-      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:29093,PLAINTEXT_HOST://0.0.0.0:9092'
-      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
-      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
-      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-    ports:
-      - "127.0.0.1:9092:9092"
-    volumes:
-      - kafka_data:/var/lib/kafka/data
-    healthcheck:
-      # Check that the broker can answer Kafka requests, not only that its TCP
-      # listener is open. KRaft may expose the listener while it is still
-      # recovering its metadata and partitions.
-      test: [ "CMD-SHELL", "kafka-topics --bootstrap-server localhost:29092 --list >/dev/null 2>&1" ]
-      interval: 10s
-      timeout: 15s
-      retries: 30
-      start_period: 300s
-
-  # ─── Scraper Producer (sole Kafka source for listings.raw) ──────
-  scraper-producer:
-    build:
-      context: .
-      dockerfile: data_pipeline/Dockerfile
-    container_name: wakala-scraper-producer
-    restart: "on-failure:3"
-    depends_on:
-      kafka:
-        condition: service_healthy
-    environment:
-      KAFKA_BOOTSTRAP_SERVERS: "kafka:29092"
-      PYTHONPATH: "/app"
-      # Set SCRAPER_MODE=live for production, leave unset for dry-run (default)
-      SCRAPER_MODE: "live"
-      SCHEDULE_INTERVAL_HOURS: "1"
-      POSTGRES_HOST: "postgres"
-      POSTGRES_PORT: "5432"
-      POSTGRES_USER: ${POSTGRES_USER:-wakala_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
-      POSTGRES_DB: ${POSTGRES_DB:-wakala}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    volumes:
-      - .:/app
-    # Run the new unified scraper pipeline continuously
-    command: [ "python", "data_pipeline/scrapers/main.py", "--schedule", "--interval", "10" ]
-
   backend:
     build:
       context: ./backend
@@ -151,10 +60,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      kafka:
-        condition: service_healthy
-      neo4j:
-        condition: service_started
     env_file:
       - .env
     environment:
@@ -164,38 +69,12 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-wakala}
       POSTGRES_USER: ${POSTGRES_USER:-wakala_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
-      NEO4J_URI: bolt://neo4j:7687
-      NEO4J_USER: ${NEO4J_USER:-neo4j}
-      NEO4J_PASSWORD: ${NEO4J_PASSWORD:?NEO4J_PASSWORD must be set}
       QDRANT_HOST: qdrant
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
       - ./backend:/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-
-  backend-consumer:
-    build:
-      context: ./backend
-    container_name: wakala-backend-consumer
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
-    env_file:
-      - .env
-    environment:
-      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set in .env}
-      POSTGRES_USER: ${POSTGRES_USER:-wakala_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
-      POSTGRES_DB: ${POSTGRES_DB:-wakala}
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-    command: python consume_to_postgres.py
 
   backend-scheduler:
     build:
@@ -214,9 +93,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-wakala}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
-      NEO4J_URI: bolt://neo4j:7687
-      NEO4J_USER: ${NEO4J_USER:-neo4j}
-      NEO4J_PASSWORD: ${NEO4J_PASSWORD:?NEO4J_PASSWORD must be set}
       QDRANT_HOST: qdrant
     command: python scheduler.py
 
@@ -237,7 +113,4 @@ services:
 
 volumes:
   postgres_data:
-  neo4j_data:
-  neo4j_logs:
   qdrant_data:
-  kafka_data:

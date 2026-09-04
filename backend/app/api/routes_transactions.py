@@ -12,6 +12,7 @@ from app.models.transaction import Transaction
 from app.models.listing import Listing
 from app.models.user import User
 from app.core.security import get_current_user
+from app.core.limiter import limiter
 from app.services.payment_service import payment_service
 from app.ml.vision.ocr_validator import ocr_validator
 from pydantic import BaseModel
@@ -29,13 +30,15 @@ class TransactionResponse(BaseModel):
     payment_intent_id: str | None
 
 @router.post("/initiate", response_model=TransactionResponse)
+@limiter.limit("10/minute")
 async def initiate_transaction(
-    request: InitiateTransactionRequest,
+    request: Request,
+    payload: InitiateTransactionRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """Initie une transaction Escrow pour sécuriser les fonds."""
-    result = await db.execute(select(Listing).where(Listing.id == request.listing_id))
+    result = await db.execute(select(Listing).where(Listing.id == payload.listing_id))
     listing = result.scalar_one_or_none()
     if not listing:
         raise HTTPException(status_code=404, detail="Annonce introuvable.")
@@ -73,6 +76,7 @@ async def initiate_transaction(
     }
 
 @router.post("/{tx_id}/webhook-pay", summary="Simule le retour de paiement bancaire")
+@limiter.limit("30/minute")
 async def webhook_payment_success(
     tx_id: str, 
     request: Request, 
@@ -106,8 +110,10 @@ async def webhook_payment_success(
     return {"status": tx.status}
 
 @router.post("/{tx_id}/upload-document", summary="Upload et vérification IA de la carte grise")
+@limiter.limit("5/minute")
 async def upload_transfer_document(
     tx_id: str,
+    request: Request,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user) # Idéalement, seul l'acheteur ou le vendeur peut faire ça

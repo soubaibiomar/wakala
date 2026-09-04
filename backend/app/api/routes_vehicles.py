@@ -115,7 +115,17 @@ async def list_vehicles(
         elif "ds" == brand_lower:
             brand_aliases.extend(["DS", "Ds", "ds"])
             
-        brand_conditions = [Vehicle.brand.ilike(f"%{b}%") for b in set(brand_aliases)]
+        brand_conditions = []
+        for b in set(brand_aliases):
+            if len(b) <= 3:
+                brand_conditions.extend([
+                    Vehicle.brand.ilike(b),
+                    Vehicle.brand.ilike(f"{b} %"),
+                    Vehicle.brand.ilike(f"% {b}"),
+                    Vehicle.brand.ilike(f"% {b} %"),
+                ])
+            else:
+                brand_conditions.append(Vehicle.brand.ilike(f"%{b}%"))
         query = query.where(or_(*brand_conditions))
     if model:
         query = query.where(Vehicle.model.ilike(f"%{model}%"))
@@ -148,12 +158,16 @@ async def list_vehicles(
     if is_4x4 is not None:
         query = query.where(Vehicle.is_4x4 == is_4x4)
     
-    # The catalogue must expose only active, new 0 km vehicles. Deleted imports
-    # remain in the database for history, but must never leak into the showroom.
+    # The catalogue must expose only active, new 0 km vehicles with valid pricing.
+    # Corrupted scrape entries (e.g. #Avis) and unpriced duplicates (price = 0)
+    # are excluded from the showroom.
     query = query.where(
         Vehicle.status == "available",
         Vehicle.condition == "new",
         Vehicle.mileage == 0,
+        Vehicle.price > 0,
+        Vehicle.model != "#Avis",
+        Vehicle.brand != "#Avis",
     )
 
     if condition == 'occasion':

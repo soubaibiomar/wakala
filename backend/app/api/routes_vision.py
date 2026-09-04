@@ -35,7 +35,7 @@ async def analyze_image(request: Request, file: UploadFile = File(...), _user: U
     3. Passe l'image floutée dans YOLOv8 (ou heuristique).
     4. Retourne l'image traitée en base64 et le score de condition.
     """
-    if not file.content_type.startswith("image/"):
+    if not (file.content_type or "").startswith("image/"):
         raise HTTPException(status_code=400, detail="Le fichier doit être une image.")
 
     if file.size and file.size > 5 * 1024 * 1024:

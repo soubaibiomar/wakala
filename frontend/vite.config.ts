@@ -2,6 +2,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
+const backendTarget = process.env.BACKEND_URL || (process.platform === 'win32' ? 'http://localhost:8000' : 'http://backend:8000');
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -24,8 +26,19 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: backendTarget,
         changeOrigin: true,
+      },
+    },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          three: ['three', '@react-three/fiber', '@react-three/drei'],
+          markdown: ['react-markdown', 'remark-gfm'],
+        },
       },
     },
   },

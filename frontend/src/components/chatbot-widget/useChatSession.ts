@@ -20,15 +20,20 @@ export interface Message {
 }
 
 function generateId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
 function getOrCreateSessionId(): string {
   const key = 'wakala_chat_session';
-  let sid = localStorage.getItem(key);
+  // Chat identifiers and conversation content may contain personal data;
+  // keep them only for the current browser session, not persistent storage.
+  let sid = sessionStorage.getItem(key);
   if (!sid) {
     sid = 'chat-' + generateId();
-    localStorage.setItem(key, sid);
+    sessionStorage.setItem(key, sid);
   }
   return sid;
 }
@@ -37,7 +42,7 @@ const HISTORY_KEY = 'wakala_chat_history';
 
 export function useChatSession() {
   const [messages, setMessages] = useState<Message[]>(() => {
-    const saved = localStorage.getItem(HISTORY_KEY);
+    const saved = sessionStorage.getItem(HISTORY_KEY);
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -56,6 +61,9 @@ export function useChatSession() {
 
   // Load history from DB on mount
   useEffect(() => {
+    // Remove data written by older versions that used persistent storage.
+    localStorage.removeItem(HISTORY_KEY);
+    localStorage.removeItem('wakala_chat_session');
     const loadHistory = async () => {
       try {
         const history = await chatbotService.getChatHistory();
@@ -80,9 +88,9 @@ export function useChatSession() {
     loadHistory();
   }, []);
 
-  // Save messages to localStorage whenever they change
+  // Save only for the current tab/session; do not persist client chat data.
   useEffect(() => {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(messages));
+    sessionStorage.setItem(HISTORY_KEY, JSON.stringify(messages));
   }, [messages]);
 
   const cancelGeneration = useCallback(() => {
@@ -185,10 +193,12 @@ export function useChatSession() {
     cancelGeneration();
     setMessages([]);
     setError(null);
-    localStorage.removeItem(HISTORY_KEY);
+    sessionStorage.removeItem(HISTORY_KEY);
     const newSid = 'chat-' + generateId();
     sessionIdRef.current = newSid;
-    localStorage.setItem('wakala_chat_session', newSid);
+    sessionStorage.setItem('wakala_chat_session', newSid);
+    localStorage.removeItem(HISTORY_KEY);
+    localStorage.removeItem('wakala_chat_session');
   }, [cancelGeneration]);
 
   return {

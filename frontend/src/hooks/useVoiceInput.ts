@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { getSessionToken } from '../services/api';
 
 export type VoiceStatus = 'idle' | 'listening' | 'error' | 'processing';
 
@@ -134,10 +135,15 @@ export function useVoiceInput({
       formData.append('audio', audioBlob, 'recording.webm');
       formData.append('language', lang);
 
-      const apiBase = import.meta.env.VITE_API_URL || '';
-      const response = await fetch(`${apiBase}/api/voice/transcribe`, {
+      const configuredBase = import.meta.env.VITE_API_URL || '/api';
+      const endpoint = configuredBase.endsWith('/api')
+        ? `${configuredBase}/voice/transcribe`
+        : `${configuredBase}/api/voice/transcribe`;
+      const token = getSessionToken();
+      const response = await fetch(endpoint, {
         method: 'POST',
         body: formData,
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
 
       if (!response.ok) {
@@ -221,7 +227,7 @@ export function useVoiceInput({
   }, [status, startListening, stopListening]);
 
   return {
-    isSupported: true,
+    isSupported: typeof window !== 'undefined' && Boolean(SpeechRecognitionAPI || (typeof navigator !== 'undefined' && navigator?.mediaDevices?.getUserMedia)),
     status,
     interimTranscript,
     errorMessage,

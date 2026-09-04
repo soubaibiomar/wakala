@@ -60,6 +60,19 @@ function cleanVehicleTitle(brand: string, model: string): { brand: string; model
   return { brand: cleanBrand, model: cleanModel };
 }
 
+function cleanVersionTitle(brand: string, model: string, rawVersion?: string | null): string {
+  if (!rawVersion) return '';
+  let v = rawVersion.trim();
+  v = v.replace(/^nouveau\s+/i, '').replace(/^nouvelle\s+/i, '');
+  const esc = (s: string) => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  const brandRegex = new RegExp(`^${esc(brand.trim())}\\s*`, 'i');
+  v = v.replace(brandRegex, '');
+  const modelRegex = new RegExp(`^${esc(model.trim())}\\s*`, 'i');
+  v = v.replace(modelRegex, '');
+  v = v.replace(/^[-–:•\s]+/, '').trim();
+  return v || rawVersion.trim();
+}
+
 function getDisplayBodyType(brand: string, model: string, currentBodyType?: string): string {
   const labels: Record<string, string> = {
     pick_up: 'Pick-up',
@@ -149,6 +162,8 @@ export default function VehicleCard({
   // Clean brand and model for crisp presentation
   const { brand: cleanBrand, model: cleanModel } = cleanVehicleTitle(vehicle.brand, vehicle.model);
   const displayBodyType = getDisplayBodyType(cleanBrand, cleanModel, vehicle.body_type);
+  const displayVersion = !isGrouped ? cleanVersionTitle(cleanBrand, cleanModel, vehicle.version || bestVersionName) : '';
+
   // Format price securely
   const hasPrice = Number.isFinite(vehicle.price) && vehicle.price > 0;
   const formattedPrice = hasPrice ? new Intl.NumberFormat('fr-MA', {
@@ -157,14 +172,17 @@ export default function VehicleCard({
     maximumFractionDigits: 0,
   }).format(vehicle.price) : '';
 
-  // Determine if this vehicle is a new model or grouped model
-  const isNewOfficial = Boolean(
-    isGrouped || 
+  // Determine if this vehicle card represents a grouped model (starting price) or an individual finition
+  const isGroupedModel = Boolean(isGrouped);
+  const isNew = Boolean(
+    isGroupedModel || 
     vehicle.description?.toLowerCase().includes('véhicule neuf officiel') ||
     vehicle.mileage === 0
   );
 
-  const finalPrice = hasPrice ? (isNewOfficial ? `À partir de ${formattedPrice}` : formattedPrice) : '';
+  // If grouped model: "À partir de 475.000 MAD"
+  // If specific finition / vehicle: "475.000 MAD" (exact price!)
+  const finalPrice = hasPrice ? (isGroupedModel ? `À partir de ${formattedPrice}` : formattedPrice) : '';
   const shortId = vehicle.id.split('-')[0];
   const occSlug = `${cleanBrand.toLowerCase()}-${cleanModel.toLowerCase()}-${vehicle.year || '0'}-${shortId}`
     .replace(/[^a-z0-9\-]+/g, '-')
@@ -174,13 +192,13 @@ export default function VehicleCard({
   // Clean model name for clean URL
   const cleanModelForUrl = cleanModel.toLowerCase().trim();
   
-  const linkTo = isNewOfficial 
+  const linkTo = isGroupedModel 
     ? `/marque/${encodeURIComponent(cleanBrand.toLowerCase())}/${encodeURIComponent(cleanModelForUrl)}` 
     : `/vehicule/${occSlug}`;
 
   // New catalogue vehicles must use the curated side-profile image, never a
   // stored Wakala/listing photo. Used listings keep their own uploaded image.
-  const carImgSrc = isNewOfficial
+  const carImgSrc = isNew
     ? resolveVehicleImage(cleanBrand, cleanModel)
     : resolveVehicleImage(cleanBrand, cleanModel, vehicle.images);
 
@@ -196,8 +214,12 @@ export default function VehicleCard({
     }
   }
 
+  const cardTitle = isGroupedModel
+    ? `Voir les versions de ${cleanBrand} ${cleanModel}`
+    : `${cleanBrand} ${cleanModel}${displayVersion ? ` - ${displayVersion}` : ''}`;
+
   return (
-    <Link to={linkTo} className="vehicle-card" title={isNewOfficial ? `Voir les versions de ${cleanBrand} ${cleanModel}` : `${cleanBrand} ${cleanModel}`}>
+    <Link to={linkTo} className="vehicle-card" title={cardTitle}>
       
       {/* ─── Image Header ──────────────────────────────────────── */}
       <div className="vehicle-card__image" style={{ background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -266,6 +288,11 @@ export default function VehicleCard({
           <h3 className="vehicle-card__title">
             {cleanBrand} {cleanModel}
           </h3>
+          {displayVersion && (
+            <div className="vehicle-card__version" title={displayVersion}>
+              {displayVersion}
+            </div>
+          )}
         </div>
 
         {/* Fiche Technique Grid */}
@@ -325,7 +352,7 @@ export default function VehicleCard({
           </div>
 
           
-          {isNewOfficial && (
+          {isGroupedModel ? (
             <span style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -339,6 +366,21 @@ export default function VehicleCard({
               border: '1px solid rgba(174, 140, 78, 0.2)'
             }}>
               Voir les versions <ArrowRight size={13} />
+            </span>
+          ) : (
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              color: 'var(--color-accent-gold, #AE8C4E)',
+              background: 'rgba(174, 140, 78, 0.08)',
+              padding: '4px 10px',
+              borderRadius: '999px',
+              border: '1px solid rgba(174, 140, 78, 0.2)'
+            }}>
+              Voir la version <ArrowRight size={13} />
             </span>
           )}
         </div>

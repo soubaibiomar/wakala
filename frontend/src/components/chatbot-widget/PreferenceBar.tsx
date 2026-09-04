@@ -54,24 +54,28 @@ export function getSuitcasesText(liters: number, lang: SupportedLanguage = 'fr')
 }
 
 function resolveLang(explicitLang?: string, text?: string): SupportedLanguage {
-  if (explicitLang) {
-    const l = explicitLang.toLowerCase();
-    if (l === 'darija' || l === 'darija_ar' || l === 'darija_lat') return 'darija';
-    if (l === 'ar' || l === 'arabic') return 'ar';
-    if (l === 'en' || l === 'english') return 'en';
-    if (l === 'fr' || l === 'french') return 'fr';
-  }
-
   if (text) {
     const hasArabicScript = /[\u0600-\u06FF]/.test(text);
     if (hasArabicScript) {
       const isDarija = /(?:ديال|ديالي|طوموبيل|شحال|فاليز|مزيان|بغيت|كاين|مخلط)/i.test(text);
       return isDarija ? 'darija' : 'ar';
     }
-    const isEnglish = /(?:budget|what|which|fuel|transmission|driving|trunk|suitcases)/i.test(text);
-    if (isEnglish && !/(?:quel|votre|boîte|voiture|carburant)/i.test(text)) {
+    const isEnglish = /(?:budget|what|which|fuel|transmission|driving|trunk|suitcases|prefer|vehicle|looking for|car|cars)/i.test(text);
+    const isFrench = /(?:quel|votre|boîte|voiture|carburant|véhicule|recherchez|souhaitez)/i.test(text);
+    if (isEnglish && !isFrench) {
       return 'en';
     }
+    if (isFrench && !isEnglish) {
+      return 'fr';
+    }
+  }
+
+  if (explicitLang) {
+    const l = explicitLang.toLowerCase();
+    if (l === 'darija' || l === 'darija_ar' || l === 'darija_lat') return 'darija';
+    if (l === 'ar' || l === 'arabic') return 'ar';
+    if (l === 'en' || l === 'english') return 'en';
+    if (l === 'fr' || l === 'french') return 'fr';
   }
 
   return 'fr';
@@ -268,18 +272,19 @@ const PREFERENCE_CATEGORIES: PreferenceCategoryDef[] = [
     type: 'pills',
     name: 'Format',
     questionPatterns: [
-      /quelle carrosserie/i,
-      /quel format/i,
+      /carrosserie/i,
+      /format/i,
+      /body\s*(?:type|style)/i,
       /quel type de véhicule/i,
       /citadine, suv ou berline/i,
       /suv ou berline/i,
+      /suv.*(?:berline|sedan|citadine|hatchback)/i,
       /taille du véhicule/i,
       /نوع الهيكل/i,
       /فئة السيارة/i,
       /شكل السيارة/i,
       /سيتادين.*suv/i,
       /دفع رباعي.*سيدان/i,
-      /body style/i,
       /suv, sedan or hatchback/i,
       /preferred body/i,
       /vehicle style/i,
@@ -424,6 +429,33 @@ export default function PreferenceBar({
       const isMatchingQuestion = category.questionPatterns.some((pattern) => pattern.test(cleanMsg));
       if (isMatchingQuestion) {
         return category;
+      }
+    }
+
+    // 4. Fallback générique: Extraire les options listées entre parenthèses, ex: "(Diesel, Petrol, or Hybrid)"
+    const parenMatch = cleanMsg.match(/\(([^)]+)\)\s*[?؟]?$/);
+    if (parenMatch) {
+      const rawItems = parenMatch[1].split(/,\s*(?:or|ou|and|et|أم|أو|ولا)?\s*|\s+(?:or|ou|أم|أو|ولا)\s+/i);
+      const extracted = rawItems
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0 && item.length < 35 && !/^(?:etc|ex|e\.g\.)/i.test(item));
+      if (extracted.length >= 2) {
+        const options: PreferenceOption[] = extracted.map((item) => ({
+          label: item.charAt(0).toUpperCase() + item.slice(1),
+          value: item,
+        }));
+        return {
+          id: 'dynamic_paren_choices',
+          type: 'pills',
+          name: 'Choix',
+          questionPatterns: [],
+          localizedOptions: {
+            fr: options,
+            en: options,
+            ar: options,
+            darija: options,
+          },
+        };
       }
     }
 

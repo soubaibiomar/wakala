@@ -2,9 +2,9 @@ import { FormEvent, useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { RefreshCw } from 'lucide-react';
-import { LANGUAGE_OPTIONS, type ChatLanguage, type ChatTurn, type QuestionOption } from './recommendationClient';
+import { LANGUAGE_OPTIONS, type ChatLanguage, type ChatTurn, type QuestionOption, extractBrandPreference, getBrandFallbackBudgetRange } from './recommendationClient';
 
-const FALLBACK_BUDGET_RANGE = { min: 89000, max: 3278000, step: 5000, label: 'Budget catalogue' };
+const FALLBACK_BUDGET_RANGE = { min: 80000, max: 600000, step: 5000, label: 'Budget recommandé' };
 
 interface ChatPanelProps {
   messages: ChatTurn[];
@@ -29,14 +29,28 @@ export function ChatPanel({ messages, options, busy = false, onSend, language, o
   const [budgetMax, setBudgetMax] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const endRef = useRef<HTMLDivElement>(null);
-  const lastAssistantMessage = [...messages].reverse().find((message) => message.role === 'assistant')?.content || '';
-  const isMultiSelectQuestion = /what matters most|which priorities|quelle est votre priorit[ée]|priorit[ée].*(?:compte|important)|ما الأولوية|الأولوية|awlawiya/i.test(lastAssistantMessage);
+  const lastAssistantIndex = messages.map((m) => m.role).lastIndexOf('assistant');
+  const lastAssistantMessage = lastAssistantIndex >= 0 ? messages[lastAssistantIndex].content : '';
+  const hasUserRepliedToLastAssistant = lastAssistantIndex >= 0 && messages.slice(lastAssistantIndex + 1).some((m) => m.role === 'user');
+  const isMultiSelectQuestion = /what matters most|which priorities|top priority|quelle est votre priorit[ée]|priorit[ée].*(?:compte|important)|ما الأولوية|الأولوية|أولوية|أولويتكم|awlawiya/i.test(lastAssistantMessage);
+  const mentionedBrand = extractBrandPreference(messages.map((m) => m.content).join(' '));
+  const fallbackBounds = mentionedBrand ? getBrandFallbackBudgetRange(mentionedBrand.name) : FALLBACK_BUDGET_RANGE;
+  const isDirectBudgetQuestion = (
+    /(?:quel(?:le)?\s+est\s+votre\s+budget|what\s+is\s+your\s+(?:maximum\s+)?budget|شحال\s+هي\s+الميزانية|ما\s+هي\s+ميزانيتك)/i.test(lastAssistantMessage)
+    || (/budget\s+(?:maximum|recommand[ée]|d['’]investissement)/i.test(lastAssistantMessage) && /\?|؟/.test(lastAssistantMessage))
+  ) && lastAssistantMessage.length < 250;
+
   // Keep the fallback object stable. Recreating it on every render caused
   // the synchronization effect below to reset the sliders after every drag.
-  const effectiveRangeBounds = rangeBounds || (/budget|prix|ميزاني/i.test(lastAssistantMessage)
-    ? FALLBACK_BUDGET_RANGE
-    : null);
-  const isBudgetRange = effectiveRangeBounds?.label === 'Budget catalogue';
+  // Respect rangeBounds when passed (including null). Only use fallbackBounds if
+  // rangeBounds is undefined, the user hasn't already replied, no options exist,
+  // and the assistant explicitly asked a direct budget qualification question.
+  const effectiveRangeBounds = rangeBounds !== undefined
+    ? rangeBounds
+    : (!hasUserRepliedToLastAssistant && options.length === 0 && isDirectBudgetQuestion
+      ? fallbackBounds
+      : null);
+  const isBudgetRange = Boolean(effectiveRangeBounds && /budget|ميزاني/i.test(effectiveRangeBounds.label));
   const isSuitcaseRange = Boolean(effectiveRangeBounds && /suitcase|valise|حقائب|فاليزات/i.test(effectiveRangeBounds.label));
   const rangeUnit = isBudgetRange
     ? 'MAD'

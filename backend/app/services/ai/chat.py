@@ -58,10 +58,10 @@ async def _stream_openrouter_direct(messages_payload: list[dict], fallback_text:
     should_fallback = False
     
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(8.0, connect=4.0)) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(14.0, connect=4.0)) as client:
             async with client.stream("POST", url, json=payload, headers=headers) as response:
                 if response.status_code != 200:
-                    print(f"[OpenRouter Status {response.status_code}] Cloud provider request failed")
+                    print(f"[OpenRouter Status {response.status_code}] Primary LLM request failed, evaluating fallback")
                     should_fallback = True
                 else:
                     async for line in response.aiter_lines():
@@ -78,11 +78,47 @@ async def _stream_openrouter_direct(messages_payload: list[dict], fallback_text:
                             except Exception:
                                 pass
     except Exception as e:
-        print(f"[OpenRouter Stream Exception: {e}] Cloud provider request failed")
+        print(f"[OpenRouter Stream Exception: {e}] Cloud provider request failed, evaluating fallback")
         should_fallback = True
 
     if should_fallback or not yielded_any:
-        yield fallback_text
+        # Fallback to secondary provider (Groq) if configured
+        groq_key = getattr(settings, "GROQ_API_KEY", None)
+        if groq_key:
+            print("[LLM Resilience] Activating secondary LLM provider (Groq)")
+            groq_headers = {
+                "Authorization": f"Bearer {groq_key}",
+                "Content-Type": "application/json",
+            }
+            groq_payload = {
+                "model": getattr(settings, "GROQ_MODEL", "llama-3.3-70b-versatile"),
+                "messages": messages_payload,
+                "stream": True,
+                "temperature": 0.2,
+                "max_tokens": 360,
+            }
+            try:
+                async with httpx.AsyncClient(timeout=httpx.Timeout(5.0, connect=2.5)) as groq_client:
+                    async with groq_client.stream("POST", "https://api.groq.com/openai/v1/chat/completions", json=groq_payload, headers=groq_headers) as groq_res:
+                        if groq_res.status_code == 200:
+                            async for line in groq_res.aiter_lines():
+                                if line.startswith("data: "):
+                                    data_str = line[6:].strip()
+                                    if data_str == "[DONE]":
+                                        break
+                                    try:
+                                        data = json.loads(data_str)
+                                        delta = data["choices"][0].get("delta", {}).get("content", "")
+                                        if delta:
+                                            yielded_any = True
+                                            yield delta
+                                    except Exception:
+                                        pass
+            except Exception as ge:
+                print(f"[Groq Secondary Provider Exception: {ge}]")
+
+        if not yielded_any:
+            yield fallback_text
 
 
 def get_llm():
@@ -94,14 +130,24 @@ def get_llm():
             api_key=settings.OPENROUTER_API_KEY,
             temperature=0.2,
             max_tokens=450,
-            request_timeout=30.0,
-            timeout=30.0,
+            request_timeout=15.0,
+            timeout=15.0,
             default_headers={
                 "HTTP-Referer": "https://wakala.ma",
                 "X-Title": "Wakala Platform",
             }
         )
-    raise RuntimeError("OPENROUTER_API_KEY is not configured")
+    if getattr(settings, "GROQ_API_KEY", None):
+        return ChatOpenAI(
+            base_url="https://api.groq.com/openai/v1",
+            model=getattr(settings, "GROQ_MODEL", "llama-3.3-70b-versatile"),
+            api_key=settings.GROQ_API_KEY,
+            temperature=0.2,
+            max_tokens=450,
+            request_timeout=15.0,
+            timeout=15.0,
+        )
+    raise RuntimeError("Neither OPENROUTER_API_KEY nor GROQ_API_KEY is configured")
 
 EMOJI_PATTERN = re.compile(
     r'[\U00010000-\U0010ffff]|[\u2600-\u27BF]|[\u2300-\u23FF]|[\u2B50\u2B55\u2934\u2935\u25AA\u25AB\u25FE\u25FD\u25FB\u25FC\u25B6\u25C0\u3030\u303D\u3297\u3299\uFE0F]'
@@ -403,13 +449,23 @@ def is_specific_search_request(message: str, max_price: Optional[int], history: 
         or re.search(r'\b\d+\s*(?:k|000|mad|dh|dirham|درهم|mlyon|melyon|million|مليون|الف|ألف)\b', all_user_text)
     )
     
-    fuel_keywords = ['diesel', 'essence', 'hybride', 'hybrid', 'electrique', 'électrique', 'petrol', 'gasoline', 'مازوط', 'بنزين', 'هجين', 'ايبريد', 'كهربائي', 'mazot', 'lisans']
+    fuel_keywords = [
+        'diesel', 'essence', 'hybride', 'hybrid', 'electrique', 'électrique', 'petrol', 'gasoline',
+        'مازوط', 'مازوت', 'بنزين', 'هجين', 'ايبريد', 'إيبريد', 'كهربائي', 'كهربائية', 'تريسينتي', 'mazot', 'lisans', 'ليصانص', 'بترول'
+    ]
     has_fuel = any(k in all_user_text for k in fuel_keywords)
     
-    trans_keywords = ['automatique', 'automatic', 'manuelle', 'manual', 'bva', 'bvm', 'أوتوماتيك', 'اوتوماتيك', 'يدوي', 'مانييل']
+    trans_keywords = [
+        'automatique', 'automatic', 'manuelle', 'manual', 'bva', 'bvm',
+        'أوتوماتيك', 'اوتوماتيك', 'يدوي', 'مانييل', 'بواط'
+    ]
     has_transmission = any(k in all_user_text for k in trans_keywords)
     
-    body_keywords = ['suv', 'crossover', 'citadine', 'berline', 'sedan', 'hatchback', 'break', 'compacte', '7 places', 'familiale', 'سيتادين', 'سيدان', 'دفع رباعي']
+    body_keywords = [
+        'suv', 'crossover', 'citadine', 'berline', 'sedan', 'hatchback', 'break', 'compacte', '7 places', 'familiale',
+        'coupe', 'coupé', 'monospace', 'pick-up', 'pickup',
+        'سيتادين', 'سيدان', 'دفع رباعي', 'صغيرة', 'طوموبيل صغيرة', 'مونوسباس', 'كوبيه', 'كوبي', 'بيك اب', 'بيك أب'
+    ]
     has_body = any(k in all_user_text for k in body_keywords)
     
     explicit_rec_triggers = [
@@ -802,6 +858,45 @@ def fast_classify_intent(message: str) -> Optional[Dict[str, Any]]:
     if any(kw in msg for kw in maint_kw):
         return {"intent": "maintenance_check", "max_price": None, "search_query": None}
 
+    # A make/model mentioned in an informational question (for example
+    # "what is Dacia?" or "شنو هي داسيا؟") must not be mistaken for a vehicle
+    # search merely because the make is present in search_triggers below.
+    informative_prefixes = [
+        'what is', "what's", 'what does', 'who is', 'tell me about', 'do you know',
+        'give me info', 'give me information', 'explain', 'meaning of',
+        'how reliable', 'does ', 'compare ', 'difference between', 'why ',
+        'how ', 'when ', 'where ', 'how much', "qu'est-ce que", "c'est quoi",
+        'qui est', 'parle-moi de', 'parle moi de', 'informations sur', 'infos sur',
+        'je veux des informations sur', 'je veux des infos sur',
+        'renseigne-moi', 'renseigne moi', 'est-ce que', 'quelle est la différence',
+        'pourquoi ', 'comment ', 'quand ', 'où ', 'combien coûte', 'combien coute',
+        'ما هي', 'ما هو', 'من هي', 'من هو', 'معلومات عن', 'أخبرني عن', 'هل ',
+        'شنو هي', 'شنو هو', 'اش هي', 'اش هو', 'شكون هي', 'شكون هو', 'شنو كتعني',
+        'علاش ', 'كيفاش ', 'كيف ', 'الفرق بين', 'قارن ', 'بشحال', 'chno hiya',
+        'chno howa', 'gol lia 3la', '3tini ma3lomat', 'wach ', '3lach ',
+        'kifach ', 'chno kay3ni', 'far9 bin', 'qaren '
+    ]
+    recommendation_markers = [
+        'recommend', 'suggest', 'choose', 'find', 'show me',
+        'buy', 'best', 'safest', 'help me choose', 'which car', 'recommande',
+        'propose', 'choisir', 'cherche', 'acheter', 'meilleur',
+        'meilleure', 'aide-moi', 'aide moi', 'quelle voiture',
+        'أبحث', 'أفضل', 'أنسب', 'اختيار', 'ساعدني', 'شنو نشري',
+        'نشري', 'كنقلب', '3awni'
+    ]
+    informative_markers = [
+        'information about', 'info about', 'info on', 'informations sur',
+        'des informations sur', 'help me understand', 'aide-moi à comprendre',
+        'price of', 'prix de', ' vs ', ' versus ', ' contre ', 'worth it',
+        'available in', 'disponible au', 'reliable', 'fiable', 'معلومات عن',
+        'معلومات على', 'معلومة على', 'بغيت معلومات', 'بغيت نعرف', 'ثمن',
+        'سعر', 'ma3lomat 3la', 'bghit ma3lomat', 'bghit n3ref 3la'
+    ]
+    informative_signal = any(msg.startswith(prefix) for prefix in informative_prefixes) or any(marker in msg for marker in informative_markers)
+    if informative_signal and not any(marker in msg for marker in recommendation_markers):
+        clean_q = normalize_multilingual_query_terms(message)
+        return {"intent": "general_advice", "max_price": None, "search_query": clean_q}
+
     greetings = [
         'bonjour', 'salut', 'bonsoir', 'hello', 'hi', 'hey', 'good morning', 'good afternoon',
         'salam', 'slm', 'salamo alaykom', 'salamou alaykoum', 'salam alaykom',
@@ -826,7 +921,7 @@ def fast_classify_intent(message: str) -> Optional[Dict[str, Any]]:
         'je veux acheter', 'acheter', 'voiture pour', 'budget de', 'mon budget',
         'tomobila', 'sayara', 'neuf', 'dacia', 'renault',
         'peugeot', 'clio', 'golf', 'volkswagen', 'hyundai', 'kia', 'mercedes', 'bmw',
-        'looking for', 'search', 'want to buy', 'i want', 'i need', 'find me',
+        'looking for', 'search', 'want to buy', 'i want', 'i need', 'find me', 'help me choose',
         'show me', 'cheap car', 'diesel car', 'new car', 'price of', 'my budget',
         'comprar', 'coche', 'auto', 'kaufen', 'comprare',
         'سيارة', 'سيارات', 'شراء', 'أبحث', 'أريد', 'بدي', 'طوموبيل', 'ميزانيتي', 'البودجي',
@@ -930,72 +1025,121 @@ OUT_OF_DOMAIN_RESPONSES = {
     'darija_lat': "Ana mkhssas ghir f tomobilat. Sowelni 3la tomobil, moteur, ssiانة, salam, chra wela comparaison dyal les modeles.",
 }
 
+async def retrieve_vehicles_from_db(query: str, max_price: Optional[float] = None, top_k: int = 3) -> str:
+    """Fallback text search in PostgreSQL when vector search is unavailable."""
+    try:
+        from app.core.database import async_session_factory
+        if not async_session_factory:
+            return ""
+        from app.models.vehicle import Vehicle
+        from sqlalchemy import select, or_
+
+        stop_words = {'les', 'des', 'une', 'qui', 'pour', 'avec', 'dans', 'quel', 'quelle', 'voiture', 'auto', 'cherche', 'veut', 'besoin', 'budget'}
+        clean_tokens = [w for w in re.findall(r'\b\w{3,}\b', query.lower()) if w not in stop_words]
+
+        async with async_session_factory() as session:
+            stmt = select(Vehicle)
+            if max_price is not None:
+                stmt = stmt.where(Vehicle.price <= float(max_price))
+
+            if clean_tokens:
+                clauses = []
+                for token in clean_tokens[:4]:
+                    clauses.append(Vehicle.brand.ilike(f"%{token}%"))
+                    clauses.append(Vehicle.model.ilike(f"%{token}%"))
+                    clauses.append(Vehicle.body_type.ilike(f"%{token}%"))
+                stmt = stmt.where(or_(*clauses))
+
+            stmt = stmt.order_by(Vehicle.price.asc()).limit(top_k)
+            res = await session.execute(stmt)
+            vehicles = res.scalars().all()
+
+            if not vehicles:
+                return ""
+
+            context_lines = []
+            for v in vehicles:
+                specs = [f"Prix: {v.price} MAD", f"Ville: {v.city or 'Maroc'}"]
+                if v.fuel_type:
+                    specs.append(f"Carburant: {v.fuel_type}")
+                if v.transmission:
+                    specs.append(f"Boîte: {v.transmission}")
+                if v.body_type:
+                    specs.append(f"Carrosserie: {v.body_type}")
+                specs_str = " | ".join(specs)
+                context_lines.append(f"- ID: {v.id} | {v.brand} {v.model} ({v.year}) | {specs_str}")
+            return "\n".join(context_lines)
+    except Exception as err:
+        print(f"[DB Fallback Vehicle Retrieval Warning] {err}")
+        return ""
+
+
 async def retrieve_vehicles(query: str, max_price: Optional[float] = None, top_k: int = 3) -> str:
     qdrant = get_qdrant_client()
     clean_query = normalize_multilingual_query_terms(query)
-    
-    try:
-        query_vector = await asyncio.wait_for(embeddings_model.aembed_query(clean_query), timeout=2.5)
-    except Exception as e:
-        print(f"[Qdrant Embed Fast Fallback] {e}")
-        return "Catalogue de véhicules neufs disponibles sur la plateforme Wakala."
-    
-    filter_conditions = []
-    if max_price is not None:
-        filter_conditions.append(
-            qmodels.FieldCondition(
-                key="price",
-                range=qmodels.Range(lte=float(max_price))
+    search_result = None
+
+    if qdrant:
+        try:
+            query_vector = await asyncio.wait_for(embeddings_model.aembed_query(clean_query), timeout=2.5)
+            filter_conditions = []
+            if max_price is not None:
+                filter_conditions.append(
+                    qmodels.FieldCondition(
+                        key="price",
+                        range=qmodels.Range(lte=float(max_price))
+                    )
+                )
+            query_filter = qmodels.Filter(must=filter_conditions) if filter_conditions else None
+            search_result = await qdrant.search(
+                collection_name=settings.QDRANT_COLLECTION,
+                query_vector=query_vector,
+                query_filter=query_filter,
+                limit=top_k * 3
             )
-        )
-    
-    query_filter = qmodels.Filter(must=filter_conditions) if filter_conditions else None
-    
-    try:
-        search_result = await qdrant.search(
-            collection_name=settings.QDRANT_COLLECTION,
-            query_vector=query_vector,
-            query_filter=query_filter,
-            limit=top_k * 3
-        )
-    except Exception:
-        return "Aucun véhicule correspondant dans la base de données actuelle."
+        except Exception as e:
+            print(f"[Qdrant Fast Fallback] Vector search unavailable or timed out: {e}")
 
-    if not search_result:
-        return "Aucun véhicule correspondant dans la base de données actuelle."
-
-    seen_signatures = set()
     context_str = ""
-    for hit in search_result:
-        payload = hit.payload or {}
-        sig = (payload.get('brand'), payload.get('model'), payload.get('year'), payload.get('price'))
-        if sig in seen_signatures:
-            continue
-        seen_signatures.add(sig)
-        
-        brand = payload.get('brand', 'Véhicule')
-        model = payload.get('model', '')
-        year = payload.get('year', '')
-        price = payload.get('price', '')
-        city = payload.get('city', 'Maroc')
-        fuel = payload.get('fuel_type', '')
-        transmission = payload.get('transmission', '')
-        body_type = payload.get('body_type', '')
-        
-        specs = [f"Prix: {price} MAD", f"Ville: {city}"]
-        if fuel:
-            specs.append(f"Carburant: {fuel}")
-        if transmission:
-            specs.append(f"Boîte: {transmission}")
-        if body_type:
-            specs.append(f"Carrosserie: {body_type}")
-        
-        specs_str = " | ".join(specs)
-        context_str += f"- ID: {hit.id} | {brand} {model} ({year}) | {specs_str}\n"
-        if len(seen_signatures) >= top_k:
-            break
-    
-    return context_str if context_str else "Aucun véhicule correspondant dans la base de données actuelle."
+    if search_result:
+        seen_signatures = set()
+        for hit in search_result:
+            payload = hit.payload or {}
+            sig = (payload.get('brand'), payload.get('model'), payload.get('year'), payload.get('price'))
+            if sig in seen_signatures:
+                continue
+            seen_signatures.add(sig)
+            
+            brand = payload.get('brand', 'Véhicule')
+            model = payload.get('model', '')
+            year = payload.get('year', '')
+            price = payload.get('price', '')
+            city = payload.get('city', 'Maroc')
+            fuel = payload.get('fuel_type', '')
+            transmission = payload.get('transmission', '')
+            body_type = payload.get('body_type', '')
+            
+            specs = [f"Prix: {price} MAD", f"Ville: {city}"]
+            if fuel:
+                specs.append(f"Carburant: {fuel}")
+            if transmission:
+                specs.append(f"Boîte: {transmission}")
+            if body_type:
+                specs.append(f"Carrosserie: {body_type}")
+            
+            specs_str = " | ".join(specs)
+            context_str += f"- ID: {hit.id} | {brand} {model} ({year}) | {specs_str}\n"
+            if len(seen_signatures) >= top_k:
+                break
+
+    if not context_str:
+        # Fallback to direct PostgreSQL database search
+        db_context = await retrieve_vehicles_from_db(clean_query, max_price=max_price, top_k=top_k)
+        if db_context:
+            return db_context
+        return "Catalogue de véhicules neufs disponibles sur la plateforme Wakala."
+
+    return context_str
 
 GREETING_RESPONSES = {
     "darija_lat": "Salam ! Merhba bik f Wakala, l-plateforme l-oula d l-automobile f l-mghrib. Nqder n3awnek tkhtar tomobila jdida li tnasbek, n7esbo rassem diwana, nqarno bin les modeles, wla njawbek 3la ay soual teqni w mécanique. Kifach nqder n3awnek lyoum ?",
@@ -1067,79 +1211,245 @@ CUSTOMS_CONTEXTS = {
 CONSULTATIVE_DISCOVERY_CONTEXTS = {
     "darija_lat": """L-client baghi ychri tomobila walakin mazal ma7eddech koulchi.
 Nta l-moustachar l-automobile d Wakala f l-mghrib.
-Silsilat d l-as2ila soual b soual :
-1. Etape 1 (Budget) : Ila mazal ma3tach l-budget, sewlo b d-derhem (MAD / DH).
-2. Etape 2 (Usage) : Ila 3tana l-budget, sewlo 3la l-isti3mal dyalo (mdina, triq kbira, wla mkhlet).
-3. Etape 3 (Carburant) : Ila 3refna l-usage, sewlo 3la l-moteur li kayfdel (Mazot, Lisans, Hybride, wla Electrique).
-4. Etape 4 (Boite) : Ila 3refna l-carburant, sewlo 3la la boite (Automatique wla Manuelle).
-5. Etape 5 (Carrosserie) : Ila 3refna la boite, sewlo 3la l-format (SUV, Citadine, Berline).
-6. Etape 6 (Recommandations finales) : Mnin ykounou l-ma3loumat kamlin, 3tih 2 tal 3 d les modeles mn l-catalogue k natija nihaiya m3a l-coffre b l-valisat w l-bloc JSON. Hbes l-as2ila d l-qualification, wla sewel soual wahed akhar ila kan ghadi ykhelih ykhtar tomobila wehda nihaiya.
+L-qualification mbnia b charama 3la l-ab3ad t-tmanya (8 Dimensions) d Wakala (Prix d'acces/Budget, Praticite f l-mdina, Espace coffre/valisat, Cout reel/masarif, Ecologie/moteur propre, Securite NCAP, Performance, Motricite 4x4).
+Silsilat d l-as2ila sSarima (8D) soual b soual :
+1. Etape 1 (Prix d'acces / Budget) : Ila mazal ma3tach l-budget, sewlo b d-derhem (MAD / DH).
+2. Etape 2 (Praticite f l-mdina) : Ila 3tana l-budget, sewlo wach kayfdel tomobila sghira sahla f l-parking f l-mdina wla format kber.
+3. Etape 3 (Espace & Coffre) : Sewlo ch7al kaye7taj f l-coffre b l-valisat wla wach kaye7taj 7 d les places.
+4. Etape 4 (Ecologie & Masarif d l-isti3mal) : Sewlo wach l-moteur l-hybride/electrique awla l-conso l-qlila hiya l-awlawiya.
+5. Etape 5 (Securite NCAP, Motricite 4x4 wla Performance) : Sewlo 3la la securite certifiee (5 etoiles NCAP), 4x4 awla l-puissance.
+6. Etape 6 (Recommandations finales 8D) : Mnin ykounou l-ma3loumat d les 8D kamlin, 3tih 2 tal 3 d les modeles mn l-catalogue k natija nihaiya m3a l-evaluation 8D, l-coffre b l-valisat w l-bloc JSON. Hbes l-as2ila d l-qualification.
 
 Qawa3id sSarima :
 - Sewel STRICTEMENT soual wahed f kol risala.
+- Kol soual khesso ykoun b charama tied l wahed mn les 8 Dimensions d Wakala (mamnou3 as2ila kharja 3la les 8D).
 - Matktech 3lih b les listes d les questions.
 - Hder 100% b Darija b l-hrof l-latiniya w bla aucun emoji.""",
 
     "darija_ar": """الزبون مهتم بالبحث عن سيارة أو استشارة حول الشراء لكنه لم يحدد كل تفاصيله بعد.
 أنت المستشار الأول وخبير السيارات في منصة وكالة (Wakala).
-تسلسل مراحل الاستشارة خطوة بخطوة:
-1. المرحلة 1 (الميزانية): إذا كانت الميزانية غير محددة، اسأل فقط عن الميزانية التقريبية بالدرهم.
-2. المرحلة 2 (نوع الاستعمال): إذا حُددت الميزانية، اسأل فقط عن طبيعة التنقل اليومي (وسط المدينة، طريق وسفر، أو مخلط).
-3. المرحلة 3 (نوع الوقود): إذا عُرف الاستعمال، اسأل فقط عن نوع المحرك المفضل (مازوط، ليسانص، إيبريد، أو كهربائي).
-4. المرحلة 4 (علبة السرعات): إذا حُدد الوقود، اسأل فقط عن علبة السرعات (أوتوماتيك أو مانييل).
-5. المرحلة 5 (نوع الهيكل): إذا حُددت علبة السرعات، اسأل فقط عن فئة السيارة (SUV عائلية، سيتادين للمدينة، أو بيرلين).
-6. المرحلة 6 (التوصية والنتيجة النهائية): بعد اكتمال المعايير، رشح أفضل 2 إلى 3 سيارات مناسبة من الكتالوج كنتيجة نهائية مع ذكر سعة الصندوق بعدد الفاليزات وإدراج كود JSON. توقف عن طرح الأسئلة، أو اطرح سؤالاً إضافياً واحداً فقط إذا كان سيحسم الاختيار لسيارة واحدة نهائية.
+التأهيل كيعتمد 100% وبصرامة على الأبعاد الثمانية لوكالة (سعر الشراء/الميزانية، القيادة فالمدينة، اتساع الكوفير، مصاريف الاستعمال، المحرك النظيف، السلامة المعتمدة، قوة الموتور، الدفع الرباعي).
+تسلسل مراحل الاستشارة الصارم على الأبعاد الثمانية (8D):
+1. المرحلة 1 (سعر الشراء / الميزانية): إذا كانت الميزانية غير محددة، اسأل فقط عن الميزانية القصوى بالدرهم.
+2. المرحلة 2 (العملية الحضرية وسهولة الركن): اسأل واش كيفضل طوموبيل صغيرة وساهلة فالباركينغ فالمدينة ولا طوموبيل كبر منها وأوسع.
+3. المرحلة 3 (الكوفير والوسع): اسأل عن حجم الصندوق شحال كيحتاج (بعدد الفاليزات) ولا كيحتاج 7 د البلايص.
+4. المرحلة 4 (الموتور النظيف ومصاريف ليسانس): اسأل واش الموتور الهجين (إيبريد) أو الكهربائي أولوية، ولا كيفضل مازوط/ليصانص باستهلاك ومصاريف قليلة.
+5. المرحلة 5 (السلامة أو 4x4 أو قوة الموتور): اسأل عن السلامة المعتمدة (5 نجوم Euro NCAP)، الدفع الرباعي 4x4 ولا قوة الموتور والريبريز.
+6. المرحلة 6 (التوصية والنتيجة النهائية 8D): بعد اكتمال الأبعاد الثمانية، رشح أفضل 2 إلى 3 سيارات مناسبة من الكتالوج كنتيجة نهائية مع تقييم الأبعاد الثمانية، ذكر سعة الصندوق بالفاليزات وإدراج كود JSON. توقف عن طرح أسئلة التأهيل.
 
 شروط صارمة:
 - اطرح سؤالاً واحداً فقط في كل رسالة بالدارجة المغربية.
+- كل سؤال خاصو يركز حصرياً وبصرامة على واحد من الأبعاد الثمانية المعتمدة (8D).
 - ممنوع طرح قائمة أسئلة متعددة دفعة واحدة.
 - التزم 100% بالدارجة المغربية المكتوبة بالعربية وبدون أي إيموجي نهائياً.""",
 
     "arabic": """العميل يرغب في استشارة حول شراء سيارة في السوق المغربي ولكن لم يحدد بعد كل معاييره وتفضيلاته.
 أنت كبير المستشارين والخبراء التقنيين لمنصة وكالة (Wakala).
-التسلسل التشخيصي الإلزامي خطوة بخطوة:
-1. الخطوة 1 (الميزانية): إذا لم تُحدد الميزانية، اسأل فقط عن الميزانية المستهدفة بالدرهم المغربي.
-2. الخطوة 2 (طبيعة الاستعمال): إذا عُرفت الميزانية، اسأل فقط عن طبيعة القيادة والتنقل اليومي (داخل المدينة، طرق سريعة وسفر، أو قيادة مختلطة).
-3. الخطوة 3 (نوع الوقود): إذا عُرفت طبيعة الاستعمال، اسأل فقط عن نوع المحرك والوقود المفضل (ديزل اقتصادي، بنزين، هجين/هايبرد، أو كهربائي بالكامل).
-4. الخطوة 4 (ناقل الحركة): إذا حُدد الوقود، اسأل فقط عن نوع ناقل الحركة (أوتوماتيكي أو يدوي).
-5. الخطوة 5 (فئة السيارة): إذا حُدد ناقل الحركة، اسأل فقط عن نوع الهيكل المفضل (دفع رباعي / SUV، سيدان مريحة، أو سيارة مدينة مدمجة).
-6. الخطوة 6 (الترشيحات والنتيجة النهائية): عند اكتمال كافة المعايير، قدم أفضل 2 إلى 3 سيارات من الكتالوج كنتيجة نهائية مع تعليل تقني وحجم الصندوق بعدد حقائب السفر وإدراج كتل JSON. توقف عن طرح أسئلة التأهيل، أو اطرح سؤالاً إضافياً واحداً فقط إذا كان كفيلاً بحسم الاختيار لسيارة واحدة نهائية.
+يعتمد التأهيل حصرياً وبشكل صارم على الأبعاد الثمانية لمنصة وكالة (سعر الشراء/الميزانية، العملية الحضرية، سعة الأمتعة، كلفة الاستخدام، البيئة، السلامة المعتمدة، الأداء، الدفع والجر).
+التسلسل التشخيصي الصارم للأبعاد الثمانية (8D) خطوة بخطوة:
+1. الخطوة 1 (سعر الشراء / الميزانية): إذا لم تُحدد الميزانية، اسأل فقط عن الميزانية القصوى بالدرهم المغربي.
+2. الخطوة 2 (العملية الحضرية): إذا عُرفت الميزانية، اسأل فقط عن الحاجة لسيارة مدمجة سهلة الركن في المدينة أم حجماً أكثر اتساعاً.
+3. الخطوة 3 (المساحة وصندوق الأمتعة): اسأل فقط عن سعة صندوق الأمتعة المطلوبة (بعدد حقائب السفر) أو الحاجة إلى 7 مقاعد.
+4. الخطوة 4 (البيئة وكلفة الاستخدام): اسأل عما إذا كان المحرك الهجين/الكهربائي النظيف أو التوفير الأقصى في الوقود وتكاليف التشغيل يمثل أولوية.
+5. الخطوة 5 (السلامة المعتمدة، الأداء أو الدفع الرباعي): اسأل عن متطلبات السلامة المعتمدة Euro NCAP (5 نجوم)، قوة المحرك أو الدفع الرباعي 4x4.
+6. الخطوة 6 (الترشيحات النهائية 8D): عند اكتمال الأبعاد الثمانية، قدم أفضل 2 إلى 3 سيارات من الكتالوج كنتيجة نهائية مع تقييم الأبعاد الثمانية، التعليل التقني، حجم الصندوق بعدد الحقائب وإدراج كتل JSON. توقف عن طرح أسئلة التأهيل.
 
 قواعد قطعية:
 - اطرح دائماً سؤالاً واحداً فقط في كل رسالة باللغة العربية الفصحى.
+- يجب أن يرتبط كل سؤال بشكل صارم وحصري بأحد الأبعاد الثمانية المعتمدة (8D).
 - تجنب تماماً طرح قوائم أسئلة متعددة.
 - التزم 100% باللغة العربية الفصحى السليمة وبدون أي رموز تعبيرية (Emojis).""",
 
     "french": """Le client souhaite trouver ou acheter un véhicule au Maroc mais n'a pas encore défini l'ensemble de ses critères.
 Tu es l'expert conseiller automobile d'élite de la plateforme Wakala.
-SÉQUENCE STRICTE DE QUALIFICATION TOUR PAR TOUR :
-1. Étape 1 (Budget) : Si le budget n'est pas encore précisé, demande UNIQUEMENT son budget cible en Dirhams (MAD / DH).
-2. Étape 2 (Usage) : Si le budget est connu mais pas l'usage, demande UNIQUEMENT son type de trajet quotidien (ville, autoroute ou mixte).
-3. Étape 3 (Carburant) : Si l'usage est connu mais pas le carburant, demande UNIQUEMENT sa préférence de motorisation (Diesel, Essence, Hybride ou Électrique).
-4. Étape 4 (Boîte de vitesses) : Si le carburant est connu mais pas la boîte, demande UNIQUEMENT son choix de transmission (Boîte automatique ou Boîte manuelle).
-5. Étape 5 (Carrosserie) : Si la boîte est connue mais pas le format, demande UNIQUEMENT sa préférence de carrosserie (SUV, Berline, Citadine compacte).
-6. Étape 6 (Recommandations finales) : Une fois les critères réunis, présente les 2 à 3 véhicules pertinents du catalogue comme résultat final avec arguments techniques, équivalence coffre en valises et blocs JSON de recommandation. Arrête de poser des questions de découverte, ou pose au maximum une seule question supplémentaire si elle permet de départager et d'isoler une seule voiture finale.
+La qualification s'appuie STRICTEMENT sur les 8 Dimensions Wakala : Prix d'accès, Praticité urbaine, Espace coffre, Coût réel d'usage, Écologie, Sécurité certifiée, Performance, Motricité.
+SÉQUENCE STRICTE DE QUALIFICATION TOUR PAR TOUR (8D) :
+1. Étape 1 (Prix d'accès) : Si le budget n'est pas encore précisé, demande UNIQUEMENT son budget maximum en Dirhams (MAD / DH).
+2. Étape 2 (Praticité urbaine) : Si le budget est connu mais pas l'usage urbain, demande UNIQUEMENT s'il recherche un format compact facile à garer en ville ou un gabarit plus grand et spacieux.
+3. Étape 3 (Espace & Habitabilité) : Si l'usage est connu, demande UNIQUEMENT son besoin en volume de coffre (en nombre de valises) ou s'il a besoin de 7 places.
+4. Étape 4 (Écologie & Coût réel) : Demande si la motorisation propre (Hybride ou Électrique) ou l'économie de carburant et coûts réduits est une priorité.
+5. Étape 5 (Sécurité certifiée, Performance ou Motricité 4x4) : Selon les priorités, demande son exigence sur la sécurité Euro NCAP (5★), la puissance moteur/reprises ou la transmission 4x4 tout-terrain.
+6. Étape 6 (Recommandations finales 8D) : Une fois les critères 8D réunis, présente les 2 à 3 véhicules les plus pertinents du catalogue comme résultat final avec leurs scores 8D, arguments techniques, équivalence coffre en valises et blocs JSON de recommandation. Arrête de poser des questions de qualification.
 
 RÈGLES IMPÉRATIVES :
 - Pose STRICTEMENT UNE SEULE question par message en français.
+- Chaque question doit impérativement et strictement qualifier l'une des 8 Dimensions Wakala (jamais de questions hors 8D comme la boîte de vitesses isolée).
 - Ne fais JAMAIS de liste de questions ni de questionnaire.
 - Reste 100% en français avec zéro émoji.""",
 
     "english": """The user is exploring buying a car in Morocco but has not yet specified all required preferences.
 You are the elite automotive consultant for the Wakala platform.
-STRICT TURN-BY-TURN DISCOVERY SEQUENCE:
-1. Turn 1 (Budget): If target budget is missing, ask ONLY for their target budget in MAD.
-2. Turn 2 (Usage): If budget is known but usage is missing, ask ONLY about their daily driving habits (city vs highway vs mixed).
-3. Turn 3 (Fuel): If usage is known but fuel is missing, ask ONLY about their preferred fuel type (Diesel, Petrol, Hybrid, or EV).
-4. Turn 4 (Transmission): If fuel is known but gearbox is missing, ask ONLY for their transmission preference (Automatic or Manual).
-5. Turn 5 (Body Style): If transmission is known but car type is missing, ask ONLY for their preferred body style (SUV, Sedan, Hatchback/City car).
-6. Turn 6 (Final Recommendations): Once criteria are clear, present 2 to 3 tailored vehicle options from the catalogue as the final result with full technical reasons, suitcase capacity for the trunk, and JSON recommendation blocks. Stop asking qualification questions, or ask at most one single additional question if it directly narrows down to one single car.
+Qualification strictly follows Wakala's 8 Core Dimensions: Access Price, Urban Practicality, Space & Luggage, Real Running Cost, Ecology, Certified Safety, Performance, Drivetrain/Motricity.
+STRICT TURN-BY-TURN 8D DISCOVERY SEQUENCE:
+1. Turn 1 (Access Price): If target budget is missing, ask ONLY for their maximum target budget in MAD.
+2. Turn 2 (Urban Practicality): If budget is known, ask ONLY about their need for a compact city-friendly car easy to park vs a larger spacious vehicle.
+3. Turn 3 (Space & Luggage): Ask ONLY for their luggage capacity requirement (in number of suitcases) or if they need 7 seats.
+4. Turn 4 (Ecology & Running Cost): Ask if clean hybrid/electric propulsion or low fuel consumption and minimal running costs is a priority.
+5. Turn 5 (Certified Safety, Performance or 4x4 Motricity): Ask about their requirement for top Euro NCAP safety (5★), engine power/responsiveness, or all-wheel drive 4x4 capability.
+6. Turn 6 (Final 8D Recommendations): Once 8D criteria are gathered, present 2 to 3 tailored vehicle options from the catalogue with their 8D score evaluation, technical reasons, suitcase trunk capacity, and JSON recommendation blocks. Stop asking qualification questions.
 
 STRICT CONSTRAINTS:
 - Ask STRICTLY ONE question per response in English.
+- Every question must strictly qualify one of Wakala's 8 Dimensions.
 - Do NOT generate bulleted question lists or multiple questions.
 - Answer 100% in English with zero emojis."""
 }
+
+
+def get_fallback_discovery_question(
+    detected_lang: str,
+    message: str,
+    history: Optional[List[Dict[str, str]]] = None,
+    max_price: Optional[int] = None,
+) -> str:
+    all_user_text = message.lower()
+    if history:
+        all_user_text = " ".join(m.get("content", "").lower() for m in history if m.get("role") == "user") + " " + all_user_text
+
+    # 1. Dimension 1: Prix d'accès (Budget)
+    extracted_price = max_price
+    if extracted_price is None:
+        budget_match = re.search(r'(\d+[\s,.]?\d*)\s*(?:k|000|mad|dhs?|dirhams?|درهم|دراهم|mlyon|melyon|million|مليون|الف|ألف)\b', all_user_text)
+        if budget_match:
+            val_str = budget_match.group(1).replace(' ', '').replace(',', '').replace('.', '')
+            if val_str.isdigit():
+                val = int(val_str)
+                extracted_price = val * 1000 if (val < 1000 and 'k' in all_user_text) else val
+        else:
+            raw_num_match = re.search(r'\b([4-9]\d{4}|[1-9]\d{5,7})\b', all_user_text)
+            if raw_num_match:
+                extracted_price = int(raw_num_match.group(1))
+
+    has_budget = extracted_price is not None
+
+    # 2. Dimension 2: Praticité urbaine (City / Compact / Easy parking vs spacious)
+    praticite_keywords = [
+        'ville', 'city', 'urbain', 'urbaine', 'compact', 'compacte', 'parking', 'garer',
+        'autoroute', 'highway', 'mixte', 'both', 'citadine', 'hatchback',
+        'مدينة', 'المدينة', 'حضرية', 'مدمجة', 'ركن', 'الركنة', 'باركينغ', 'سيتادين',
+        'فالمدينة', 'طريق سيار', 'بجوج'
+    ]
+    has_praticite = any(k in all_user_text for k in praticite_keywords)
+
+    # 3. Dimension 3: Espace (Trunk volume, suitcases, 5 vs 7 seats)
+    space_keywords = [
+        'coffre', 'valise', 'valises', 'bagage', 'bagages', 'trunk', 'suitcase', 'suitcases',
+        'luggage', 'boot', '7 places', '7 seats', '7 مقاعد', '7 بلايص', 'places', 'seats',
+        'famille', 'family', 'enfants', 'poussette', 'أمتعة', 'حقائب', 'صندوق', 'كوفير', 'عائلة'
+    ]
+    has_space = any(k in all_user_text for k in space_keywords)
+
+    # 4. Dimension 4 & 5: Coût réel & Écologie (TCO, fuel economy, hybrid/electric)
+    eco_cost_keywords = [
+        'hybride', 'hybrid', 'electrique', 'électrique', 'electric', 'ev', 'phev', 'diesel', 'essence', 'petrol',
+        'consommation', 'conso', 'économie', 'economie', 'running cost', 'running costs', 'low fuel',
+        'coût', 'coûts', 'frais', 'vignette',
+        'مازوط', 'مازوت', 'بنزين', 'ليصانص', 'هجين', 'ايبريد', 'إيبريد', 'كهربائي',
+        'استهلاك', 'توفير', 'تكاليف', 'مصاريف', 'صرف', 'اقتصاد'
+    ]
+    has_eco_cost = any(k in all_user_text for k in eco_cost_keywords)
+
+    # 5. Dimension 6: Sécurité (Euro NCAP, active safety, ADAS)
+    safety_keywords = [
+        'securite', 'sécurité', 'security', 'safety', 'ncap', 'crash', 'crash-test', 'adas', 'isofix',
+        'étoiles', 'etoiles', 'stars', '5★', '4★',
+        'سلامة', 'أمان', 'حماية'
+    ]
+    has_safety = any(k in all_user_text for k in safety_keywords)
+
+    # 6. Dimension 7: Motricité (4x4 / AWD vs 2WD)
+    motricite_keywords = [
+        '4x4', '4wd', 'awd', 'integrale', 'intégrale', 'tout-terrain', 'tout terrain', 'offroad', 'off-road',
+        'piste', 'montagne', 'motricité', 'motricite', 'garde au sol', '2wd', '2 roues', 'deux roues',
+        'دفع رباعي', 'دفع ثنائي', 'رباعي', 'ثنائي'
+    ]
+    has_motricite = any(k in all_user_text for k in motricite_keywords)
+
+    # 7. Dimension 8: Performance (Power, acceleration, dynamics)
+    performance_keywords = [
+        'performance', 'puissance', 'power', 'reprises', 'dynamique', 'sport', 'sportif', 'ch', 'hp', 'vitesse',
+        'قوة', 'تسارع', 'أداء', 'رياضي'
+    ]
+    has_performance = any(k in all_user_text for k in performance_keywords)
+
+    formatted_price = f"{extracted_price:,}".replace(",", " ") if extracted_price else ""
+
+    # Strict 8 Dimensions Progression
+    if not has_budget:
+        return {
+            "french": "Quel est votre budget maximum en MAD pour cette voiture ?",
+            "english": "What is your maximum target budget in MAD for this car?",
+            "arabic": "ما هي ميزانيتك القصوى بالدرهم لشراء هذه السيارة؟",
+            "darija_ar": "شحال هي الميزانية القصوى ديالك بالدرهم لهاد الطوموبيل؟",
+            "darija_lat": "Ch7al hiya l-budget maximum dyalek b d-derhem l had tomobil?",
+        }.get(detected_lang, "What is your maximum target budget in MAD for this car?")
+
+    if not has_praticite:
+        price_prefix = f"Avec un budget de {formatted_price} DH, " if formatted_price else ""
+        price_prefix_en = f"With a budget of {formatted_price} DH, " if formatted_price else ""
+        price_prefix_ar = f"مع ميزانية {formatted_price} درهم، " if formatted_price else ""
+        price_prefix_darija = f"مع ميزانية {formatted_price} درهم، " if formatted_price else ""
+        return {
+            "french": f"{price_prefix}pour vos trajets quotidiens, préférez-vous un format compact facile à garer en ville ou un gabarit plus spacieux ?",
+            "english": f"{price_prefix_en}for daily driving, do you prefer a compact car easy to park in the city or a more spacious vehicle?",
+            "arabic": f"{price_prefix_ar}لتنقلاتك اليومية، هل تفضل سيارة مدمجة وسهلة الركن في المدينة أم حجماً أكثر اتساعاً؟",
+            "darija_ar": f"{price_prefix_darija}فالتحركات اليومية، واش كتفضل طوموبيل صغيرة وساهلة فالركنة فالمدينة ولا طوموبيل واسعة وكبيرة؟",
+            "darija_lat": f"{price_prefix}f l-isti3mal l-yawmi, wach katfeddel tomobil sghira sahla f l-parking wla tomobil was3a w kbira?",
+        }.get(detected_lang, f"{price_prefix_en}for daily driving, do you prefer a compact car easy to park in the city or a more spacious vehicle?")
+
+    if not has_space:
+        return {
+            "french": "De combien de place pour les bagages avez-vous besoin (en nombre de valises) ou cherchez-vous 7 places ?",
+            "english": "How much luggage space do you need (in suitcases), or are you looking for 7 seats?",
+            "arabic": "كم من مساحة الأمتعة تحتاج (بعدد الحقائب)، أم تبحث عن 7 مقاعد؟",
+            "darija_ar": "شحال كتحتاج ديال المساحة للباݣاج (بعدد الفاليزات)، ولا كتقلب على 7 د البلايص؟",
+            "darija_lat": "Ch7al kaye7taj l-coffre dyalek b l-valisat, wla katqelleb 3la 7 d les places?",
+        }.get(detected_lang, "How much luggage space do you need (in suitcases), or are you looking for 7 seats?")
+
+    if not has_eco_cost:
+        return {
+            "french": "La motorisation hybride ou électrique propre est-elle une priorité, ou préférez-vous une motorisation thermique à faible consommation ?",
+            "english": "Is clean hybrid or electric power a priority for you, or do you prefer a fuel-efficient combustion engine?",
+            "arabic": "هل المحرك الهجين أو الكهربائي النظيف أولوية بالنسبة لك، أم تفضل محركاً عادياً باستهلاك اقتصادي؟",
+            "darija_ar": "واش الموتور الهجين (إيبريد) ولا الكهربائي أولوية عندك، ولا كتفضل موتور عادي واقتصادي فالمصاريف؟",
+            "darija_lat": "Wach l-moteur hybride wla electrique awlawiya, wla katfeddel moteur classique b conso qlila?",
+        }.get(detected_lang, "Is clean hybrid or electric power a priority for you, or do you prefer a fuel-efficient combustion engine?")
+
+    if not has_safety:
+        return {
+            "french": "Quelle importance accordez-vous à la sécurité certifiée et à une note maximale Euro NCAP (5★) ?",
+            "english": "How important is certified safety and a top Euro NCAP rating (5★) to you?",
+            "arabic": "ما مدى أهمية السلامة المعتمدة والتقييم الأقصى Euro NCAP (5 نجوم) بالنسبة لك؟",
+            "darija_ar": "شحال مهمة عندك السلامة المعتمدة وأعلى نقطة فالأمان (5 نجوم Euro NCAP)؟",
+            "darija_lat": "Ch7al mohima 3ndek la securite certifiee w a3la noqta (5 etoiles Euro NCAP)?",
+        }.get(detected_lang, "How important is certified safety and a top Euro NCAP rating (5★) to you?")
+
+    if not has_motricite:
+        return {
+            "french": "Avez-vous besoin d'une motricité 4x4 / transmission intégrale (AWD) pour les pistes, ou d'une 2 roues motrices standard ?",
+            "english": "Do you need 4x4 / all-wheel drive (AWD) for rough terrain, or standard 2WD?",
+            "arabic": "هل تحتاج إلى دفع رباعي (4x4 / AWD) للطرق الوعرة، أم دفع ثنائي عادي (2WD)؟",
+            "darija_ar": "واش كتحتاج الدفع الرباعي (4x4) للبستات والعقابي، ولا دفع عادي (2WD)؟",
+            "darija_lat": "Wach kaye7taj 4x4 awla transmission integrale AWD l l-piste, wla 2 roues motrices standard?",
+        }.get(detected_lang, "Do you need 4x4 / all-wheel drive (AWD) for rough terrain, or standard 2WD?")
+
+    if not has_performance:
+        return {
+            "french": "Privilégiez-vous la puissance moteur et les reprises dynamiques sur autoroute ?",
+            "english": "Do you prioritize engine power and highway acceleration responsiveness?",
+            "arabic": "هل تفضل قوة المحرك والتسارع القوي على الطرق السريعة؟",
+            "darija_ar": "واش كتفضل الموتور القوي والتسارع والريبريز فالطريق الكبيرة؟",
+            "darija_lat": "Wach katfeddel l-moteur l-qwi w les reprises f l-autoroute?",
+        }.get(detected_lang, "Do you prioritize engine power and highway acceleration responsiveness?")
+
+    return {
+        "french": "Parfait ! Voici les modèles du catalogue qui répondent le mieux à vos exigences sur l'ensemble des 8 dimensions.",
+        "english": "Great! Here are the catalogue models that best match your preferences across all 8 dimensions.",
+        "arabic": "ممتاز! إليك السيارات الأنسب لمعاييرك وتفضيلاتك وفق تقييم الأبعاد الثمانية.",
+        "darija_ar": "مزيان بزاف! ها هما الطوموبيلات اللي كيطابقو المعايير ديالك على حساب الأبعاد الثمانية كاملين.",
+        "darija_lat": "Mezyan bzaf! Hahoma les modeles li kaynasbou l-ma3ayir dyalek 3la 7sab les 8 dimensions.",
+    }.get(detected_lang, "Great! Here are the catalogue models that best match your preferences across all 8 dimensions.")
+
 
 async def chat_stream(message: str, history: List[Dict[str, str]], language: Optional[str] = None) -> AsyncIterable[str]:
     """Gère la logique complète du chat et génère la réponse 100% dans la langue du client sur tout le secteur automobile, garantie sans emojis ni fuite de réflexion."""
@@ -1215,13 +1525,7 @@ async def chat_stream(message: str, history: List[Dict[str, str]], language: Opt
     # 6. Stream de génération avec filtrage systématique d'emojis et des balises de réflexion (<think>)
     if settings.OPENROUTER_API_KEY:
         if is_discovery_request:
-            fallback_text = {
-                "french": "Quel est votre budget maximum pour cette voiture ?",
-                "english": "What is your maximum budget for this car?",
-                "arabic": "ما هي ميزانيتك القصوى لهذه السيارة؟",
-                "darija_ar": "شحال هي الميزانية القصوى ديالك لهاد الطوموبيل؟",
-                "darija_lat": "Ch7al hiya l-budget maximum dyalek l had tomobil?",
-            }.get(detected_lang, "What is your maximum budget for this car?")
+            fallback_text = get_fallback_discovery_question(detected_lang, clean_message, history, max_price)
         else:
             fallback_text = {
                 "french": "Je peux vous aider avec votre question automobile. Pouvez-vous préciser votre besoin ?",
@@ -1303,16 +1607,11 @@ async def chat_stream(message: str, history: List[Dict[str, str]], language: Opt
         final_clean = scrub_thinking(thinking_buffer) if is_filtering_thinking else thinking_buffer
         final_clean = remove_emojis(final_clean)
         if final_clean.strip():
+            started_yielding = True
             yield final_clean
 
     # Some free providers spend the entire budget on hidden reasoning even
     # when reasoning exclusion is requested. Never leave the UI empty in that
     # case: return one localized, useful next step.
     if not started_yielding and is_discovery_request:
-        yield {
-            "french": "Quel est votre budget maximum pour cette voiture ?",
-            "english": "What is your maximum budget for this car?",
-            "arabic": "ما هي ميزانيتك القصوى لهذه السيارة؟",
-            "darija_ar": "شحال هي الميزانية القصوى ديالك لهاد الطوموبيل؟",
-            "darija_lat": "Ch7al hiya l-budget maximum dyalek l had tomobil?",
-        }.get(detected_lang, "What is your maximum budget for this car?")
+        yield get_fallback_discovery_question(detected_lang, clean_message, history, max_price)

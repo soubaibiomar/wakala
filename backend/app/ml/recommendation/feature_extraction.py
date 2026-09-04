@@ -47,7 +47,14 @@ FAMILY_QUERY_TERMS = (
 def extract_brand(text: str) -> Optional[str]:
     lower = text.lower()
     for keyword, brand in BRAND_KEYWORDS.items():
-        if keyword in lower:
+        if keyword == "seat":
+            # Guard against English "seat" / "seats" (comfort, leather, ergonomic, etc.)
+            if re.search(r"\b(?:ergonomic|comfort|comfortable|leather|heated|ventilated|child|baby|isofix|booster|car|front|rear|back|driver|passenger)\s+seats?\b|\bseats?\s+(?:comfort|confort|belt|heating|massage|cover|adjustment|memory|capacity|count|number)\b|\b\d+\s*seats?\b", lower):
+                continue
+            if not re.search(r"\bseat\b", lower):
+                continue
+            return brand
+        if re.search(r"\b" + re.escape(keyword) + r"\b", lower):
             return brand
     return None
 
@@ -77,7 +84,7 @@ PRICE_PATTERNS = [
     re.compile(r'(?P<min>\d+(?:\s?\d+)*\s*[kK]?)\s*(?:a|à|–|-|jusqu\'?à?|et)\s*(?P<max>\d+(?:\s?\d+)*\s*[kK]?)\s*(?:€|eur|dh|mad|melyoun|mlyoun|alf)?', re.IGNORECASE),
     re.compile(r'(?P<max>\d+(?:\s?\d+)*\s*[kK]?)\s*(?:€|eur|dh|mad|melyoun|mlyoun|alf)?\s*(?:max|maxi|maximum|au plus|plafond)', re.IGNORECASE),
     re.compile(r'(?P<min>\d+(?:\s?\d+)*\s*[kK]?)\s*(?:€|eur|dh|mad|melyoun|mlyoun|alf)?\s*(?:min|mini|minimum|au moins|plancher)', re.IGNORECASE),
-    re.compile(r'(?:moins de|max|maxi|maximum|jusqu\'?à?|under|au plus|plafond de)\s*(?P<max>\d+(?:\s?\d+)*\s*[kK]?)\s*(?:€|eur|dh|mad|melyoun|mlyoun|alf)?', re.IGNORECASE),
+    re.compile(r'(?:moins de|max|maxi|maximum|jusqu\'?à?|under|au plus|plafond(?:\s*de|\s*:)?)\s*(?P<max>\d+(?:\s?\d+)*\s*[kK]?)\s*(?:€|eur|dh|mad|melyoun|mlyoun|alf)?', re.IGNORECASE),
     re.compile(r'(?:plus de|min|mini|minimum|à partir de|dès|over|au moins)\s*(?P<min>\d+(?:\s?\d+)*\s*[kK]?)\s*(?:€|eur|dh|mad|melyoun|mlyoun|alf)?', re.IGNORECASE),
     re.compile(r'(?P<exact>\d+(?:\s?\d+)*\s*[kK]?)\s*(?:€|eur|dh|mad|melyoun|mlyoun|alf)', re.IGNORECASE),
     re.compile(r'budget\s*(?:de|:)?\s*(?P<min>\d+(?:\s?\d+)*\s*[kK]?)\s*(?:a|à|–|-)\s*(?P<max>\d+(?:\s?\d+)*\s*[kK]?)', re.IGNORECASE),

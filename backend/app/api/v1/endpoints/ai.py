@@ -66,21 +66,27 @@ async def chat_endpoint(
             yield cached[1]
             full_response = cached[1]
         else:
-        # 1. Obtenir un itérateur asynchrone
             iterator = chat_stream(message, history, language=language)
+            completed_cleanly = False
 
-        
-        # 2. Renvoyer les chunks au client
+            # 2. Renvoyer les chunks au client
             try:
                 async for chunk in iterator:
                     full_response += chunk
                     yield chunk
+                completed_cleanly = True
             except Exception as e:
                 import logging
                 logging.getLogger(__name__).error(f"Chat streaming error: {e}", exc_info=True)
-                yield "\n[Désolé, une difficulté technique temporaire est survenue. Veuillez réessayer.]"
+                temporary_error = {
+                    "fr": "\nDésolé, une difficulté technique temporaire est survenue. Veuillez réessayer.",
+                    "darija": "\nسمح ليا، وقع مشكل تقني مؤقت. عاود المحاولة من فضلك.",
+                    "ar": "\nعذراً، حدثت مشكلة تقنية مؤقتة. يرجى المحاولة مرة أخرى.",
+                    "en": "\nSorry, a temporary technical problem occurred. Please try again.",
+                }.get((language or "").lower(), "\nSorry, a temporary technical problem occurred. Please try again.")
+                yield temporary_error
 
-            if full_response:
+            if completed_cleanly and full_response and len(full_response.strip()) >= 30:
                 _CHAT_CACHE[cache_key] = (time.monotonic(), full_response)
                 if len(_CHAT_CACHE) > _CHAT_CACHE_MAX:
                     oldest_key = min(_CHAT_CACHE, key=lambda key: _CHAT_CACHE[key][0])

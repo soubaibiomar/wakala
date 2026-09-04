@@ -2,7 +2,7 @@
 tests/unit/test_consultative_flow.py — Tests unitaires pour le flow consultatif.
 
 Vérifie :
-- Le flow pose 1-2 questions avant toute recommandation
+- Le flow pose une seule question à la fois avant toute recommandation
 - Pas de recommandation si profil incomplet (budget/usage manquant)
 - Recommandation déclenchée une fois profil complet
 - Accumulation incrémentale du profil
@@ -222,6 +222,16 @@ class TestConsultativeFlow:
         assert "ville" in context
         assert "diesel" in context.lower()
 
+    def test_question_plan_contains_one_question_only(self):
+        """Même avec plusieurs dimensions manquantes, une seule question sort."""
+        self.flow.update_profile(self.session_id, "Budget 250000 MAD et je roule en ville")
+        plan = self.flow.get_next_question_plan(self.session_id, [
+            {"body_type": "SUV", "fuel_type": "diesel", "ncap_rating": "5/5"},
+            {"body_type": "Berline", "fuel_type": "essence", "ncap_rating": "4/5"},
+        ])
+        assert len(plan["questions"]) == 1
+        assert len(plan["dimensions"]) == 1
+
     def test_build_recommendation_query(self):
         """La requête de recommandation est correctement construite."""
         self.flow.update_profile(
@@ -266,7 +276,28 @@ class TestConsultativeFlow:
         assert not profile.is_complete
         assert profile.budget_max is None
 
-    def test_two_questions_max_context(self):
-        """Le contexte de découverte demande de poser 1-2 questions max."""
+    def test_one_question_at_a_time_context(self):
+        """Le contexte de découverte impose une seule question à la fois."""
         context = self.flow.get_discovery_context(self.session_id)
-        assert "1 à 2 questions" in context or "1–2 questions" in context
+        assert "exactement une seule question" in context
+
+    def test_extract_arabic_and_slider_budget_formats(self):
+        """Vérifie l'extraction des budgets arabes, darija et issus de la barre de préférences."""
+        assert extract_profile_fields("ميزانيتي المستهدفة هي 200 000 درهم").get("budget_max") == 200000.0
+        assert extract_profile_fields("البودجي ديالي هو 200 000 درهم").get("budget_max") == 200000.0
+        assert extract_profile_fields("200000 درهم").get("budget_max") == 200000.0
+        assert extract_profile_fields("200 ألف درهم").get("budget_max") == 200000.0
+        assert extract_profile_fields("200 ألف").get("budget_max") == 200000.0
+        assert extract_profile_fields("15 مليون").get("budget_max") == 150000.0
+        assert extract_profile_fields("ميزانيتي 200000").get("budget_max") == 200000.0
+        assert extract_profile_fields("أقل من 200000").get("budget_max") == 200000.0
+        assert extract_profile_fields("بين 150000 و 200000").get("budget_max") == 200000.0
+        assert extract_profile_fields("عندي غير 180000").get("budget_max") == 180000.0
+
+    def test_extract_arabic_passengers_and_constraints(self):
+        """Vérifie l'extraction des passagers en darija/arabe et des contraintes négatives."""
+        res_passengers = extract_profile_fields("كنقلب على طوموبيل ديال 7 بلايص")
+        assert res_passengers.get("nb_passagers") == 7
+
+        res_constraints = extract_profile_fields("ما بغيتش محرك ديزل وبدون علبة يدوية")
+        assert len(res_constraints.get("constraints", [])) >= 1

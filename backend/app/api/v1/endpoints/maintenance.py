@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, File, Form, UploadFile, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, UploadFile, HTTPException, status, Request
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
@@ -14,6 +14,7 @@ from app.models.user import User
 from app.models.vehicle import Vehicle
 from app.models.maintenance import VehicleService, ServiceReminder
 from app.schemas.maintenance_schema import VehicleServiceResponse, ServiceReminderResponse
+from app.core.limiter import limiter
 
 router = APIRouter()
 
@@ -21,7 +22,9 @@ UPLOAD_DIR = "uploads/receipts"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @router.post("/add", response_model=VehicleServiceResponse)
+@limiter.limit("10/minute")
 async def add_service(
+    request: Request,
     car_id: uuid.UUID = Form(...),
     service_type: str = Form(...),
     mileage: int = Form(...),
@@ -130,7 +133,13 @@ async def get_receipt(
     path = os.path.join(UPLOAD_DIR, safe_name)
     if not os.path.isfile(path):
         raise HTTPException(status_code=404, detail="Facture introuvable")
-    return FileResponse(path)
+    return FileResponse(
+        path,
+        headers={
+            "Cache-Control": "private, no-store",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
 
 @router.get("/history/{car_id}", response_model=List[VehicleServiceResponse])
 async def get_service_history(

@@ -23,7 +23,7 @@ class UserCreate(BaseModel):
     email: EmailStr = Field(..., examples=["jean@example.ma"])
     phone: str = Field(..., max_length=30, examples=["+212612345678"])
     cin: Optional[str] = Field(None, min_length=7, max_length=8, examples=["AB123456"])
-    password: str = Field(..., min_length=8, max_length=128, examples=["MonMotDePasse123!"])
+    password: str = Field(..., min_length=8, max_length=72, examples=["MonMotDePasse123!"])
     role: str = Field("buyer", pattern="^(buyer|seller)$", examples=["buyer"])
 
     @field_validator("phone")
@@ -99,7 +99,7 @@ class UserUpdate(BaseModel):
 class LoginRequest(BaseModel):
     """Schéma de connexion."""
     email: EmailStr
-    password: str
+    password: str = Field(..., min_length=1, max_length=72)
     remember_me: bool = False
 
 
@@ -136,7 +136,7 @@ class ResetPasswordRequest(BaseModel):
     """Schéma pour réinitialiser le mot de passe après validation OTP."""
     email: EmailStr
     otp_code: str = Field(..., min_length=6, max_length=6)
-    new_password: str = Field(..., min_length=8, max_length=128)
+    new_password: str = Field(..., min_length=8, max_length=72)
 
     @field_validator("new_password")
     @classmethod
@@ -151,8 +151,8 @@ class ResetPasswordRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     """Schéma pour changer le mot de passe d'un utilisateur connecté."""
     current_password: str = Field(..., min_length=1, description="Ancien mot de passe")
-    new_password: str = Field(..., min_length=8, max_length=128, description="Nouveau mot de passe")
-    confirm_password: str = Field(..., min_length=8, max_length=128, description="Confirmation du nouveau mot de passe")
+    new_password: str = Field(..., min_length=8, max_length=72, description="Nouveau mot de passe")
+    confirm_password: str = Field(..., min_length=8, max_length=72, description="Confirmation du nouveau mot de passe")
 
     @field_validator("new_password")
     @classmethod
@@ -162,4 +162,3 @@ class ChangePasswordRequest(BaseModel):
         if not any(c.isdigit() for c in v):
             raise ValueError("Le mot de passe doit contenir au moins un chiffre")
         return v
-

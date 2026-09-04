@@ -72,13 +72,25 @@ export default function Profile() {
       alert('Les nouveaux mots de passe ne correspondent pas');
       return;
     }
+    if (formData.newPassword.length < 8) {
+      alert('Le nouveau mot de passe doit contenir au moins 8 caractères');
+      return;
+    }
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await api.post('/auth/change-password', {
+        current_password: formData.currentPassword,
+        new_password: formData.newPassword,
+        confirm_password: formData.confirmPassword,
+      });
       setLoading(false);
       setFormData(prev => ({ ...prev, currentPassword: '', newPassword: '', confirmPassword: '' }));
       alert('Mot de passe mis à jour');
-    }, 1000);
+    } catch (error: any) {
+      setLoading(false);
+      const detail = error?.response?.data?.detail;
+      alert(typeof detail === 'string' ? detail : 'Impossible de mettre à jour le mot de passe');
+    }
   };
 
   return (

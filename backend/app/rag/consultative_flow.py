@@ -26,65 +26,66 @@ logger = logging.getLogger(__name__)
 # Extraction déterministe de champs depuis le message utilisateur
 # ──────────────────────────────────────────────────────────────────
 
-# Budget patterns (supports MAD, DH, dhs, k, million, etc.)
+# Budget patterns (supports MAD, DH, dhs, k, million, Arabic dirhams, alf, mlyon, etc.)
 _BUDGET_PATTERNS = [
-    # "250k", "250K MAD", "budget 250k"
-    r"(?:budget\s*(?:de|dyal|dyali)?\s*)?(\d+\s*[kK])\b\s*(?:mad|dh|dhs|dirhams?)?",
-    # "budget 250000", "budget de 250 000 MAD"
-    r"budget\s*(?:de|dyal|dyali)?\s*(\d[\d\s.,]*)\s*(?:mad|dh|dhs|dirhams?)?",
-    # "250000 MAD", "250 000 DH"
-    r"(\d[\d\s.,]*)\s*(?:mad|dh|dhs|dirhams?)",
+    # "250k", "250K MAD", "budget 250k", "200 ألف"
+    r"(?:budget|prix|price|ميزانية|ميزانيتي|البودجي|ثمن)?\s*(?:de|dyal|dyali|ديال|ديالي|المستهدفة|هي|هو)?\s*(\d+[\d.,]*\s*(?:[kK]|ألف|الف|mlyon|مليون))\b\s*(?:mad|dh|dhs|dirhams?|درهم|دراهم)?",
+    # "budget 250000", "budget de 250 000 MAD", "ميزانيتي 200000", "ميزانيتي المستهدفة هي 200 000 درهم", "البودجي ديالي هو 200 000 درهم"
+    r"(?:budget|prix|price|ميزانية|ميزانيتي|البودجي|ثمن)\s*(?:de|dyal|dyali|ديال|ديالي|المستهدفة|هي|هو)?\s*(\d[\d\s.,]*)\s*(?:mad|dh|dhs|dirhams?|درهم|دراهم)?",
+    # "250000 MAD", "250 000 DH", "200000 درهم", "200 000 درهم"
+    r"(\d[\d\s.,]*)\s*(?:mad|dh|dhs|dirhams?|درهم|دراهم)",
     # "ma3ndich/3andi ghir 200000", darija budget
     r"(?:3andi|m3aya|3ndi|عندي)\s*(?:ghir|ghi|غير)?\s*(\d[\d\s.,]*)",
-    # "entre X et Y" — take the upper bound
-    r"entre\s*(\d[\d\s.,]*)\s*(?:et|w|و)\s*(\d[\d\s.,]*)",
-    # "max 250000", "maximum 250000"
-    r"max(?:imum)?\s*(\d[\d\s.,]*)",
-    # "moins de 300000"
-    r"moins\s*de\s*(\d[\d\s.,]*)",
+    # "entre X et Y" or "بين X و Y" — take the upper bound
+    r"(?:entre|between|بين)\s*(\d[\d\s.,]*)\s*(?:et|to|w|و|-)\s*(\d[\d\s.,]*)",
+    # "max 250000", "maximum 250000", "ماكسيموم 250000", "أقصى حد 250000"
+    r"(?:max(?:imum)?|ماكس|أقصى\s+حد)\s*(\d[\d\s.,]*)",
+    # "moins de 300000", "أقل من 300000", "تحت 300000", "قل من 300000"
+    r"(?:moins\s*de|under|below|أقل\s*من|قل\s*من|تحت)\s*(\d[\d\s.,]*)",
 ]
 
 _USAGE_KEYWORDS = {
-    "ville": ["ville", "urbain", "mdina", "city", "المدينة", "فالمدينة"],
-    "route": ["route", "autoroute", "highway", "tri9", "الطريق", "longs trajets", "voyage"],
-    "mixte": ["mixte", "les deux", "both", "ville et route", "mixed"],
-    "offroad": ["offroad", "piste", "montagne", "4x4", "tout terrain"],
+    "ville": ["ville", "urbain", "mdina", "city", "المدينة", "فالمدينة", "داخل المدينة", "وسط المدينة"],
+    "route": ["route", "autoroute", "highway", "tri9", "الطريق", "longs trajets", "voyage", "طريق طويل", "سفر"],
+    "mixte": ["mixte", "les deux", "both", "ville et route", "mixed", "الاثنين", "بين المدينة والطريق", "بجوج", "مخلط"],
+    "offroad": ["offroad", "piste", "montagne", "4x4", "tout terrain", "وعرة", "طرق وعرة", "جبلية", "مسالك", "دفع رباعي"],
 }
 
 _FUEL_KEYWORDS = {
-    "essence": ["essence", "benzine", "lisans", "gasoline", "بنزين"],
-    "diesel": ["diesel", "mazout", "gazoil", "ديزل"],
-    "hybride": ["hybride", "hybrid", "هجين"],
-    "electrique": ["electrique", "électrique", "electric", "كهربائية", "ev"],
+    "essence": ["essence", "benzine", "lisans", "gasoline", "بنزين", "ليصانص", "بترول"],
+    "diesel": ["diesel", "mazout", "gazoil", "ديزل", "مازوط", "مازوت"],
+    "hybride": ["hybride", "hybrid", "هجين", "ايبريد", "إيبريد"],
+    "electrique": ["electrique", "électrique", "electric", "كهربائية", "كهربائي", "ev", "تريسينتي"],
 }
 
 _BODY_TYPE_KEYWORDS = {
-    "citadine": ["citadine", "petite voiture", "compact"],
-    "berline": ["berline", "sedan", "سيدان"],
-    "suv": ["suv", "4x4", "crossover"],
-    "monospace": ["monospace", "van", "familiale"],
+    "citadine": ["citadine", "petite voiture", "compact", "صغيرة", "سيتادين", "مدينة"],
+    "berline": ["berline", "sedan", "سيدان", "برلين", "بيرلين"],
+    "suv": ["suv", "4x4", "crossover", "دفع رباعي", "كروس اوفر", "كروس"],
+    "monospace": ["monospace", "van", "familiale", "مونوسباس", "فان"],
     "break": ["break", "wagon", "station wagon"],
-    "coupe": ["coupe", "coupé", "sportive"],
-    "pick_up": ["pick up", "pickup", "pick-up"],
+    "coupe": ["coupe", "coupé", "sportive", "كوبيه", "كوبي"],
+    "pick_up": ["pick up", "pickup", "pick-up", "بيك اب", "بيك أب"],
     "utilitaire": ["utilitaire", "commercial"],
 }
 
 
 def _parse_number(text: str) -> Optional[float]:
-    """Parse a number from various formats: 250000, 250 000, 250,000, 250k."""
-    cleaned = re.sub(r"[^\d.,kK]", "", text.strip())
+    """Parse a number from various formats: 250000, 250 000, 250,000, 250k, 200 ألف, 15 مليون."""
+    t = text.strip()
+    is_thousands = bool('ألف' in t or 'الف' in t or 'k' in t.lower())
+    is_mlyon = bool(re.search(r'(?:mlyon|melyon|مليون)', t, re.I))
+    cleaned = re.sub(r"[^\d.,]", "", t)
     if not cleaned:
         return None
-    # Handle "k" suffix
-    if cleaned[-1] in ("k", "K"):
-        try:
-            return float(cleaned[:-1].replace(",", ".")) * 1000
-        except ValueError:
-            return None
-    # Remove spaces and commas used as thousands separators
     cleaned = cleaned.replace(" ", "").replace(",", "")
     try:
-        return float(cleaned)
+        val = float(cleaned)
+        if is_thousands and val < 10000:
+            return val * 1000
+        if is_mlyon and val < 100:
+            return val * 10000
+        return val
     except ValueError:
         return None
 
@@ -139,7 +140,7 @@ def extract_profile_fields(message: str) -> dict:
 
     # ── Nombre de passagers ──────────────────────────────────────
     passengers_match = re.search(
-        r"(\d+)\s*(?:passagers?|personnes?|people|persons?|places?|pers|nas)", text_lower
+        r"(\d+)\s*(?:passagers?|personnes?|people|persons?|places?|pers|nas|بلايص|بلاصة|مقاعد|مقعد|أشخاص|ركاب|نفوس)", text_lower
     )
     if passengers_match:
         val = int(passengers_match.group(1))
@@ -151,7 +152,10 @@ def extract_profile_fields(message: str) -> dict:
     # Ces termes alimentent les filtres durs/contexte (et non une préférence
     # 8D explicite). Cela évite par exemple que "budget 240000" couvre
     # artificiellement la dimension prix_acces.
-    non_priority_aliases = {"budget", "prix", "ville", "city", "urbain", "urban"}
+    non_priority_aliases = {
+        "budget", "prix", "ville", "city", "urbain", "urban",
+        "ميزانية", "ميزانيتي", "البودجي", "ثمن", "مدينة", "فلوس", "دراهم", "درهم"
+    }
     for alias, dimension in PRIORITY_ALIASES.items():
         if alias not in non_priority_aliases and alias in text_lower and dimension in VALID_DIMENSIONS:
             priorities.append(dimension)
@@ -161,7 +165,7 @@ def extract_profile_fields(message: str) -> dict:
     # Une sensibilité forte à la consommation concerne à la fois le coût réel
     # et l'impact énergétique. On conserve les deux signaux séparément afin
     # que le moteur puisse les pondérer sans que le LLM ne les invente.
-    if any(term in text_lower for term in ("consommation", "consumption", "conso", "faible consommation", "économie de carburant", "fuel economy")):
+    if any(term in text_lower for term in ("consommation", "consumption", "conso", "faible consommation", "économie de carburant", "fuel economy", "استهلاك", "توفير الوقود", "اقتصادية", "ما كتاكلش", "ما تستهلكش")):
         extracted["priorities"] = list(set(extracted.get("priorities", [])) | {"cout_reel", "ecologie"})
 
     # ── Contraintes textuelles ───────────────────────────────────
@@ -169,7 +173,11 @@ def extract_profile_fields(message: str) -> dict:
         r"pas\s+(?:trop\s+)?(?:de\s+)?(.+?)(?:\.|,|$)",
         r"je\s+(?:ne\s+)?veux\s+pas\s+(.+?)(?:\.|,|$)",
         r"sans\s+(.+?)(?:\.|,|$)",
-        r"ma\s+bghitch\s+(.+?)(?:\.|,|$)",  # darija
+        r"ma\s+bghitch\s+(.+?)(?:\.|,|$)",  # darija latin
+        r"ما\s+بغيتش\s+(.+?)(?:\.|,|$)",    # darija arabic
+        r"بدون\s+(.+?)(?:\.|,|$)",         # arabic
+        r"بلا\s+(.+?)(?:\.|,|$)",          # darija
+        r"لا\s+أريد\s+(.+?)(?:\.|,|$)",    # arabic
     ]
     constraints = []
     for pattern in constraint_patterns:
@@ -316,7 +324,7 @@ class ConsultativeFlow:
     def get_next_question_plan(
         self, session_id: str, candidate_vehicles: Optional[list[dict]] = None
     ) -> dict[str, Any]:
-        """Produit une sélection Analyze → Select → Formulate de 1 à 2 questions."""
+        """Produit une sélection Analyze → Select → Formulate d'une seule question."""
         profile = self.get_profile(session_id)
         if profile.budget_max is None:
             return {"dimensions": [], "target": "budget", "questions": [
@@ -333,7 +341,7 @@ class ConsultativeFlow:
 
         first = ranked[0]
         questions = {
-            "espace": "De combien de place avez-vous besoin pour les passagers et les valises ?",
+            "espace": "De combien de place avez-vous besoin pour vos bagages, en nombre de valises ?",
             "securite": "Quel niveau d'importance accordez-vous à la sécurité certifiée (notes NCAP) ?",
             "cout_reel": "Préférez-vous réduire la consommation et les coûts d'utilisation, même si le prix d'achat est plus élevé ?",
             "prix_acces": "Souhaitez-vous privilégier le prix d'achat le plus bas dans votre budget ?",
@@ -342,12 +350,11 @@ class ConsultativeFlow:
             "ecologie": "L'énergie hybride ou électrique est-elle une priorité pour vous ?",
             "motricite": "Avez-vous besoin d'une transmission intégrale ou d'aptitudes tout-terrain ?",
         }
+        # The UI is a one-question-at-a-time conversation. Selecting a second
+        # dimension here caused the LLM to bundle unrelated questions into one
+        # message and produced mismatched Yes/No suggestions.
         selected = [first]
-        if len(ranked) > 1 and first not in {"cout_reel", "performance"}:
-            selected.append(ranked[1])
-        rendered = [questions[dimension] for dimension in selected]
-        if len(selected) == 2:
-            rendered[1] = f"Et entre {selected[0]} et {selected[1]}, lequel compte le plus pour vous ?"
+        rendered = [questions[first]]
         return {"dimensions": selected, "target": ",".join(selected), "questions": rendered}
 
     def record_question_plan(self, session_id: str, plan: dict[str, Any]) -> None:
@@ -399,7 +406,7 @@ class ConsultativeFlow:
             + f". CHAMPS MANQUANTS : {essential_missing}."
             + f". DIMENSIONS 8D COUVERTES : {', '.join(profile.covered_dimensions) or 'aucune'}."
             + f" DIMENSIONS 8D MANQUANTS : {missing}."
-            + f" QUESTIONS EN ATTENTE : {pending}. Pose 1 à 2 questions maximum."
+            + f" QUESTIONS EN ATTENTE : {pending}. Pose exactement une seule question à la fois."
         )
         return res
 

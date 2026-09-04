@@ -31,7 +31,11 @@ async def list_new_car_brands(
             func.min(TrimCatalog.price_new_mad).label("min_price_mad")
         )
         .outerjoin(ModelCatalog, ModelCatalog.brand_id == BrandCatalog.id)
-        .outerjoin(TrimCatalog, and_(TrimCatalog.model_id == ModelCatalog.id, TrimCatalog.is_available_in_morocco.is_(True)))
+        .outerjoin(TrimCatalog, and_(
+            TrimCatalog.model_id == ModelCatalog.id,
+            TrimCatalog.is_available_in_morocco.is_(True),
+            TrimCatalog.price_new_mad > 0,
+        ))
         .where(BrandCatalog.is_active.is_(True))
         .group_by(BrandCatalog.id)
         .order_by(BrandCatalog.name.asc())
@@ -110,7 +114,7 @@ async def list_new_car_models(
             continue
 
         valid_trims = matching_trims if (fuel_type or transmission or max_price or min_price) else trims
-        prices = [float(t.promo_price_mad or t.price_new_mad) for t in valid_trims]
+        prices = [float(t.promo_price_mad or t.price_new_mad) for t in valid_trims if float(t.promo_price_mad or t.price_new_mad or 0) > 0]
         min_p = min(prices) if prices else None
         max_p = max(prices) if prices else None
         has_promo = any(t.is_promo for t in valid_trims)

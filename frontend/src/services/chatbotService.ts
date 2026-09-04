@@ -36,6 +36,8 @@ export const chatbotService = {
     // Determine the base URL from the Axios instance or env
     const baseURL = import.meta.env.VITE_API_URL || '/api';
     
+    const timeoutController = signal ? null : new AbortController();
+    const timeoutId = timeoutController ? window.setTimeout(() => timeoutController.abort(), 45_000) : null;
     try {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -55,7 +57,7 @@ export const chatbotService = {
           session_id: sessionId,
           language
         }),
-        signal
+        signal: signal || timeoutController?.signal
       });
 
       if (!response.ok) {
@@ -83,6 +85,8 @@ export const chatbotService = {
       }
       console.error("Streaming error:", error);
       throw error;
+    } finally {
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
     }
   },
   

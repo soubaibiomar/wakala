@@ -11,16 +11,9 @@ import fr from '../i18n/fr';
 import './Catalogue.css';
 import { resolveVehicleImage } from '../utils/vehicleImageResolver';
 
-const PAGE_SIZE = 12;
+import { extractMaximumBudget, extractBrandPreference } from '../components/recommendation-experience/recommendationClient';
 
-function extractMaximumBudget(query: string): number | null {
-  const match = query.match(/(?:under|below|less than|max(?:imum)?|budget|have|avec|moins de|jusqu['’à]|≤)?\s*(\d[\d\s.,]*)\s*(k|000|mad|dhs?|dh|dirhams?|دراهم?|ألف)?/i);
-  if (!match) return null;
-  const value = Number(match[1].replace(/[\s.,]/g, ''));
-  if (!Number.isFinite(value) || value <= 0) return null;
-  const suffix = (match[2] || '').toLowerCase();
-  return suffix === 'k' || suffix === '000' || suffix === 'ألف' ? value * 1000 : value;
-}
+const PAGE_SIZE = 12;
 
 const BUDGET_BROWSE_OPTIONS = [
   { label: 'Moins de 150 000 MAD', max: 150000, brand: 'Dacia', model: 'Sandero' },
@@ -232,12 +225,24 @@ export default function Catalogue() {
 
     if (q && q !== lastQuery) {
       setLastQuery(q);
-      setLoading(true);
-      
       // The recommendation bar and the chatbot share one qualification flow.
       // Do not fetch three cars here: the assistant must ask its criteria first.
       setActiveRecommendations(null);
-      if (q.trim().split(/\s+/).length <= 2) setSearchTerm(q);
+      const detectedBrand = extractBrandPreference(q);
+      if (detectedBrand) {
+        setSearchTerm(detectedBrand.apiValue);
+        if (detectedBrand.model) {
+          setActiveModel(detectedBrand.model);
+        }
+      } else {
+        const cleanQ = q.replace(/[^\p{L}\p{N}\s-]/gu, ' ').trim().replace(/\s+/g, ' ');
+        if (cleanQ.split(/\s+/).length <= 2) {
+          setSearchTerm(cleanQ);
+        } else {
+          setLoading(true);
+          fetchVehicles(1);
+        }
+      }
     } else if (!q && lastQuery) {
       const clearedQuery = lastQuery;
       setLastQuery(null);
@@ -261,12 +266,31 @@ export default function Catalogue() {
 
   useEffect(() => {
     const handleRecommendationResults = (event: Event) => {
-      const detail = (event as CustomEvent<{ cars?: Vehicle[]; total?: number; final?: boolean; empty?: boolean; reset?: boolean }>).detail;
+      const detail = (event as CustomEvent<{
+        cars?: Vehicle[];
+        total?: number;
+        final?: boolean;
+        empty?: boolean;
+        reset?: boolean;
+        filters?: { fuel_type?: string; body_type?: string; transmission?: string; price_max?: number };
+      }>).detail;
       if (detail?.reset) {
         setActiveRecommendations(null);
+        setActiveFuel('');
+        setActiveBody('');
+        setActiveTransmission('');
+        setPriceMin('');
+        setPriceMax('');
+        setSearchTerm('');
         setPage(1);
         setCatalogueResetKey((current) => current + 1);
         return;
+      }
+      if (detail?.filters) {
+        if (detail.filters.fuel_type) setActiveFuel(detail.filters.fuel_type as FuelType);
+        if (detail.filters.body_type) setActiveBody(detail.filters.body_type as BodyType);
+        if (detail.filters.transmission) setActiveTransmission(detail.filters.transmission as TransmissionType);
+        if (detail.filters.price_max) setPriceMax(String(detail.filters.price_max));
       }
       // `cars` is the actual recommendation pool. Rendering is paginated
       // later, so never use the 20-card display cap as the recommendation
@@ -699,7 +723,9 @@ export default function Catalogue() {
                     ? `${searchTerm} ${activeModel}`
                     : 'Voitures neuves au Maroc'}
             </h1>
-            <span className="catalogue__main-count">1 - {vehicles.length} sur {total} annonces</span>
+            <span className="catalogue__main-count">
+              1 - {vehicles.length} sur {total} {activeRecommendations ? 'finitions recommandées' : 'annonces'}
+            </span>
           </div>
 
           {!activeRecommendations && !activeFuel && !activeBody && !city && !priceMin && !priceMax && !searchTerm && !activeModel && (

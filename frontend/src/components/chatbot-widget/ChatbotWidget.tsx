@@ -35,6 +35,11 @@ export default function ChatbotWidget() {
   );
 
   const hasNewMessage = messages.length > 0 && !isOpen;
+  const isCatalogue = location.pathname === '/catalogue' || location.pathname === '/admin/catalogue';
+
+  if (isCatalogue) {
+    return null;
+  }
 
   return (
     <>

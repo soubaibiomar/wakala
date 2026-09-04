@@ -11,7 +11,7 @@
  *   </AuthProvider>
  */
 
-import { BrowserRouter, Routes, Route, Link, useLocation, Outlet, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Outlet, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Home as HomeIcon, Search, Calculator, User, LogOut } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -60,60 +60,7 @@ const queryClient = new QueryClient();
 // ─── Navbar ───────────────────────────────────────────────────
 
 import Navbar from './components/layout/Navbar';
-
-// ─── Footer ───────────────────────────────────────────────────
-
-function Footer() {
-  return (
-    <footer className="footer" id="footer">
-      <div className="footer__inner">
-        <div>
-          <div className="footer__brand">Wakala</div>
-          <p className="footer__desc">
-            Votre partenaire de confiance pour l’achat automobile au Maroc.
-            Comparez les véhicules neufs, consultez des fiches techniques fiables,
-            estimez les frais d’importation et trouvez le modèle adapté à vos besoins.
-          </p>
-        </div>
-        <div>
-          <div className="footer__title">Nos services</div>
-          <ul className="footer__list">
-            <li><Link to="/guide-achat-voiture-maroc">Guide d’achat automobile</Link></li>
-            <li><Link to="/catalogue">Catalogue de voitures neuves</Link></li>
-            <li><Link to="/financement-auto-maroc">Financement et Mourabaha</Link></li>
-            <li><Link to="/comparateur">Comparateur de véhicules</Link></li>
-            <li><Link to="/dedouanement">Simulateur de dédouanement</Link></li>
-            <li><Link to="/chat">Assistant automobile multilingue</Link></li>
-          </ul>
-        </div>
-        <div>
-          <div className="footer__title">Villes et réseau</div>
-          <ul className="footer__list">
-            <li><Link to="/voitures-neuves/casablanca">Casablanca</Link></li>
-            <li><Link to="/voitures-neuves/rabat">Rabat</Link></li>
-            <li><Link to="/voitures-neuves/marrakech">Marrakech</Link></li>
-            <li><Link to="/voitures-neuves/tanger">Tanger</Link></li>
-            <li><Link to="/voitures-neuves/agadir">Agadir</Link></li>
-            <li><Link to="/marque">Toutes les marques</Link></li>
-          </ul>
-        </div>
-        <div>
-          <div className="footer__title">Wakala</div>
-          <ul className="footer__list">
-            <li><Link to="/score-de-confiance">Score de confiance Wakala</Link></li>
-            <li><Link to="/technologie">Technologie et données</Link></li>
-            <li><Link to="/a-propos">À propos de Wakala</Link></li>
-            <li><Link to="/contact">Nous contacter</Link></li>
-            <li><Link to="/mentions-legales">Mentions légales</Link></li>
-          </ul>
-        </div>
-      </div>
-      <div className="footer__bottom">
-        © {new Date().getFullYear()} Wakala — L’automobile en toute confiance au Maroc
-      </div>
-    </footer>
-  );
-}
+import Footer from './components/layout/Footer';
 
 // ─── Layouts ──────────────────────────────────────────────────
 

@@ -30,6 +30,18 @@ import { resolveVehicleImage } from '../utils/vehicleImageResolver';
 import { resolveBrandLogo } from '../utils/brandLogoResolver';
 import './ComparatorPage.css';
 
+// URLs come from imported catalogue data. Only allow web links; this prevents
+// a malformed record from creating a javascript:, data:, or other unsafe link.
+function safeExternalUrl(value?: string | null): string | undefined {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value, window.location.origin);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export const ComparatorPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -387,9 +399,9 @@ export const ComparatorPage: React.FC = () => {
                               className="brand-mini-logo" 
                               onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                             />
-                            {v.brand_url ? (
+                            {safeExternalUrl(v.brand_url) ? (
                               <a
-                                href={v.brand_url}
+                                href={safeExternalUrl(v.brand_url)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="veh-brand-link"
@@ -403,9 +415,9 @@ export const ComparatorPage: React.FC = () => {
                             )}
                           </div>
 
-                          {v.model_url ? (
+                          {safeExternalUrl(v.model_url) ? (
                             <a
-                              href={v.model_url}
+                              href={safeExternalUrl(v.model_url)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="veh-title-link"
@@ -420,9 +432,9 @@ export const ComparatorPage: React.FC = () => {
                             <h3 className="veh-title">{v.model_name}</h3>
                           )}
 
-                          {v.trim_url ? (
+                          {safeExternalUrl(v.trim_url) ? (
                             <a
-                              href={v.trim_url}
+                              href={safeExternalUrl(v.trim_url)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="veh-trim-badge-link"
@@ -586,9 +598,9 @@ export const ComparatorPage: React.FC = () => {
                     {vehicles.map((v) => (
                       <td key={v.id} className="row-value">
                         <div className="official-links-group">
-                          {v.trim_url && (
+                          {safeExternalUrl(v.trim_url) && (
                             <a
-                              href={v.trim_url}
+                              href={safeExternalUrl(v.trim_url)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="official-ext-pill"
@@ -597,9 +609,9 @@ export const ComparatorPage: React.FC = () => {
                               Fiche Modèle <ExternalLink size={10} style={{ marginLeft: 3 }} />
                             </a>
                           )}
-                          {v.brand_url && (
+                          {safeExternalUrl(v.brand_url) && (
                             <a
-                              href={v.brand_url}
+                              href={safeExternalUrl(v.brand_url)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="official-ext-pill secondary-pill"
@@ -699,9 +711,9 @@ export const ComparatorPage: React.FC = () => {
                         <td key={v.id} className={`row-value ${isWinner ? 'winner-cell' : ''}`}>
                           <div className="val-main font-bold">{v.specs.consumption_l_100}</div>
                           {isWinner && <span className="winner-pill">Plus sobre</span>}
-                          {v.real_conso_url && (
+                          {safeExternalUrl(v.real_conso_url) && (
                             <a
-                              href={v.real_conso_url}
+                              href={safeExternalUrl(v.real_conso_url)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="metric-source-link"
@@ -738,9 +750,9 @@ export const ComparatorPage: React.FC = () => {
                     {vehicles.map((v) => (
                       <td key={v.id} className="row-value">
                         <div>{renderStars(v.specs.euro_ncap_stars)}</div>
-                        {v.ncap_report_url && (
+                        {safeExternalUrl(v.ncap_report_url) && (
                           <a
-                            href={v.ncap_report_url}
+                            href={safeExternalUrl(v.ncap_report_url)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="metric-source-link"

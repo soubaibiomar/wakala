@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Message } from './useChatSession';
 import ChatMessage from './ChatMessage';
 import PreferenceBar from './PreferenceBar';
@@ -146,6 +147,18 @@ export default function ChatWindow({
     }
   };
 
+  const navigate = useNavigate();
+  const handleOpenCatalogue = useCallback(() => {
+    const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+    if (lastUser) {
+      sessionStorage.setItem('wakala_pending_intent', JSON.stringify({
+        message: lastUser.content,
+        language: currentLanguage || 'fr',
+      }));
+    }
+    navigate('/catalogue');
+  }, [messages, currentLanguage, navigate]);
+
   return (
     <div className={styles.window}>
       {/* Header Premium */}
@@ -165,6 +178,15 @@ export default function ChatWindow({
         </div>
 
         <div className={styles.windowHeaderRight}>
+          {messages.length > 0 && (
+            <button
+              className={styles.headerActionBtn}
+              onClick={handleOpenCatalogue}
+              title="Continuer dans le catalogue de véhicules"
+            >
+              Catalogue ↗
+            </button>
+          )}
           <button
             className={styles.headerActionBtn}
             onClick={onClear}
