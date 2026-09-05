@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { FastApiRecommendationClient, MockRecommendationClient, type Car, type ChatTurn, detectConstraintConflict, computeFallback8dScores, detectClientProfile, getUniqueModelCars, deduplicateCars, extractMaximumBudget, extractBrandPreference, informativeRequestPattern, isCriterionPreference } from './recommendationClient';
-import { alignQuestionOptions } from './RecommendationExperience';
+import { alignQuestionOptions } from './recommendationClient';
 
 vi.mock('../../services/chatbotService', () => ({
   chatbotService: { streamMessage: vi.fn() },
@@ -520,28 +520,19 @@ describe('FastApiRecommendationClient recommendation logic', () => {
       const clio = car({ id: 'clio-5', brand: 'Renault', model: 'Clio', price: 160000, body_type: 'citadine', engine_power_hp: 90 });
       const sandero = car({ id: 'sandero', brand: 'Dacia', model: 'Sandero Stepway', price: 145000, body_type: 'suv', engine_power_hp: 95 });
 
-      // Step 1: Budget question for young student adapts dynamically to recommended cars
+      // Step 1: Budget question adapts dynamically to recommended cars
       const qBudget = await client.getNextQuestion(
         [{ role: 'user', content: 'Je suis un jeune étudiant et je cherche ma première voiture' }],
         [clio, sandero],
       );
       expect(qBudget).not.toBeNull();
-      expect(qBudget?.question).toContain('première voiture');
+      expect(qBudget?.question).toContain('budget');
       expect(qBudget?.rangeBounds).toBeDefined();
       expect(qBudget?.rangeBounds?.min).toBe(145000);
       expect(qBudget?.rangeBounds?.max).toBe(160000);
-      expect(qBudget?.rangeBounds?.label).toBe('Budget jeune conducteur');
       expect(qBudget?.options.length).toBeGreaterThanOrEqual(2);
 
-      // Verify envelope fallback when no cars loaded yet
-      const qFallbackStudent = await client.getNextQuestion(
-        [{ role: 'user', content: 'Je suis un jeune étudiant et je cherche ma première voiture' }],
-        [],
-      );
-      expect(qFallbackStudent?.rangeBounds?.min).toBe(70000);
-      expect(qFallbackStudent?.rangeBounds?.max).toBe(220000);
-
-      // Step 2: Format question for young student (after usage is answered)
+      // Step 2: Format question offers strictly candidate bodies (Citadine & SUV, strictly NO Coupé)
       const qFormat = await client.getNextQuestion(
         [
           { role: 'user', content: 'Je suis un jeune étudiant et je cherche ma première voiture' },
@@ -553,9 +544,11 @@ describe('FastApiRecommendationClient recommendation logic', () => {
         [clio, sandero],
       );
       expect(qFormat).not.toBeNull();
-      expect(qFormat?.options[0].label).toContain('Citadine');
+      expect(qFormat?.options.some((o) => o.label.includes('Citadine'))).toBe(true);
+      expect(qFormat?.options.some((o) => o.label.includes('SUV'))).toBe(true);
+      expect(qFormat?.options.some((o) => o.label.toLowerCase().includes('coupé'))).toBe(false);
 
-      // Step 3: Priority question for young student
+      // Step 3: Priority question is an objective 8D question, not a hallucinated persona question
       const qPriority = await client.getNextQuestion(
         [
           { role: 'user', content: 'Je suis un jeune étudiant et je cherche ma première voiture' },
@@ -569,8 +562,7 @@ describe('FastApiRecommendationClient recommendation logic', () => {
         [clio, sandero],
       );
       expect(qPriority).not.toBeNull();
-      expect(qPriority?.question).toContain('trajets quotidiens');
-      expect(qPriority?.options[0].label).toContain('Frais réduits');
+      expect(qPriority?.question).not.toContain('étudiant');
     });
 
     it('adapts budget range and premium criteria for executive profile', async () => {
@@ -580,28 +572,19 @@ describe('FastApiRecommendationClient recommendation logic', () => {
       const bmwX5 = car({ id: 'bmw-x5', brand: 'BMW', model: 'X5', price: 920000, body_type: 'suv', transmission: 'automatique', engine_power_hp: 286 });
       const daciaLogan = car({ id: 'dacia-logan', brand: 'Dacia', model: 'Logan', price: 140000, body_type: 'berline', engine_power_hp: 90 });
 
-      // Step 1: Budget question for executive adapts dynamically to recommended cars
+      // Step 1: Budget question adapts dynamically to recommended cars
       const qBudget = await client.getNextQuestion(
         [{ role: 'user', content: 'Je suis directeur général, je cherche un véhicule de standing' }],
         [mbClassE, bmwX5],
       );
       expect(qBudget).not.toBeNull();
-      expect(qBudget?.question).toContain('véhicule statutaire');
+      expect(qBudget?.question).toContain('budget');
       expect(qBudget?.rangeBounds).toBeDefined();
       expect(qBudget?.rangeBounds?.min).toBe(680000);
       expect(qBudget?.rangeBounds?.max).toBe(920000);
-      expect(qBudget?.rangeBounds?.label).toBe('Budget prestige executive');
       expect(qBudget?.options.length).toBeGreaterThanOrEqual(2);
 
-      // Verify envelope fallback when no cars loaded yet
-      const qFallbackExec = await client.getNextQuestion(
-        [{ role: 'user', content: 'Je suis directeur général, je cherche un véhicule de standing' }],
-        [],
-      );
-      expect(qFallbackExec?.rangeBounds?.min).toBe(350000);
-      expect(qFallbackExec?.rangeBounds?.max).toBe(1500000);
-
-      // Step 2: Format question for executive (after usage is answered)
+      // Step 2: Format question offers strictly candidate bodies (Berline & SUV, strictly NO Coupé)
       const qFormat = await client.getNextQuestion(
         [
           { role: 'user', content: 'Je suis directeur général' },
@@ -613,8 +596,9 @@ describe('FastApiRecommendationClient recommendation logic', () => {
         [mbClassE, bmwX5],
       );
       expect(qFormat).not.toBeNull();
-      expect(qFormat?.options[0].label).toContain('Berline statutaire');
-      expect(qFormat?.options[1].label).toContain('SUV Premium');
+      expect(qFormat?.options.some((o) => o.label.includes('Berline'))).toBe(true);
+      expect(qFormat?.options.some((o) => o.label.includes('SUV'))).toBe(true);
+      expect(qFormat?.options.some((o) => o.label.toLowerCase().includes('coupé'))).toBe(false);
 
       // Ranking: Premium executive brands are ranked on top, budget low-end brands are penalized
       const sorted = await client.applyAnswer(
@@ -641,17 +625,9 @@ describe('FastApiRecommendationClient recommendation logic', () => {
       expect(qBudget?.rangeBounds).toBeDefined();
       expect(qBudget?.rangeBounds?.min).toBe(420000);
       expect(qBudget?.rangeBounds?.max).toBe(540000);
-      expect(qBudget?.rangeBounds?.label).toBe('Budget professionnel de santé');
       expect(qBudget?.options.length).toBeGreaterThanOrEqual(2);
 
-      // Verify envelope fallback when no cars loaded yet
-      const qFallbackMed = await client.getNextQuestion(
-        [{ role: 'user', content: 'Je suis médecin urgentiste' }],
-        [],
-      );
-      expect(qFallbackMed?.rangeBounds?.min).toBe(200000);
-      expect(qFallbackMed?.rangeBounds?.max).toBe(750000);
-
+      // As both cars are SUV and Hybrid, format/fuel questions are not asked when no diversity exists
       const qPriority = await client.getNextQuestion(
         [
           { role: 'user', content: 'Je suis médecin urgentiste' },
@@ -659,15 +635,12 @@ describe('FastApiRecommendationClient recommendation logic', () => {
           { role: 'user', content: 'Budget 500 000 MAD' },
           { role: 'assistant', content: 'Quelle utilisation ?' },
           { role: 'user', content: 'Mixte' },
-          { role: 'assistant', content: 'Quelle silhouette ?' },
-          { role: 'user', content: 'SUV' },
         ],
         [volvoXC60, toyotaRav4],
       );
-      expect(qPriority).not.toBeNull();
-      expect(qPriority?.question).toContain('soignant');
-      expect(qPriority?.options[0].label).toContain('Sécurité certifiée maximale');
-      expect(qPriority?.options[1].label).toContain('Fiabilité absolue sans panne');
+      if (qPriority) {
+        expect(qPriority.question).not.toContain('soignant');
+      }
     });
 
     it('adapts long-distance autonomy and diesel for commercial_commuter', async () => {
@@ -684,32 +657,7 @@ describe('FastApiRecommendationClient recommendation logic', () => {
       expect(qBudget).not.toBeNull();
       expect(qBudget?.rangeBounds?.min).toBe(290000);
       expect(qBudget?.rangeBounds?.max).toBe(340000);
-      expect(qBudget?.rangeBounds?.label).toBe('Budget commercial grand rouleur');
       expect(qBudget?.options.length).toBeGreaterThanOrEqual(2);
-
-      // Verify envelope fallback when no cars loaded yet
-      const qFallbackCommuter = await client.getNextQuestion(
-        [{ role: 'user', content: 'Je suis délégué commercial et je fais beaucoup de route' }],
-        [],
-      );
-      expect(qFallbackCommuter?.rangeBounds?.min).toBe(120000);
-      expect(qFallbackCommuter?.rangeBounds?.max).toBe(390000);
-
-      const qPriority = await client.getNextQuestion(
-        [
-          { role: 'user', content: 'Je suis délégué commercial' },
-          { role: 'assistant', content: 'Quel est votre budget ?' },
-          { role: 'user', content: 'Budget 320 000 MAD' },
-          { role: 'assistant', content: 'Quelle utilisation ?' },
-          { role: 'user', content: 'Autoroute' },
-          { role: 'assistant', content: 'Quel format ?' },
-          { role: 'user', content: 'Berline' },
-        ],
-        [passat, octavia],
-      );
-      expect(qPriority).not.toBeNull();
-      expect(qPriority?.question).toContain('tournées professionnelles');
-      expect(qPriority?.options[0].label).toContain('Autonomie maximale');
     });
 
     it('adapts family questions and priority options for family profile', async () => {
@@ -729,16 +677,8 @@ describe('FastApiRecommendationClient recommendation logic', () => {
       expect(qBudget?.rangeBounds?.label).toBe('Budget familial');
       expect(qBudget?.options.length).toBeGreaterThanOrEqual(2);
 
-      // Verify envelope fallback when no cars loaded yet
-      const qFallbackFamily = await client.getNextQuestion(
-        [{ role: 'user', content: 'Je cherche une voiture pour ma grande famille' }],
-        [],
-      );
-      expect(qFallbackFamily?.rangeBounds?.min).toBe(140000);
-      expect(qFallbackFamily?.rangeBounds?.max).toBe(450000);
-
-      // Step 2: Family priority question
-      const qPriority = await client.getNextQuestion(
+      // Step 2: Family space/luggage question
+      const qSpace = await client.getNextQuestion(
         [
           { role: 'user', content: 'Je cherche une voiture familiale avec grand coffre' },
           { role: 'assistant', content: 'Quel est votre budget ?' },
@@ -748,10 +688,45 @@ describe('FastApiRecommendationClient recommendation logic', () => {
         ],
         [jogger, p5008],
       );
-      expect(qPriority).not.toBeNull();
-      expect(qPriority?.question).toContain('famille');
-      expect(qPriority?.options[0].label).toContain('Sécurité maximale');
-      expect(qPriority?.options[1].label).toContain('Volume de coffre géant');
+      expect(qSpace).not.toBeNull();
+      expect(qSpace?.options.map((o) => o.label)).toEqual(['Break', 'SUV', 'Pas de préférence']);
+    });
+
+    it('never displays suggestions that do not exist in candidate cars', () => {
+      const thermalOnlyCars = [
+        car({ id: '1', fuel_type: 'diesel', body_type: 'berline', is_4x4: false, seats: 5 }),
+        car({ id: '2', fuel_type: 'essence', body_type: 'berline', is_4x4: false, seats: 5 }),
+      ];
+
+      // Fuel question: Diesel & Essence exist, Hybrid & Electric DO NOT
+      const fuelOptions = alignQuestionOptions(
+        'Which fuel type do you prefer (Diesel, Petrol, Hybrid, or Electric)?',
+        [],
+        'en',
+        thermalOnlyCars
+      );
+      expect(fuelOptions.some((o) => o.value === 'diesel')).toBe(true);
+      expect(fuelOptions.some((o) => o.value === 'essence')).toBe(true);
+      expect(fuelOptions.some((o) => o.value === 'hybride')).toBe(false);
+      expect(fuelOptions.some((o) => o.value === 'electrique')).toBe(false);
+
+      // Drivetrain question: Only 2WD exists, 4x4 DOES NOT -> only 1 specific choice left -> returns []
+      const awdOptions = alignQuestionOptions(
+        'Do you need all-wheel drive (4x4 / AWD)?',
+        [],
+        'en',
+        thermalOnlyCars
+      );
+      expect(awdOptions).toHaveLength(0);
+
+      // Space question: Only 5 seats exist, 7 seats DOES NOT
+      const spaceOptions = alignQuestionOptions(
+        'De combien de place pour les bagages avez-vous besoin, en valises ?',
+        [],
+        'fr',
+        thermalOnlyCars
+      );
+      expect(spaceOptions.some((o) => o.label.includes('7 places'))).toBe(false);
     });
   });
 

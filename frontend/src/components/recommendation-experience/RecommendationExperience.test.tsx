@@ -245,9 +245,35 @@ describe('RecommendationExperience - Navigation and Process Continuation', () =>
   });
 
   it('renders suggestion chips when the assistant asks "Which fuel type do you prefer for this vehicle (Diesel, Petrol, or Hybrid)?" and handles chip click', async () => {
+    const allFuelCars: Car[] = [
+      ...sampleCars,
+      {
+        id: 'car-3',
+        brand: 'Toyota',
+        model: 'Corolla Cross',
+        price: 260000,
+        body_type: 'suv',
+        fuel_type: 'hybride',
+        transmission: 'automatique',
+        year: 2024,
+        images: [{ file_path: '/assets/corolla.jpg' }],
+      } as unknown as Car,
+      {
+        id: 'car-4',
+        brand: 'MG',
+        model: 'ZS EV',
+        price: 320000,
+        body_type: 'suv',
+        fuel_type: 'electrique',
+        transmission: 'automatique',
+        year: 2024,
+        images: [{ file_path: '/assets/mgev.jpg' }],
+      } as unknown as Car,
+    ];
+
     const mockClient: RecommendationClient = {
       detectRecommendationIntent: vi.fn().mockResolvedValue(true),
-      applyAnswer: vi.fn().mockResolvedValue(sampleCars),
+      applyAnswer: vi.fn().mockResolvedValue(allFuelCars),
       getNextQuestion: vi.fn().mockResolvedValue({
         question: 'Which fuel type do you prefer for this vehicle (Diesel, Petrol, or Hybrid)?',
         options: [],
@@ -256,7 +282,7 @@ describe('RecommendationExperience - Navigation and Process Continuation', () =>
 
     render(
       <MemoryRouter initialEntries={['/catalogue']}>
-        <RecommendationExperience client={mockClient} initialCars={sampleCars} />
+        <RecommendationExperience client={mockClient} initialCars={allFuelCars} />
       </MemoryRouter>
     );
 

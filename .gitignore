@@ -1,7 +1,20 @@
-# ─── Environment ───────────────────────────────────────
+# ─── Environment & Secrets ────────────────────────────────
 .env
 .env.local
 .env.*.local
+*.pem
+*.key
+*.cert
+*.crt
+credentials*.json
+service_account*.json
+client_secret*.json
+
+# ─── Database Dumps ───────────────────────────────────────
+*.dump
+*.sql.gz
+*.sql.tar
+*.bak
 
 # ─── Dependencies ──────────────────────────────────────
 node_modules/

@@ -187,13 +187,81 @@ async def validation_exception_handler(request, exc):
         "Request validation failed: method=%s path=%s errors=%s",
         request.method, request.url.path, exc.errors(),
     )
-    return JSONResponse(status_code=422, content={"detail": jsonable_encoder(exc.errors())})# ─── Health check ─────────────────────────────────────────────
+    return JSONResponse(status_code=422, content={"detail": jsonable_encoder(exc.errors())})
+
+# ─── Health checks ─────────────────────────────────────────────
 
 @app.get("/health", tags=["Health"])
 async def health_check():
-    """Vérifie que le service est opérationnel."""
+    """Vérifie que le service HTTP est opérationnel (rapide pour liveness probe)."""
     return {
         "status": "healthy",
         "service": "Wakala-backend",
         "version": "0.1.0",
     }
+
+
+@app.get("/health/deep", tags=["Health"])
+async def health_check_deep():
+    """
+    Vérification approfondie de connectivité aux services externes :
+    - PostgreSQL (critique)
+    - Qdrant (vector store)
+    - Neo4j (graphe)
+    """
+    checks = {
+        "postgres": "unknown",
+        "qdrant": "unknown",
+        "neo4j": "unknown",
+    }
+
+    # 1. Vérification PostgreSQL
+    try:
+        from app.core.database import engine
+        from sqlalchemy import text
+        if engine is not None:
+            async with engine.begin() as conn:
+                await conn.execute(text("SELECT 1"))
+            checks["postgres"] = "ok"
+        else:
+            checks["postgres"] = "unconfigured"
+    except Exception as e:
+        checks["postgres"] = f"error: {str(e)}"
+
+    # 2. Vérification Qdrant
+    try:
+        from app.services.ai.qdrant import get_qdrant_client
+        qdrant = get_qdrant_client()
+        if qdrant is not None:
+            await qdrant.get_collections()
+            checks["qdrant"] = "ok"
+        else:
+            checks["qdrant"] = "unconfigured"
+    except Exception as e:
+        checks["qdrant"] = f"error: {str(e)}"
+
+    # 3. Vérification Neo4j
+    try:
+        from app.core.neo4j_client import neo4j_client
+        if neo4j_client and neo4j_client.driver:
+            neo4j_client.driver.verify_connectivity()
+            checks["neo4j"] = "ok"
+        else:
+            checks["neo4j"] = "unconfigured"
+    except Exception as e:
+        checks["neo4j"] = f"error: {str(e)}"
+
+    is_postgres_ok = checks["postgres"] == "ok"
+    overall_status = "healthy" if is_postgres_ok else "degraded"
+    status_code = 200 if is_postgres_ok else 503
+
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": overall_status,
+            "service": "Wakala-backend",
+            "version": "0.1.0",
+            "checks": checks,
+        }
+    )
+

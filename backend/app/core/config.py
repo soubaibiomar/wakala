@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     GOOGLE_CLIENT_ID: str = ""
+    WEBHOOK_SECRET: str = ""
 
     # ─── CORS ──────────────────────────────────────────────────
     CORS_ORIGINS: List[str] = [

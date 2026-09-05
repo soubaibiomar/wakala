@@ -595,7 +595,7 @@ function sortForProfile(cars: Car[], profile: ClientProfileCategory): Car[] {
     .map(({ car }) => car);
 }
 
-function getNcapScore(car: Pick<Car, 'ncap_rating'>): number {
+export function getNcapScore(car: Pick<Car, 'ncap_rating'>): number {
   const rating = String(car.ncap_rating || '').replace(',', '.');
   const match = rating.match(/(?:^|\s)([0-5](?:\.\d+)?)\s*(?:\/\s*5|(?:stars?|étoiles?))?/i);
   if (!match) return -1;
@@ -848,12 +848,12 @@ function dynamicQuestion(language: ChatLanguage, history: ChatTurn[], remainingC
   ]) || suitcaseQuestionAnswered || hasSuitcaseRangeInHistory;
 
   const priorityQuestionAnswered = questionWasAnswered(
-    /priority|priorité|importance|important|matters most|exigence|primordial|critère|requirement|أولوية|أولويتكم|الأولوية|معيار|أهم|المعيار|لا غنى عليه|تجربة|performance|power|acceleration|running costs|consumption|coûts|الأداء|القوة|التسارع|استهلاك|الأمان|أمان/i
+    /priorit|importance|important|matters most|exigence|primordial|critère|requirement|أولوية|أولويتكم|الأولوية|معيار|أهم|المعيار|لا غنى عليه|تجربة|experience|performance|power|acceleration|running costs|consumption|coûts|standing|prestige|الأداء|القوة|التسارع|استهلاك|الأمان|أمان/i
   );
 
   const hasPriority = hasAny(text, [
-    /\b(safe|safety|security|sécurité|economical|economy|consumption|consommation|performance|power|comfort|confort|reliable|fiable|fiabilité|sav|connectivité|carplay|autonomie|insonorisation)\b/i,
-    /(?:^|[^\p{L}\p{N}])(?:ال)?(السلامة|اقتصادية|استهلاك|قوية|مريحة|موثوقة|الأمان|الامان|صندوق|مقاعد|أمتعة|امتعة|موثوقية|اعتمادية|اتصال|شاشة|تكنولوجيا|صيانة|عزل|تكاليف|مصاريف|توفير|اقتصاد)(?:$|[^\p{L}\p{N}])/iu,
+    /\b(safe|safety|security|sécurité|economical|economy|consumption|consommation|performance|power|comfort|confort|reliable|fiable|fiabilité|sav|connectivité|carplay|autonomie|insonorisation|hybrid|hybride|electric|électrique|prestige|standing)\b/i,
+    /(?:^|[^\p{L}\p{N}])(?:ال)?(السلامة|اقتصادية|استهلاك|قوية|مريحة|موثوقة|الأمان|الامان|صندوق|مقاعد|أمتعة|امتعة|موثوقية|اعتمادية|اتصال|شاشة|تكنولوجيا|صيانة|عزل|تكاليف|مصاريف|توفير|اقتصاد|برستيج|هيبة)(?:$|[^\p{L}\p{N}])/iu,
   ]) || priorityQuestionAnswered;
 
   const fuels = new Set(remainingCars.map((car) => car.fuel_type).filter(Boolean));
@@ -953,132 +953,36 @@ function dynamicQuestion(language: ChatLanguage, history: ChatTurn[], remainingC
   }
 
   if (!hasBudget) {
-    if (detectedProfile === 'executive') {
-      const mentionsSupercar = hasAny(text, [
-        /\b(supercar|hypercar|ferrari|lamborghini|mclaren|bugatti|aston martin|valhalla|sf90|12cilindri|revuelto|purosangue)\b/i,
-      ]);
-      const executiveCars = mentionsSupercar
-        ? remainingCars
-        : remainingCars.filter((car) => !SUPERCAR_BRANDS.has(normalizeBrandText(car.brand)) && (Number(car.price) || 0) <= 2200000);
-      const question = language === 'en'
-        ? 'As an executive or director, to find the car that matches your standing and professional needs: what is your maximum budget in MAD?'
-        : language === 'ar'
-          ? 'بصفتك مديراً / إطاراً، لاختيار سيارة لائقة ومريحة تناسب مكانتك وتنقلاتك: ما هي ميزانيتك القصوى بالدرهم؟'
-          : language === 'darija'
-            ? 'بصفتك مدير / إطار، باش نلقاو ليك طوموبيل مناسبة لمكانتك وخدمتك: شحال هي الميزانية القصوى ديالك بالدرهم؟'
-            : 'En tant que dirigeant / directeur, pour trouver le véhicule statutaire et confortable qui correspond à votre standing : quel est votre budget maximum en MAD ?';
-      const fallbackBounds = {
-        min: 350000,
-        max: 1500000,
-        step: 25000,
-        label: language === 'en' ? 'Executive budget' : language === 'ar' || language === 'darija' ? 'ميزانية رجال الأعمال' : 'Budget prestige executive',
-      };
-      const bounds = computeCarPriceBounds(executiveCars.length ? executiveCars : remainingCars, fallbackBounds);
-      return {
-        question,
-        options: generateDynamicBudgetOptions(bounds.min, bounds.max, language),
-        rangeBounds: bounds,
-      };
-    }
-    if (detectedProfile === 'medical') {
-      const question = language === 'en'
-        ? 'As a healthcare professional, to find a reliable and comfortable car for your rounds and commutes: what is your maximum budget in MAD?'
-        : language === 'ar'
-          ? 'بصفتك في المجال الطبي، لاختيار سيارة تجمع بين الراحة والاعتمادية في تنقلاتك: ما هي ميزانيتك القصوى بالدرهم؟'
-          : language === 'darija'
-            ? 'بصفتك فطاقم الصحة، باش نلقاو ليك طوموبيل مريحة وموثوقة لتحركاتك: شحال هي الميزانية القصوى ديالك بالدرهم؟'
-            : 'En tant que professionnel de santé, pour allier confort, fiabilité et sérénité dans vos déplacements : quel est votre budget maximum en MAD ?';
-      const fallbackBounds = {
-        min: 200000,
-        max: 750000,
-        step: 10000,
-        label: language === 'en' ? 'Healthcare budget' : language === 'ar' || language === 'darija' ? 'ميزانية مهنيي الصحة' : 'Budget professionnel de santé',
-      };
-      const bounds = computeCarPriceBounds(remainingCars, fallbackBounds);
-      return {
-        question,
-        options: generateDynamicBudgetOptions(bounds.min, bounds.max, language),
-        rangeBounds: bounds,
-      };
-    }
-    if (detectedProfile === 'commercial_commuter') {
-      const question = language === 'en'
-        ? 'For your frequent travel, business trips, and daily commute: what is your maximum budget in MAD?'
-        : language === 'ar'
-          ? 'لتنقلاتك المهنية وأسفارك المتكررة: ما هي ميزانيتك القصوى بالدرهم؟'
-          : language === 'darija'
-            ? 'للتنقلات المهنية والأسفار الكثيرة: شحال هي الميزانية القصوى ديالك بالدرهم؟'
-            : 'Pour vos tournées professionnelles et déplacements fréquents : quel est votre budget maximum en MAD ?';
-      const fallbackBounds = {
-        min: 120000,
-        max: 390000,
-        step: 5000,
-        label: language === 'en' ? 'Commercial travel budget' : language === 'ar' || language === 'darija' ? 'ميزانية التنقل المهني' : 'Budget commercial grand rouleur',
-      };
-      const bounds = computeCarPriceBounds(remainingCars, fallbackBounds);
-      return {
-        question,
-        options: generateDynamicBudgetOptions(bounds.min, bounds.max, language),
-        rangeBounds: bounds,
-      };
-    }
-    if (detectedProfile === 'young_student') {
-      const question = language === 'en'
-        ? 'For a first car or your daily student / young driver commute: what is your maximum budget in MAD?'
-        : language === 'ar'
-          ? 'لأول سيارة أو لتنقلاتك اليومية كشاب / طالب: ما هي ميزانيتك القصوى بالدرهم؟'
-          : language === 'darija'
-            ? 'لأول طوموبيل ديالك ولا لتنقلاتك كشاب / طالب: شحال هي الميزانية القصوى ديالك بالدرهم؟'
-            : 'Pour votre première voiture ou vos trajets du quotidien : quel est votre budget maximum en MAD ?';
-      const fallbackBounds = {
-        min: 70000,
-        max: 220000,
-        step: 5000,
-        label: language === 'en' ? 'Young driver budget' : language === 'ar' || language === 'darija' ? 'ميزانية السائق الشاب' : 'Budget jeune conducteur',
-      };
-      const bounds = computeCarPriceBounds(remainingCars, fallbackBounds);
-      return {
-        question,
-        options: generateDynamicBudgetOptions(bounds.min, bounds.max, language),
-        rangeBounds: bounds,
-      };
-    }
-    if (detectedProfile === 'family') {
-      const question = language === 'en'
-        ? 'To comfortably accommodate your family and luggage: what is your maximum budget in MAD?'
-        : language === 'ar'
-          ? 'لتنقلات عائلتك وأمتعتكم بكل راحة: ما هي ميزانيتك القصوى بالدرهم؟'
-          : language === 'darija'
-            ? 'باش ترتاح العائلة كاملة ومع الباݣاج ديالكم: شحال هي الميزانية القصوى ديالك بالدرهم؟'
-            : 'Pour accueillir confortablement toute votre famille et vos bagages : quel est votre budget maximum en MAD ?';
-      const is7Places = /7\s*(?:places|seats|بلايص|مقاعد)/i.test(text);
-      const fallbackBounds = {
-        min: 140000,
-        max: is7Places ? 550000 : 450000,
-        step: 10000,
-        label: language === 'en' ? 'Family budget' : language === 'ar' || language === 'darija' ? 'ميزانية العائلة' : 'Budget familial',
-      };
-      const bounds = computeCarPriceBounds(remainingCars, fallbackBounds);
-      return {
-        question,
-        options: generateDynamicBudgetOptions(bounds.min, bounds.max, language),
-        rangeBounds: bounds,
-      };
-    }
     const isCitadine = extractBodyPreference(text) === 'citadine';
-    const fallbackBounds = isCitadine
+    const isFamily = hasAny(text, [/\b(family|famille|children|kids|baby|poussette|3a2ila)\b/i]);
+    const is7Places = /7\s*(?:places|seats|بلايص|مقاعد)/i.test(text);
+    const fallbackBounds = is7Places
       ? {
-          min: 80000,
-          max: 260000,
-          step: 5000,
-          label: language === 'en' ? 'City car budget' : language === 'ar' || language === 'darija' ? 'ميزانية سيارة صغيرة' : 'Budget citadine',
+          min: 140000,
+          max: 550000,
+          step: 10000,
+          label: language === 'en' ? 'Family budget' : language === 'ar' || language === 'darija' ? 'ميزانية العائلة' : 'Budget familial',
         }
-      : {
-          min: 89000,
-          max: 1200000,
-          step: 5000,
-          label: language === 'en' ? 'Recommended budget' : language === 'ar' || language === 'darija' ? 'الميزانية الموصى بها' : 'Budget recommandé',
-        };
+      : isFamily
+        ? {
+            min: 140000,
+            max: 450000,
+            step: 10000,
+            label: language === 'en' ? 'Family budget' : language === 'ar' || language === 'darija' ? 'ميزانية العائلة' : 'Budget familial',
+          }
+        : isCitadine
+          ? {
+              min: 80000,
+              max: 260000,
+              step: 5000,
+              label: language === 'en' ? 'City car budget' : language === 'ar' || language === 'darija' ? 'ميزانية سيارة صغيرة' : 'Budget citadine',
+            }
+          : {
+              min: 89000,
+              max: 1200000,
+              step: 5000,
+              label: language === 'en' ? 'Recommended budget' : language === 'ar' || language === 'darija' ? 'الميزانية الموصى بها' : 'Budget recommandé',
+            };
     const bounds = computeCarPriceBounds(remainingCars, fallbackBounds);
     return {
       question: language === 'en' ? 'What is your maximum budget in MAD?' : language === 'ar' ? 'ما هي ميزانيتك القصوى بالدرهم؟' : language === 'darija' ? 'شحال هي الميزانية القصوى ديالك بالدرهم؟' : 'Quel est votre budget maximum en MAD ?',
@@ -1086,40 +990,15 @@ function dynamicQuestion(language: ChatLanguage, history: ChatTurn[], remainingC
       rangeBounds: bounds,
     };
   }
+
   if (!hasUsage) {
-    let question = language === 'en'
+    const question = language === 'en'
       ? 'How will you mainly use the car: city driving, highways, or a mix of both?'
       : language === 'ar'
         ? 'كيف ستستعمل السيارة غالباً: داخل المدينة، في الطريق السيار، أم الاثنين؟'
         : language === 'darija'
           ? 'فين غادي تستعمل الطوموبيل أكثر: فالمدينة، فالطريق السيار، ولا بجوج؟'
           : 'Vous roulerez surtout en ville, sur autoroute ou dans les deux ?';
-
-    if (detectedProfile === 'executive') {
-      question = language === 'en'
-        ? 'For your executive journeys: will you mainly drive in the city, on highways, or a mix of both?'
-        : language === 'ar'
-          ? 'لتنقلاتك المهنية: هل ستستعمل السيارة غالباً داخل المدينة، في الطريق السيار، أم الاثنين؟'
-          : language === 'darija'
-            ? 'لتحركاتك المهنية: واش غادي تسوق فالمدينة، فالطريق السيار، ولا بجوج؟'
-            : 'Pour vos déplacements professionnels : vous roulerez surtout en ville, sur autoroute ou dans les deux ?';
-    } else if (detectedProfile === 'medical') {
-      question = language === 'en'
-        ? 'For your rounds and visits: will you mainly drive in the city, on highways, or both?'
-        : language === 'ar'
-          ? 'لتنقلاتك الطبية وزياراتك: هل ستستعمل السيارة غالباً داخل المدينة، في الطريق السيار، أم الاثنين؟'
-          : language === 'darija'
-            ? 'لتحركاتك وزياراتك: واش كتسوق فالمدينة، فالطريق السيار، ولا بجوج؟'
-            : 'Pour vos déplacements et visites : vous roulerez surtout en ville, sur autoroute ou dans les deux ?';
-    } else if (detectedProfile === 'commercial_commuter') {
-      question = language === 'en'
-        ? 'For your daily business trips: are you mostly in the city, on the motorway, or both?'
-        : language === 'ar'
-          ? 'لجولاتك وأسفارك المهنية: هل تسوق غالباً داخل المدينة، في الطريق السيار، أم الاثنين؟'
-          : language === 'darija'
-            ? 'فالجولات ديالك: واش كتسوق فالمدينة، فالطريق السيار، ولا بجوج؟'
-            : 'Pour vos tournées professionnelles : vous roulerez surtout en ville, sur autoroute ou dans les deux ?';
-    }
 
     return {
       question,
@@ -1132,43 +1011,52 @@ function dynamicQuestion(language: ChatLanguage, history: ChatTurn[], remainingC
             : [{ label: 'Ville' }, { label: 'Autoroute' }, { label: 'Mixte' }],
     };
   }
-const trunkValues = remainingCars.map((car) => car.trunk_volume_l).filter((value): value is number => Number.isFinite(value));
-const trunkMin = trunkValues.length ? Math.min(...trunkValues) : 0;
-const trunkMax = trunkValues.length ? Math.max(...trunkValues) : 0;
-const hasWideTrunkRange = trunkMax - trunkMin > 150;
-const suitcaseMin = Math.max(1, Math.round(trunkMin / LITERS_PER_SUITCASE));
-const suitcaseMax = Math.max(suitcaseMin + 1, Math.round(trunkMax / LITERS_PER_SUITCASE));
-const hasWideSuitcaseRange = suitcaseMax - suitcaseMin > 2;
 
-// Select the next missing dimension from the information that most varies
-// in the remaining pool. Budget and usage are hard-filter context; they do
-// not automatically mark an 8D preference as answered. This keeps the UI
-// aligned with the same Analyze → Select → Formulate loop as the backend.
-const ncapValues = remainingCars.map((car) => getNcapScore(car)).filter((value) => value >= 0);
-const powerValues = remainingCars.map((car) => car.engine_power_hp).filter((value): value is number => Number.isFinite(value));
+  const trunkValues = remainingCars.map((car) => car.trunk_volume_l).filter((value): value is number => Number.isFinite(value));
+  const trunkMin = trunkValues.length ? Math.min(...trunkValues) : 0;
+  const trunkMax = trunkValues.length ? Math.max(...trunkValues) : 0;
+  const hasWideTrunkRange = trunkMax - trunkMin > 150;
+  const suitcaseMin = Math.max(1, Math.round(trunkMin / LITERS_PER_SUITCASE));
+  const suitcaseMax = Math.max(suitcaseMin + 1, Math.round(trunkMax / LITERS_PER_SUITCASE));
+  const hasWideSuitcaseRange = suitcaseMax - suitcaseMin > 2;
+
+  // Select the next missing dimension from the information that most varies
+  // in the remaining pool. Budget and usage are hard-filter context; they do
+  // not automatically mark an 8D preference as answered. This keeps the UI
+  // aligned with the same Analyze → Select → Formulate loop as the backend.
+  const isEcoCar = (car: Car) => /hybrid|hybride|electric|electrique|phev|ev/i.test(car.fuel_type || '') || /hybrid|hybride|electric|electrique|phev|ev/i.test(car.engine_type || '');
+  const is4x4Car = (car: Car) => Boolean(car.is_4x4) || /4x4|awd|integral/i.test(car.transmission || '') || /4x4|awd/i.test((car as any).drivetrain || '');
+  const ncapTier = (car: Car) => {
+    const s = getNcapScore(car);
+    return s === 5 ? '5star' : s >= 4 ? '4star' : s > 0 ? 'standard' : 'unknown';
+  };
+  const bodyTier = (car: Car) => normalizeBodyType(car.body_type);
+  const ncapValues = remainingCars.map(ncapTier);
+  const powerValues = remainingCars.map((car) => car.engine_power_hp).filter((value): value is number => Number.isFinite(value));
+
   const dimensionCandidates = [
     { key: 'espace', covered: hasSpace, values: trunkValues.map(String), priority: 0 },
-    { key: 'securite', covered: safetyPreferencePattern.test(text) || questionWasAnswered(/certified safety|note ncap|high ncap|safety|security|sécurité|securite|ncap|السلامة|أمان/i), values: ncapValues.map(String), priority: 1 },
+    { key: 'securite', covered: safetyPreferencePattern.test(text) || questionWasAnswered(/certified safety|note ncap|high ncap|safety|security|sécurité|securite|ncap|السلامة|أمان/i), values: ncapValues, priority: 1 },
     {
       key: 'cout_reel',
       covered:
         /economy|economical|consumption|consommation|conso|économique|économie|running\s+costs?|low\s+fuel|faible\s+conso|coûts?|frais/i.test(text)
         || /(?:استهلاك|توفير|تكاليف|مصاريف|اقتصاد|الصرف|صرف)/i.test(text)
         || questionWasAnswered(/lower fuel consumption|running costs|coûts?|consommation|consom|استهلاك|تكاليف(?:\s+تشغيل)?|مصاريف(?:\s+الاستعمال)?|الصرف/i),
-      values: [...fuels],
+      values: remainingCars.map((c) => (c.fuel_type || '').toLowerCase()),
       priority: 2,
     },
-    { key: 'praticite_urbaine', covered: detectedProfile !== 'general' || questionWasAnswered(/compact|easy to park|facile à garer|parking|ركن|الركنة|باركينغ/i), values: [...bodies], priority: 3 },
+    { key: 'praticite_urbaine', covered: questionWasAnswered(/compact|easy to park|facile à garer|parking|ركن|الركنة|باركينغ|silhouette|carrosserie|format/i), values: remainingCars.map(bodyTier), priority: 3 },
     { key: 'performance', covered: /performance|power|puissance|sportif|قوية|تسارع|الأداء/i.test(text) || /(?:^|[^\p{L}\p{N}])(القوة|التسارع|الأداء)(?:$|[^\p{L}\p{N}])/iu.test(text) || questionWasAnswered(/power and acceleration|performance|puissance|التسارع|الأداء|القوة/i), values: powerValues.map(String), priority: 4 },
-    { key: 'ecologie', covered: /hybrid|hybride|electric|électrique|ecolog|écolog|co2|بيئي/i.test(text) || /(?:^|[^\p{L}\p{N}])(هجين|كهربائي|بيئي)(?:$|[^\p{L}\p{N}])/iu.test(text) || questionWasAnswered(/hybrid or electric|hybride ou électrique|هجين|الهجين|كهربائي/i), values: [...fuels], priority: 5 },
-    { key: 'motricite', covered: /4x4|awd|offroad|tout.?terrain|mountain|montagne/i.test(text) || /(?:^|[^\p{L}\p{N}])(دفع\s*رباعي|رباعي)(?:$|[^\p{L}\p{N}])/iu.test(text) || questionWasAnswered(/four-wheel drive|all-wheel drive|4x4|awd|off-road|transmission intégrale|دفع\s*رباعي|الدفع الرباعي/i), values: remainingCars.map((car) => String(Boolean(car.is_4x4))), priority: 6 },
+    { key: 'ecologie', covered: /hybrid|hybride|electric|électrique|ecolog|écolog|co2|بيئي/i.test(text) || /(?:^|[^\p{L}\p{N}])(هجين|كهربائي|بيئي)(?:$|[^\p{L}\p{N}])/iu.test(text) || questionWasAnswered(/hybrid or electric|hybride ou électrique|هجين|الهجين|كهربائي/i), values: remainingCars.map((c) => isEcoCar(c) ? 'eco' : 'thermal'), priority: 5 },
+    { key: 'motricite', covered: /4x4|awd|offroad|tout.?terrain|mountain|montagne/i.test(text) || /(?:^|[^\p{L}\p{N}])(دفع\s*رباعي|رباعي)(?:$|[^\p{L}\p{N}])/iu.test(text) || questionWasAnswered(/four-wheel drive|all-wheel drive|4x4|awd|off-road|transmission intégrale|دفع\s*رباعي|الدفع الرباعي/i), values: remainingCars.map((c) => is4x4Car(c) ? '4x4' : '2wd'), priority: 6 },
   ];
   const dimensionTokens: Record<string, RegExp> = {
     espace: /luggage|suitcase|valise|coffre|bagages|passengers|حقائب|فاليزات|أمتعة/i,
     securite: /safety|security|sécurité|securite|ncap|السلامة|أمان/i,
-    cout_reel: /economy|consumption|consommation|coût|cost|استهلاك|تكاليف|مصاريف|الصرف|صرف/i,
-    praticite_urbaine: /city|ville|parking|compact|urbain|ركن|الركنة|باركينغ/i,
-    performance: /performance|power|puissance|تسارع|القوة/i,
+    cout_reel: /(?:lower fuel consumption|fuel consumption|consommation|استهلاك|الصرف|مصاريف)/i,
+    praticite_urbaine: /city|ville|parking|compact|urbain|ركن|الركنة|باركينغ|silhouette|carrosserie|format/i,
+    performance: /(?:power and acceleration|puissance\s*(?:et\s*les\s*reprises|&|et)?|performance|power|تسارع|القوة)/i,
     ecologie: /hybrid|electric|électrique|ecolog|co2|هجين|كهربائي/i,
     motricite: /4x4|awd|offroad|terrain|motricité|دفع رباعي|رباعي/i,
   };
@@ -1179,304 +1067,273 @@ const powerValues = remainingCars.map((car) => car.engine_power_hp).filter((valu
       candidate.covered = true;
     }
   });
+  const lastTurn = history[history.length - 1];
   const lastAssistantQuestion = [...history].reverse().find((turn) => turn.role === 'assistant')?.content || '';
   const pendingDimension = dimensionCandidates.find((candidate) => Boolean(dimensionTokens[candidate.key]?.test(lastAssistantQuestion)));
   const selectableDimensions = dimensionCandidates
-    .filter((candidate) => !candidate.covered && candidate !== pendingDimension)
+    .filter((candidate) => !candidate.covered && (lastTurn?.role === 'assistant' || candidate !== pendingDimension))
     .map((candidate) => ({ ...candidate, diversity: new Set(candidate.values).size }))
     .filter((candidate) => candidate.diversity > 1 || (!remainingCars.length));
   const selectedDimension = [...selectableDimensions].sort((a, b) => b.diversity - a.diversity || a.priority - b.priority)[0]?.key;
 
-  if (remainingCars && remainingCars.length > 0 && hasBudget && hasUsage) {
+  if (remainingCars && remainingCars.length > 0 && hasBudget && hasUsage && lastTurn?.role !== 'assistant') {
     if (remainingCars.length === 1) {
       return null;
     }
-    const uniqueCarKeys = new Set(
-      remainingCars.map((car) => `${normalizeBrandText(car.brand)} ${car.model.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()}`),
-    );
-    if (uniqueCarKeys.size <= 1 && selectableDimensions.length === 0) {
+    if (selectableDimensions.length === 0) {
       return null;
     }
   }
 
-  if ((selectedDimension === 'espace' || (!hasSpace && (hasAny(text, [/\b(family|famille|children|kids|baby|poussette|trunk|boot|coffre|luggage|bagages|valises?|3a2ila)\b/i]) || remainingCars.some((car) => (car.seats || 5) >= 7) || hasWideTrunkRange))) && !suitcaseQuestionAnswered && !hasSuitcaseRangeInHistory) {
-    if (suitcaseMax > suitcaseMin) {
-      return {
-        question: language === 'en' ? 'How much luggage space do you need, in suitcases?' : language === 'ar' ? 'كم من مساحة الأمتعة تحتاج، بعدد الحقائب؟' : language === 'darija' ? 'شحال من بلاصة ديال الباݣاج كتحتاج، بعدد الفاليزات؟' : 'De combien de place pour les bagages avez-vous besoin, en valises ?',
-        options: hasWideSuitcaseRange ? [] : suitcaseChoices(language, suitcaseMin, suitcaseMax),
-        ...(hasWideSuitcaseRange ? { rangeBounds: { min: suitcaseMin, max: suitcaseMax, step: 1, label: language === 'en' ? 'Suitcase capacity' : language === 'ar' ? 'سعة الحقائب' : language === 'darija' ? 'سعة الفاليزات' : 'Capacité en valises' } } : {}),
-      };
-    }
-    return {
-      question: language === 'en' ? 'Do you need a large trunk or 7 seats for extra space?' : language === 'ar' ? 'هل تحتاج إلى صندوق أمتعة كبير أو 7 مقاعد لمساحة إضافية؟' : language === 'darija' ? 'واش كتحتاج كوفير كبير ولا 7 د البلايص لمساحة أكبر؟' : 'Avez-vous besoin d’un grand coffre ou de 7 places pour plus d’espace ?',
-      options: language === 'en'
-        ? [{ label: 'Large trunk (3-4 suitcases)' }, { label: '7 seats / Extra space' }, { label: 'Standard trunk' }]
-        : language === 'ar'
-          ? [{ label: 'صندوق كبير (3-4 حقائب)' }, { label: '7 مقاعد / مساحة إضافية' }, { label: 'صندوق قياسي' }]
-          : language === 'darija'
-            ? [{ label: 'كوفير كبير (3-4 فاليزات)' }, { label: '7 د البلايص / وسع أكثر' }, { label: 'كوفير عادي' }]
-            : [{ label: 'Grand coffre (3-4 valises)' }, { label: '7 places / Grand espace' }, { label: 'Coffre standard' }],
-    };
-  }
-
-  if (detectedProfile !== 'general' && detectedProfile !== 'family' && !hasBody && bodies.size > 1) {
-    if (detectedProfile === 'executive') {
-      return {
-        question: language === 'en'
-          ? 'As an executive, which vehicle style best matches your professional standing?'
-          : language === 'ar'
-            ? 'بصفتك مديراً، ما هو نمط السيارة الذي يعكس مكانتك المهنية على أكمل وجه؟'
-            : language === 'darija'
-              ? 'كمدير، شنو هو شكل الطوموبيل اللي كيعبر أحسن على المكانة المهنية ديالك؟'
-              : 'En tant que dirigeant, quel style de véhicule correspond le mieux à votre standing ?',
-        options: language === 'en'
-          ? [{ label: 'Executive Sedan (elegance & lounge)', value: 'berline' }, { label: 'Prestige Premium SUV (standing & height)', value: 'suv' }, { label: '4-door Coupe / Sportback', value: 'coupe' }]
-          : language === 'ar'
-            ? [{ label: 'سيدان فخمة وذات هيبة رسمية', value: 'berline' }, { label: 'SUV بريميوم راقٍ ومرموق', value: 'suv' }, { label: 'كوبيه 4 أبواب رياضي وأنيق', value: 'coupe' }]
-            : language === 'darija'
-              ? [{ label: 'بيرلين فخمة وديال الهيبة', value: 'berline' }, { label: 'SUV بريميوم عالي وبرستيج', value: 'suv' }, { label: 'كوبي 4 بيبان رياضي وأنيق', value: 'coupe' }]
-              : [{ label: 'Grande Berline statutaire (Élégance & salon)', value: 'berline' }, { label: 'Grand SUV Premium (Prestige & hauteur)', value: 'suv' }, { label: 'Coupé 4 portes ou Sportback racé', value: 'coupe' }],
-      };
-    }
-    if (detectedProfile === 'medical') {
-      return {
-        question: language === 'en'
-          ? 'As a healthcare professional, what vehicle style best fits your rounds, clinic, and hospital shifts?'
-          : language === 'ar'
-            ? 'بصفتك في المجال الطبي، ما نمط السيارة الأنسب لنشاطك بين العيادة والمستشفى والحراسة الليلية؟'
-            : language === 'darija'
-              ? 'كمهني فالصحة، شنو هي الطوموبيل اللي كتناسب خدمتك بين الكابيني، الكلينيك والحراسة؟'
-              : 'En tant que soignant, quel format répond le mieux à vos trajets entre cabinet, clinique et gardes ?',
-        options: language === 'en'
-          ? [{ label: 'Elevated & safe SUV (all-weather, on-call)', value: 'suv' }, { label: 'Comfortable & elegant sedan (practice & travel)', value: 'berline' }, { label: 'Quiet & economical hybrid (city & clinic)', value: 'hybride' }]
-          : language === 'ar'
-            ? [{ label: 'SUV مرتفع وآمن (في المناوبات الليلية والطقس الصعب)', value: 'suv' }, { label: 'سيدان أنيقة ومريحة (للعيادة والتنقلات)', value: 'berline' }, { label: 'هجينة هادئة واقتصادية (داخل المدينة والمستشفى)', value: 'hybride' }]
-            : language === 'darija'
-              ? [{ label: 'SUV عالي وآمن (فالحراسة والليل)', value: 'suv' }, { label: 'بيرلين مريحة وأنيقة (للكابيني والأسفار)', value: 'berline' }, { label: 'إيبريد هادئة واقتصادية (فالمدينة والكلينيك)', value: 'hybride' }]
-              : [{ label: 'SUV surélevé & sécurisant (Tous temps, gardes)', value: 'suv' }, { label: 'Berline élégante & confortable (Cabinet & route)', value: 'berline' }, { label: 'Hybride silencieuse & économique (Ville & clinique)', value: 'hybride' }],
-      };
-    }
-    if (detectedProfile === 'young_student') {
-      return {
-        question: language === 'en'
-          ? 'For your first car or student commute, what style are you looking for?'
-          : language === 'ar'
-            ? 'لأول سيارة لك أو لدراستك، ما هو النمط الذي تبحث عنه بالدرجة الأولى؟'
-            : language === 'darija'
-              ? 'لأول طوموبيل ديالك ولا لقرايتك، شنو هو الستيل اللي كتقلب عليه؟'
-              : 'Pour votre première voiture ou vos études, quel style recherchez-vous en priorité ?',
-        options: language === 'en'
-          ? [{ label: 'Compact city car (easy to park)', value: 'citadine' }, { label: 'Urban crossover / Trendy look', value: 'suv' }, { label: 'Ultra-economical on a budget', value: 'citadine' }]
-          : language === 'ar'
-            ? [{ label: 'سيارة صغيرة وسهلة الركن', value: 'citadine' }, { label: 'كروس أوفر عصري ومظهر شبابي', value: 'suv' }, { label: 'اقتصادية جداً بسعر مناسب', value: 'citadine' }]
-            : language === 'darija'
-              ? [{ label: 'سيتادين صغيرة وساهلة فالركنة', value: 'citadine' }, { label: 'كروس أوفر عصري وستيل شبابي', value: 'suv' }, { label: 'اقتصادية بزاف وبثمن مناسب', value: 'citadine' }]
-              : [{ label: 'Citadine compacte & facile à garer', value: 'citadine' }, { label: 'Crossover urbain / Look branché', value: 'suv' }, { label: 'Ultra-économique à petit prix', value: 'citadine' }],
-      };
-    }
-    if (detectedProfile === 'commercial_commuter') {
-      return {
-        question: language === 'en'
-          ? 'For your business travel, where do you drive most of your mileage?'
-          : language === 'ar'
-            ? 'لجولاتك المهنية، أين تقطع معظم مسافاتك اليومية؟'
-            : language === 'darija'
-              ? 'للجولات المهنية، فين كتدوز معظم الكيلومتراج ديالك؟'
-              : 'Pour vos tournées professionnelles, sur quel terrain roulez-vous le plus ?',
-        options: language === 'en'
-          ? [{ label: 'Intercity motorway driving (> 30,000 km/year)', value: 'berline' }, { label: 'Frequent city tours (Stop & Go)', value: 'citadine' }, { label: 'Mixed driving with cargo space (samples / gear)', value: 'break' }]
-          : language === 'ar'
-            ? [{ label: 'رحلات طويلة على الطريق السيار (> 30,000 كم/سنة)', value: 'berline' }, { label: 'جولات متكررة داخل المدن ومناطقها', value: 'citadine' }, { label: 'مختلط مع مساحة لحمل العينات والمعدات', value: 'break' }]
-            : language === 'darija'
-              ? [{ label: 'طريق سيار وأسفار بين المدن (> 30.000 كم/عام)', value: 'berline' }, { label: 'جولات مستمرة داخل المدينة (Stop & Go)', value: 'citadine' }, { label: 'مخلط مع حاجة لشحن السلعة والعيّنات', value: 'break' }]
-              : [{ label: 'Grands trajets autoroutiers inter-villes (> 30 000 km/an)', value: 'berline' }, { label: 'Tournées urbaines fréquentes (Stop & Go)', value: 'citadine' }, { label: 'Mixte avec besoin de chargement (Échantillons/Matériel)', value: 'break' }],
-      };
-    }
-  }
-
-  if (detectedProfile !== 'general' && !hasPriority) {
-    if (detectedProfile === 'executive') {
-      return {
-        question: language === 'en'
-          ? 'As an executive, which experience do you prioritize most on board?'
-          : language === 'ar'
-            ? 'بصفتك مديراً، ما التجربة التي تعطيها الأولوية داخل سيارتك؟'
-            : language === 'darija'
-              ? 'كمدير، شنو كتركز عليه أكثر داخل الطوموبيل فالخدمة ديالك؟'
-              : 'En tant que dirigeant, quelle expérience privilégiez-vous en priorité à bord ?',
-        options: language === 'en'
-          ? [{ label: 'Prestige & brand standing' }, { label: 'Lounge comfort & whisper-quiet cabin' }, { label: 'Engine power & responsive automatic' }, { label: 'High-end plug-in hybrid / electric' }]
-          : language === 'ar'
-            ? [{ label: 'الهيبة والبرستيج وقوة العلامة' }, { label: 'راحة فائقة وعزل صوتي فندقي' }, { label: 'قوة المحرك وناقل حركة رياضي' }, { label: 'هجين قابل للشحن أو كهربائي فاخر' }]
-            : language === 'darija'
-              ? [{ label: 'البرستيج وقوة الماركة' }, { label: 'راحة قصوى وصالون هادئ ومريح' }, { label: 'موتور قوي وبواط أوتوماتيك رياضية' }, { label: 'إيبريد ولا كهربائي فخم' }]
-              : [{ label: 'Prestige & Image de marque' }, { label: 'Confort salon & Silence insonorisé' }, { label: 'Dynamisme moteur & Boîte auto sportive' }, { label: 'Hybride rechargeable / Électrique haut de gamme' }],
-      };
-    }
-    if (detectedProfile === 'medical') {
-      return {
-        question: language === 'en'
-          ? 'As a healthcare professional, what is your core requirement for your journeys?'
-          : language === 'ar'
-            ? 'بصفتك في المجال الطبي، ما معيارك الأكثر أهمية في تنقلاتك؟'
-            : language === 'darija'
-              ? 'كمهني فالصحة، شنو هو المعيار الأهم بالنسبة ليك فتحركاتك؟'
-              : 'En tant que soignant, quelle est votre exigence principale au quotidien ?',
-        options: language === 'en'
-          ? [{ label: 'Maximum safety (5★ NCAP & ADAS)' }, { label: 'Bulletproof reliability (zero breakdowns)' }, { label: 'Ergonomic seat comfort (after long shifts)' }, { label: 'Smooth automatic gearbox & easy drive' }]
-          : language === 'ar'
-            ? [{ label: 'أقصى معايير السلامة (5 نجوم NCAP)' }, { label: 'اعتمادية تامة بدون أعطال (للطوارئ والعيادة)' }, { label: 'مقاعد مريحة وصحية (بعد مناوبات شاقة)' }, { label: 'ناقل حركة أوتوماتيكي سلس وقيادة هادئة' }]
-            : language === 'darija'
-              ? [{ label: 'سلامة قصوى معتمدة (5 نجوم NCAP)' }, { label: 'موثوقية تامة بلا أعطال (ديما فالوقت فالأورجونس)' }, { label: 'كراسي مريحة بزاف (من بعد ساعات العمل الطويلة)' }, { label: 'بواط أوتوماتيك وسياقة مريحة وسلسة' }]
-              : [{ label: 'Sécurité certifiée maximale (5★ NCAP & ADAS)' }, { label: 'Fiabilité absolue sans panne (Urgences & ponctualité)' }, { label: 'Confort ergonomique des sièges (Longues gardes)' }, { label: 'Boîte automatique fluide & Douceur de conduite' }],
-      };
-    }
-    if (detectedProfile === 'young_student') {
-      return {
-        question: language === 'en'
-          ? 'For your daily driving, what matters most to you?'
-          : language === 'ar'
-            ? 'لتنقلاتك اليومية، ما المعيار الأكثر أهمية بالنسبة لك؟'
-            : language === 'darija'
-              ? 'فتحركاتك اليومية، شنو هي أهم حاجة عندك؟'
-              : 'Pour vos trajets quotidiens, quel critère est le plus important pour vous ?',
-        options: language === 'en'
-          ? [{ label: 'Low running costs (low fuel & cheap road tax)' }, { label: 'Easy driving & parking (sensors / camera)' }, { label: 'Modern connectivity (touchscreen & CarPlay)' }]
-          : language === 'ar'
-            ? [{ label: 'تكاليف منخفضة (استهلاك قليل وضريبة 6-7 أحصنة)' }, { label: 'سهولة القيادة والركن (حساسات وكاميرا)' }, { label: 'اتصال حديث وشاشة ذكية (CarPlay)' }]
-            : language === 'darija'
-              ? [{ label: 'مصاريف قليلة (مازوط/ليصانص وضريبة رخيصة)' }, { label: 'سياقة وركنة ساهلة (رادارات وكاميرا)' }, { label: 'كونيكسيون وتكنولوجيا (شاشة وCarPlay)' }]
-              : [{ label: 'Frais réduits (Faible conso & Vignette 6-7 CV pas chère)' }, { label: 'Facilité de conduite & Stationnement (Radars/Caméra)' }, { label: 'Connectivité moderne (Écran tactile & CarPlay)' }],
-      };
-    }
-    if (detectedProfile === 'commercial_commuter') {
-      return {
-        question: language === 'en'
-          ? 'For your business travel, what is your primary requirement?'
-          : language === 'ar'
-            ? 'لجولاتك المهنية، ما هو المعيار الأهم بالنسبة لك؟'
-            : language === 'darija'
-              ? 'فالجولات المهنية ديالك، شنو هو المعيار اللي لا غنى عليه؟'
-              : 'Pour vos tournées professionnelles, quel critère est primordial ?',
-        options: language === 'en'
-          ? [{ label: 'Maximum range & low fuel consumption (Diesel/Hybrid)' }, { label: 'Cruise control, seat comfort & motorway soundproofing' }, { label: 'Heavy-duty reliability & nationwide dealer support' }, { label: 'Spacious trunk for business samples and gear' }]
-          : language === 'ar'
-            ? [{ label: 'مدى سير طويل واستهلاك وقود منخفض (ديزل / هجين)' }, { label: 'مقاعد مريحة ومثبت سرعة وعزل ممتاز على الطريق' }, { label: 'تحمل المسافات الطويلة وتوفر الصيانة في كل المغرب' }, { label: 'سعة صندوق أمتعة ممتازة للعينات والحقائب' }]
-            : language === 'darija'
-              ? [{ label: 'أوطونومي كبيرة واستهلاك قليل (مازوط/إيبريد)' }, { label: 'راحة الكراسي، ريݣيلاتور وسكات فالطريق' }, { label: 'موثوقية فالكيلومتراج وشبكة صيانة فالمغرب كامل' }, { label: 'كوفير واسع للسلعة والباݣاج' }]
-              : [{ label: 'Autonomie maximale & Faible consommation (Diesel/Hybride)' }, { label: 'Confort d’assise, Régulateur & Insonorisation routière' }, { label: 'Fiabilité kilométrique & Réseau SAV partout au Maroc' }, { label: 'Volume de coffre pour échantillons et matériel' }],
-      };
-    }
-    if (detectedProfile === 'family') {
-      return {
-        question: language === 'en'
-          ? 'What is your top priority for family journeys on the road?'
-          : language === 'ar'
-            ? 'ما هي أولويتكم في السفر والتنقلات مع العائلة؟'
-            : language === 'darija'
-              ? 'شنو هي الأولوية الأولى ديالكم فالسفر والتحركات مع العائلة؟'
-              : 'Quelle est votre priorité pour votre famille sur la route ?',
-        options: language === 'en'
-          ? [{ label: 'Maximum safety (5★ NCAP & Isofix anchors)' }, { label: 'Huge trunk capacity & modular seating' }, { label: 'Rear passenger comfort (rear A/C, space & quiet)' }]
-          : language === 'ar'
-            ? [{ label: 'أعلى معايير الأمان (5 نجوم NCAP وتثبيت Isofix)' }, { label: 'صندوق أمتعة ضخم ومقاعد قابلة للطي' }, { label: 'راحة الركاب في الخلف (تكييف خلفي وهدوء)' }]
-            : language === 'darija'
-              ? [{ label: 'سلامة وأمان عالي (5 نجوم NCAP وIsofix)' }, { label: 'كوفير واسع بزاف وكراسي موديبل' }, { label: 'راحة اللور (كليم فالخلف، وسع وسكات)' }]
-              : [{ label: 'Sécurité maximale (5★ NCAP & Fixations Isofix)' }, { label: 'Volume de coffre géant & Modularité des sièges' }, { label: 'Confort arrière (Climatisation arrière, espace, silence)' }],
-      };
-    }
-  }
-
-  if (selectedDimension === 'securite') return {
-question: language === 'en' ? 'How important is certified safety and a high NCAP rating to you?' : language === 'ar' ? 'ما مدى أهمية السلامة المعتمدة ونتيجة NCAP المرتفعة؟' : language === 'darija' ? 'شحال مهمة عندك السلامة ونتيجة NCAP؟' : 'Quelle importance accordez-vous à la sécurité certifiée et à une bonne note NCAP ?',
-options: language === 'en'
-? [{ label: 'Highest NCAP rating (5★)' }, { label: 'Good safety (4★+)' }, { label: 'No preference' }]
-: language === 'ar'
-? [{ label: 'أعلى تقييم NCAP (5★)' }, { label: 'سلامة جيدة (4★+)' }, { label: 'لا أفضلية' }]
-: language === 'darija'
-? [{ label: 'أعلى نقطة NCAP (5★)' }, { label: 'سلامة مزيانة (4★+)' }, { label: 'ما عنديش تفضيل' }]
-: [{ label: 'Note NCAP maximale (5★)' }, { label: 'Bonne sécurité (4★+)' }, { label: 'Pas de préférence' }],
-};
-if (selectedDimension === 'cout_reel') return {
-question: language === 'en' ? 'Would you prioritize lower fuel consumption and running costs?' : language === 'ar' ? 'هل تفضل استهلاكاً وتكاليف تشغيل أقل؟' : language === 'darija' ? 'كتفضل الصرف ومصاريف الاستعمال يكونو قليلين؟' : 'Souhaitez-vous privilégier une consommation et des coûts d’usage réduits ?',
-options: language === 'en'
-? [{ label: 'Economy & lower costs' }, { label: 'No preference' }]
-: language === 'ar'
-? [{ label: 'توفير وتكاليف أقل' }, { label: 'لا أفضلية' }]
-: language === 'darija'
-? [{ label: 'اقتصاد ومصاريف قليلة' }, { label: 'ما عنديش تفضيل' }]
-: [{ label: 'Économie & coûts réduits' }, { label: 'Pas de préférence' }],
-};
-if (selectedDimension === 'praticite_urbaine') return {
-question: language === 'en' ? 'For city driving, do you prefer a compact car that is easy to park?' : language === 'ar' ? 'للاستعمال داخل المدينة، هل تفضل سيارة صغيرة وسهلة الركن؟' : language === 'darija' ? 'فالمدينة، كتفضل طوموبيل صغيرة وساهلة فالباركينغ؟' : 'Pour la ville, préférez-vous une voiture compacte et facile à garer ?',
-options: language === 'en'
-? [{ label: 'Compact (easy to park)' }, { label: 'More interior space' }]
-: language === 'ar'
-? [{ label: 'حجم مدمج (سهل الركن)' }, { label: 'مساحة داخلية أكبر' }]
-: language === 'darija'
-? [{ label: 'صغيرة وساهلة فالركنة' }, { label: 'بلاصة أكثر' }]
-: [{ label: 'Format compact (facile à garer)' }, { label: 'Plus d’espace intérieur' }],
-};
-if (selectedDimension === 'performance') return {
-question: language === 'en' ? 'Do you prioritize power and acceleration over lower running costs?' : language === 'ar' ? 'هل تفضل القوة والتسارع على انخفاض تكاليف التشغيل؟' : language === 'darija' ? 'كتفضل القوة والتسارع ولا مصاريف قليلة؟' : 'Privilégiez-vous la puissance et les reprises plutôt que les coûts d’usage réduits ?',
-options: language === 'en'
-? [{ label: 'Power and acceleration' }, { label: 'Lower running costs' }]
-: language === 'ar'
-? [{ label: 'القوة والتسارع' }, { label: 'تكاليف تشغيل أقل' }]
-: language === 'darija'
-? [{ label: 'القوة والتسارع' }, { label: 'مصاريف قليلة' }]
-: [{ label: 'Puissance & reprises' }, { label: 'Coûts d’usage réduits' }],
-};
-if (selectedDimension === 'ecologie') return {
-question: language === 'en' ? 'Is hybrid or electric power a priority for you?' : language === 'ar' ? 'هل المحرك الهجين أو الكهربائي أولوية بالنسبة لك؟' : language === 'darija' ? 'واش الهجين ولا الكهربائي أولوية عندك؟' : 'La motorisation hybride ou électrique est-elle une priorité pour vous ?',
-options: language === 'en'
-? [{ label: 'Hybrid or Electric' }, { label: 'Petrol / Diesel' }, { label: 'No preference' }]
-: language === 'ar'
-? [{ label: 'هجين أو كهربائي' }, { label: 'بنزين / ديزل' }, { label: 'لا أفضلية' }]
-: language === 'darija'
-? [{ label: 'هجين ولا كهربائي' }, { label: 'ليصانص ولا مازوط' }, { label: 'ما عنديش تفضيل' }]
-: [{ label: 'Hybride ou Électrique' }, { label: 'Essence / Diesel' }, { label: 'Pas de préférence' }],
-};
-if (selectedDimension === 'motricite') return {
-question: language === 'en'
-? 'Do you need all-wheel drive (4x4 / AWD)?'
-: language === 'ar'
-? 'هل تحتاج إلى دفع رباعي (4x4 / AWD)؟'
-: language === 'darija'
-? 'واش كتحتاج الدفع الرباعي (4x4)؟'
-: 'Avez-vous besoin d’une transmission 4x4 / intégrale (AWD) ?',
-options: language === 'en'
-? [{ label: 'Yes, 4x4 / AWD' }, { label: 'Standard (2WD)' }, { label: 'No preference' }]
-: language === 'ar'
-? [{ label: 'دفع رباعي (4x4 / AWD)' }, { label: 'دفع ثنائي عادي (2WD)' }, { label: 'لا أفضلية' }]
-: language === 'darija'
-? [{ label: 'دفع رباعي (4x4)' }, { label: 'دفع عادي (2WD)' }, { label: 'ما عنديش تفضيل' }]
-: [{ label: '4x4 / Intégrale (AWD)' }, { label: '2 roues motrices (Standard)' }, { label: 'Pas de préférence' }],
-};
-
-  if (!hasPriority && !priorityQuestionAnswered) {
-    if (remainingCars.length <= 3) {
-      const uniqueCarKeys = new Set(
-        remainingCars.map((car) => `${normalizeBrandText(car.brand)} ${car.model.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()}`),
-      );
-      if (uniqueCarKeys.size <= 1) {
-        return null;
+  const buildCandidateDimensionQuestion = (key: string): NextQuestion | null => {
+    if (key === 'espace') {
+      const has7SeatsCar = remainingCars.some((car) => (Number(car.seats) || 5) >= 7);
+      const has5SeatsCar = remainingCars.length === 0 || remainingCars.some((car) => (Number(car.seats) || 5) < 7);
+      if (has7SeatsCar && has5SeatsCar) {
+        const spaceOptions: QuestionOption[] = [
+          language === 'en' ? { label: 'Large trunk (3-4 suitcases)' } : language === 'ar' ? { label: 'صندوق كبير (3-4 حقائب)' } : language === 'darija' ? { label: 'كوفير كبير (3-4 فاليزات)' } : { label: 'Grand coffre (3-4 valises)' },
+          language === 'en' ? { label: '7 seats / Extra space' } : language === 'ar' ? { label: '7 مقاعد / مساحة إضافية' } : language === 'darija' ? { label: '7 د البلايص / وسع أكثر' } : { label: '7 places / Grand espace' },
+          language === 'en' ? { label: 'Standard trunk' } : language === 'ar' ? { label: 'صندوق قياسي' } : language === 'darija' ? { label: 'كوفير عادي' } : { label: 'Coffre standard' },
+        ];
+        return {
+          question: language === 'en'
+            ? 'Do you need a large trunk or 7 seats for extra space?'
+            : language === 'ar'
+              ? 'هل تحتاج إلى صندوق أمتعة كبير أو 7 مقاعد لمساحة إضافية؟'
+              : language === 'darija'
+                ? 'واش كتحتاج كوفير كبير ولا 7 د البلايص لمساحة أكبر؟'
+                : 'Avez-vous besoin d’un grand coffre ou de 7 places pour plus d’espace ?',
+          options: spaceOptions,
+        };
       }
+      if (suitcaseMax > suitcaseMin && (suitcaseMax - suitcaseMin >= 2 || remainingCars.length === 0)) {
+        return {
+          question: language === 'en' ? 'How much luggage space do you need, in suitcases?' : language === 'ar' ? 'كم من مساحة الأمتعة تحتاج، بعدد الحقائب؟' : language === 'darija' ? 'شحال من بلاصة ديال الباݣاج كتحتاج، بعدد الفاليزات؟' : 'De combien de place pour les bagages avez-vous besoin, en valises ?',
+          options: hasWideSuitcaseRange ? [] : suitcaseChoices(language, suitcaseMin, suitcaseMax),
+          ...(hasWideSuitcaseRange ? { rangeBounds: { min: suitcaseMin, max: suitcaseMax, step: 1, label: language === 'en' ? 'Suitcase capacity' : language === 'ar' ? 'سعة الحقائب' : language === 'darija' ? 'سعة الفاليزات' : 'Capacité en valises' } } : {}),
+        };
+      }
+      const hasLargeTrunk = remainingCars.length === 0 || remainingCars.some((c) => (Number(c.trunk_volume_l) || 0) >= 380);
+      const hasStandardTrunk = remainingCars.length === 0 || remainingCars.some((c) => (Number(c.trunk_volume_l) || 0) < 380);
+      if (hasLargeTrunk && hasStandardTrunk) {
+        const spaceOptions: QuestionOption[] = [
+          language === 'en' ? { label: 'Large trunk (3-4 suitcases)' } : language === 'ar' ? { label: 'صندوق كبير (3-4 حقائب)' } : language === 'darija' ? { label: 'كوفير كبير (3-4 فاليزات)' } : { label: 'Grand coffre (3-4 valises)' },
+          language === 'en' ? { label: 'Standard trunk' } : language === 'ar' ? { label: 'صندوق قياسي' } : language === 'darija' ? { label: 'كوفير عادي' } : { label: 'Coffre standard' },
+        ];
+        return {
+          question: language === 'en'
+            ? 'Do you need a large trunk for luggage and suitcases?'
+            : language === 'ar'
+              ? 'هل تحتاج إلى صندوق أمتعة كبير للحقائب والأمتعة؟'
+              : language === 'darija'
+                ? 'واش كتحتاج كوفير كبير للفاليزات والباݣاج؟'
+                : 'Avez-vous besoin d’un grand coffre pour vos bagages et valises ?',
+          options: spaceOptions,
+        };
+      }
+      return null;
     }
-    return {
-      question: language === 'en' ? 'What matters most to you: economy, safety, comfort, or performance?' : language === 'ar' ? 'ما الأولوية الأهم لك: الاقتصاد، السلامة، الراحة أم الأداء؟' : language === 'darija' ? 'شنو هي الحاجة اللي مهمة عندك أكثر: الاقتصاد، السلامة، الراحة ولا الأداء؟' : 'Quelle est votre priorité : économie, sécurité, confort ou performance ?',
-      options: language === 'en'
-        ? [{ label: 'Economy' }, { label: 'Safety' }, { label: 'Comfort' }, { label: 'Performance' }]
-        : language === 'ar'
-          ? [{ label: 'الاقتصاد' }, { label: 'السلامة' }, { label: 'الراحة' }, { label: 'الأداء' }]
-          : language === 'darija'
+
+    if (key === 'body_format') {
+      const availableBodies = [...new Set(remainingCars.map((c) => normalizeBodyType(c.body_type)).filter(Boolean))];
+      if (remainingCars.length > 0 && availableBodies.length < 2) return null;
+      const bodies = availableBodies.length >= 2 ? availableBodies : ['suv', 'berline', 'citadine'];
+      const bodyLabels: Record<string, Record<ChatLanguage, string>> = {
+        suv: { fr: 'SUV', en: 'SUV', ar: 'دفع رباعي (SUV)', darija: 'SUV عالي' },
+        berline: { fr: 'Berline', en: 'Sedan', ar: 'سيدان', darija: 'بيرلين' },
+        citadine: { fr: 'Citadine compacte', en: 'Compact city car', ar: 'سيارة مدمجة', darija: 'سيتادين صغيرة' },
+        break: { fr: 'Break', en: 'Estate / Wagon', ar: 'واغن عائلية', darija: 'بريك عائلي' },
+        monospace: { fr: 'Monospace', en: 'MPV / Minivan', ar: 'مونوسباس', darija: 'مونوسباس' },
+        coupe: { fr: 'Coupé', en: 'Coupe', ar: 'كوبيه', darija: 'كوبي' },
+        pick_up: { fr: 'Pick-up', en: 'Pick-up', ar: 'بيك أب', darija: 'بيك آب' },
+        cabriolet: { fr: 'Cabriolet', en: 'Convertible', ar: 'كابريوليه', darija: 'كابريولي' },
+      };
+      const bodyOptions: QuestionOption[] = bodies.map((b) => ({
+        label: bodyLabels[b]?.[language] || b.toUpperCase(),
+        value: b,
+      }));
+      bodyOptions.push(
+        language === 'en' ? { label: 'No preference', value: 'no preference' }
+        : language === 'ar' ? { label: 'لا أفضلية', value: 'لا أفضلية' }
+        : language === 'darija' ? { label: 'ما عنديش تفضيل', value: 'ما عنديش تفضيل' }
+        : { label: 'Pas de préférence', value: 'pas de preference' }
+      );
+      return {
+        question: language === 'en'
+          ? 'Which vehicle style do you prefer?'
+          : language === 'ar'
+            ? 'ما هو نمط وهيكل السيارة الذي تفضله؟'
+            : language === 'darija'
+              ? 'شنو هو شكل الطوموبيل اللي كتفضل؟'
+              : 'Quel format ou silhouette de véhicule préférez-vous ?',
+        options: bodyOptions,
+      };
+    }
+if (key === 'securite') {
+      const has5Star = remainingCars.length === 0 || remainingCars.some((c) => getNcapScore(c) === 5);
+      const has4Star = remainingCars.length === 0 || remainingCars.some((c) => getNcapScore(c) >= 4);
+      const hasLower = remainingCars.length === 0 || remainingCars.some((c) => getNcapScore(c) < 5);
+      if (remainingCars.length > 0 && !hasLower) return null;
+      if (remainingCars.length > 0 && !has5Star && !has4Star) return null;
+
+      const secOptions: QuestionOption[] = [];
+      if (has5Star) {
+        secOptions.push(language === 'en' ? { label: 'Highest NCAP rating (5★)' } : language === 'ar' ? { label: 'أعلى تقييم NCAP (5★)' } : language === 'darija' ? { label: 'أعلى نقطة NCAP (5★)' } : { label: 'Note NCAP maximale (5★)' });
+      }
+      if (has4Star && (remainingCars.length === 0 || remainingCars.some((c) => getNcapScore(c) < 4))) {
+        secOptions.push(language === 'en' ? { label: 'Good safety (4★+)' } : language === 'ar' ? { label: 'سلامة جيدة (4★+)' } : language === 'darija' ? { label: 'سلامة مزيانة (4★+)' } : { label: 'Bonne sécurité (4★+)' });
+      }
+      secOptions.push(language === 'en' ? { label: 'No preference' } : language === 'ar' ? { label: 'لا أفضلية' } : language === 'darija' ? { label: 'ما عنديش تفضيل' } : { label: 'Pas de préférence' });
+      return {
+        question: language === 'en' ? 'How important is certified safety and a high NCAP rating to you?' : language === 'ar' ? 'ما مدى أهمية السلامة المعتمدة ونتيجة NCAP المرتفعة؟' : language === 'darija' ? 'شحال مهمة عندك السلامة ونتيجة NCAP؟' : 'Quelle importance accordez-vous à la sécurité certifiée et à une bonne note NCAP ?',
+        options: secOptions,
+      };
+    }
+
+    if (key === 'cout_reel') {
+      const hasEco = remainingCars.length === 0 || remainingCars.some((c) => isEcoCar(c) || /diesel/i.test(c.fuel_type || '') || Number(c.fuel_consumption ?? c.official_consumption ?? 6) <= 5.2);
+      const hasHigherCost = remainingCars.length === 0 || remainingCars.some((c) => !isEcoCar(c) && !/diesel/i.test(c.fuel_type || '') && Number(c.fuel_consumption ?? c.official_consumption ?? 6) > 5.2);
+      if (remainingCars.length > 0 && (!hasEco || !hasHigherCost)) return null;
+      return {
+        question: language === 'en' ? 'Would you prioritize lower fuel consumption and running costs?' : language === 'ar' ? 'هل تفضل استهلاكاً وتكاليف تشغيل أقل؟' : language === 'darija' ? 'كتفضل الصرف ومصاريف الاستعمال يكونو قليلين؟' : 'Souhaitez-vous privilégier une consommation et des coûts d’usage réduits ?',
+        options: language === 'en'
+          ? [{ label: 'Economy & lower costs' }, { label: 'No preference' }]
+          : language === 'ar'
+            ? [{ label: 'توفير وتكاليف أقل' }, { label: 'لا أفضلية' }]
+            : language === 'darija'
+              ? [{ label: 'اقتصاد ومصاريف قليلة' }, { label: 'ما عنديش تفضيل' }]
+              : [{ label: 'Économie & coûts réduits' }, { label: 'Pas de préférence' }],
+      };
+    }
+
+    if (key === 'praticite_urbaine') {
+      const hasCompact = remainingCars.length === 0 || remainingCars.some((c) => ['citadine', 'hatchback'].includes(normalizeBodyType(c.body_type)));
+      const hasLarge = remainingCars.length === 0 || remainingCars.some((c) => ['suv', 'berline', 'break', 'monospace'].includes(normalizeBodyType(c.body_type)));
+      if (remainingCars.length > 0 && (!hasCompact || !hasLarge)) return null;
+      const urbOptions: QuestionOption[] = [
+        language === 'en' ? { label: 'Compact (easy to park)' } : language === 'ar' ? { label: 'حجم مدمج (سهل الركن)' } : language === 'darija' ? { label: 'صغيرة وساهلة فالركنة' } : { label: 'Format compact (facile à garer)' },
+        language === 'en' ? { label: 'More interior space' } : language === 'ar' ? { label: 'مساحة داخلية أكبر' } : language === 'darija' ? { label: 'بلاصة أكثر' } : { label: 'Plus d’espace intérieur' },
+        language === 'en' ? { label: 'No preference' } : language === 'ar' ? { label: 'لا أفضلية' } : language === 'darija' ? { label: 'ما عنديش تفضيل' } : { label: 'Pas de préférence' },
+      ];
+      return {
+        question: language === 'en' ? 'For city driving, do you prefer a compact car that is easy to park?' : language === 'ar' ? 'للاستعمال داخل المدينة، هل تفضل سيارة صغيرة وسهلة الركن؟' : language === 'darija' ? 'فالمدينة، كتفضل طوموبيل صغيرة وساهلة فالباركينغ؟' : 'Pour la ville, préférez-vous une voiture compacte et facile à garer ?',
+        options: urbOptions,
+      };
+    }
+
+    if (key === 'performance') {
+      const powers = remainingCars.map((c) => Number(c.engine_power_hp) || 0).filter((p) => p > 0);
+      const hasDiff = powers.length > 1 && Math.min(...powers) < Math.max(...powers);
+      const hasPowerful = remainingCars.length === 0 || hasDiff || remainingCars.some((c) => (Number(c.engine_power_hp) || 0) >= 115);
+      const hasModerate = remainingCars.length === 0 || hasDiff || remainingCars.some((c) => (Number(c.engine_power_hp) || 0) < 115);
+      if (remainingCars.length > 0 && (!hasPowerful || !hasModerate)) return null;
+      return {
+        question: language === 'en' ? 'Do you prioritize power and acceleration over lower running costs?' : language === 'ar' ? 'هل تفضل القوة والتسارع على انخفاض تكاليف التشغيل؟' : language === 'darija' ? 'كتفضل القوة والتسارع ولا مصاريف قليلة؟' : 'Privilégiez-vous la puissance et les reprises plutôt que les coûts d’usage réduits ?',
+        options: language === 'en'
+          ? [{ label: 'Power and acceleration' }, { label: 'Lower running costs' }]
+          : language === 'ar'
+            ? [{ label: 'القوة والتسارع' }, { label: 'تكاليف تشغيل أقل' }]
+            : language === 'darija'
+              ? [{ label: 'القوة والتسارع' }, { label: 'مصاريف قليلة' }]
+              : [{ label: 'Puissance & reprises' }, { label: 'Coûts d’usage réduits' }],
+      };
+    }
+
+    if (key === 'ecologie') {
+      const hasEco = remainingCars.length === 0 || remainingCars.some(isEcoCar);
+      const hasThermal = remainingCars.length === 0 || remainingCars.some((c) => !isEcoCar(c));
+      if (remainingCars.length > 0 && (!hasEco || !hasThermal)) return null;
+      const ecoOptions: QuestionOption[] = [
+        language === 'en' ? { label: 'Hybrid or Electric' } : language === 'ar' ? { label: 'هجين أو كهربائي' } : language === 'darija' ? { label: 'هجين ولا كهربائي' } : { label: 'Hybride ou Électrique' },
+        language === 'en' ? { label: 'Petrol / Diesel' } : language === 'ar' ? { label: 'بنزين / ديزل' } : language === 'darija' ? { label: 'ليصانص ولا مازوط' } : { label: 'Essence / Diesel' },
+        language === 'en' ? { label: 'No preference' } : language === 'ar' ? { label: 'لا أفضلية' } : language === 'darija' ? { label: 'ما عنديش تفضيل' } : { label: 'Pas de préférence' },
+      ];
+      return {
+        question: language === 'en' ? 'Is hybrid or electric power a priority for you?' : language === 'ar' ? 'هل المحرك الهجين أو الكهربائي أولوية بالنسبة لك؟' : language === 'darija' ? 'واش الهجين ولا الكهربائي أولوية عندك؟' : 'La motorisation hybride ou électrique est-elle une priorité pour vous ?',
+        options: ecoOptions,
+      };
+    }
+
+    if (key === 'motricite') {
+      const has4x4 = remainingCars.length === 0 || remainingCars.some(is4x4Car);
+      const has2wd = remainingCars.length === 0 || remainingCars.some((c) => !is4x4Car(c));
+      if (remainingCars.length > 0 && (!has4x4 || !has2wd)) return null;
+      const motOptions: QuestionOption[] = [
+        language === 'en' ? { label: 'Yes, 4x4 / AWD' } : language === 'ar' ? { label: 'دفع رباعي (4x4 / AWD)' } : language === 'darija' ? { label: 'دفع رباعي (4x4)' } : { label: '4x4 / Intégrale (AWD)' },
+        language === 'en' ? { label: 'Standard (2WD)' } : language === 'ar' ? { label: 'دفع ثنائي عادي (2WD)' } : language === 'darija' ? { label: 'دفع عادي (2WD)' } : { label: '2 roues motrices (Standard)' },
+        language === 'en' ? { label: 'No preference' } : language === 'ar' ? { label: 'لا أفضلية' } : language === 'darija' ? { label: 'ما عنديش تفضيل' } : { label: 'Pas de préférence' },
+      ];
+      return {
+        question: language === 'en'
+          ? 'Do you need all-wheel drive (4x4 / AWD)?'
+          : language === 'ar'
+            ? 'هل تحتاج إلى دفع رباعي (4x4 / AWD)؟'
+            : language === 'darija'
+              ? 'واش كتحتاج الدفع الرباعي (4x4)؟'
+              : 'Avez-vous besoin d’une transmission 4x4 / intégrale (AWD) ?',
+        options: motOptions,
+      };
+    }
+
+    if (key === 'priority') {
+      if (remainingCars.length > 0 && remainingCars.length <= 3) {
+        const uniqueCarKeys = new Set(
+          remainingCars.map((car) => `${normalizeBrandText(car.brand)} ${car.model.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()}`),
+        );
+        if (uniqueCarKeys.size <= 1) {
+          return null;
+        }
+      }
+      return {
+        question: language === 'en' ? 'What matters most to you: economy, safety, comfort, or performance?' : language === 'ar' ? 'ما الأولوية الأهم لك: الاقتصاد، السلامة، الراحة أم الأداء؟' : language === 'darija' ? 'شنو هي الحاجة اللي مهمة عندك أكثر: الاقتصاد، السلامة، الراحة ولا الأداء؟' : 'Quelle est votre priorité : économie, sécurité, confort ou performance ?',
+        options: language === 'en'
+          ? [{ label: 'Economy' }, { label: 'Safety' }, { label: 'Comfort' }, { label: 'Performance' }]
+          : language === 'ar'
             ? [{ label: 'الاقتصاد' }, { label: 'السلامة' }, { label: 'الراحة' }, { label: 'الأداء' }]
-            : [{ label: 'Économie' }, { label: 'Sécurité' }, { label: 'Confort' }, { label: 'Performance' }],
-    };
+            : language === 'darija'
+              ? [{ label: 'الاقتصاد' }, { label: 'السلامة' }, { label: 'الراحة' }, { label: 'الأداء' }]
+              : [{ label: 'Économie' }, { label: 'Sécurité' }, { label: 'Confort' }, { label: 'Performance' }],
+      };
+    }
+
+    return null;
+  };
+
+  const candidateKeys: string[] = [];
+  const shouldCheckEspace = (selectedDimension === 'espace' || (!hasSpace && (hasAny(text, [/\b(family|famille|children|kids|baby|poussette|trunk|boot|coffre|luggage|bagages|valises?|3a2ila)\b/i]) || remainingCars.some((car) => (car.seats || 5) >= 7) || hasWideTrunkRange))) && !suitcaseQuestionAnswered && !hasSuitcaseRangeInHistory;
+  if (shouldCheckEspace) {
+    candidateKeys.push('espace');
   }
-// All supported criteria are complete. The caller should present the final
-// shortlist instead of asking an empty, generic question.
-return null;
+
+  const availableBodies = [...new Set(remainingCars.map((c) => normalizeBodyType(c.body_type)).filter(Boolean))];
+  if ((availableBodies.length > 1 || remainingCars.length === 0) && !hasBody && !bodyQuestionAnswered && !candidateKeys.includes('body_format')) {
+    candidateKeys.push('body_format');
+  }
+
+  const sortedCandidates = [...selectableDimensions].sort((a, b) => b.diversity - a.diversity || a.priority - b.priority);
+  for (const c of sortedCandidates) {
+    if (!candidateKeys.includes(c.key)) {
+      candidateKeys.push(c.key);
+    }
+  }
+
+  if (!hasPriority && !priorityQuestionAnswered && !candidateKeys.includes('priority')) {
+    candidateKeys.push('priority');
+  }
+
+  if (lastTurn?.role === 'assistant' && pendingDimension) {
+    const q = buildCandidateDimensionQuestion(pendingDimension.key);
+    if (q) return q;
+  }
+
+  for (const key of candidateKeys) {
+    const q = buildCandidateDimensionQuestion(key);
+    if (q && hasAtLeastTwoValidSuggestions(q, remainingCars)) {
+      return q;
+    }
+  }
+
+  return null;
 }
 
 export function extractMaximumBudget(query: string): number | null {
@@ -2254,7 +2111,7 @@ function extractBodyPreference(query: string): string | null {
   return null;
 }
 
-function normalizeBodyType(bodyType?: string | null): string {
+export function normalizeBodyType(bodyType?: string | null): string {
 const normalized = (bodyType || '').toLowerCase().replace(/[-_]/g, ' ');
 if (/suv|crossover|4x4|دفع رباعي|كروس/.test(normalized)) return 'suv';
 if (/berline|sedan|saloon|سيدان/.test(normalized)) return 'berline';
@@ -2669,4 +2526,364 @@ export function getUniqueModelCars(cars: Car[], limit = 3): Car[] {
   }
 
   return result;
+}
+
+export const FUEL_LABEL_MAP: Record<ChatLanguage, Record<string, string>> = {
+  en: { diesel: 'Diesel', essence: 'Petrol', hybride: 'Hybrid', hybride_rechargeable: 'Plug-in Hybrid', electrique: '100% Electric', gpl: 'LPG' },
+  fr: { diesel: 'Diesel', essence: 'Essence', hybride: 'Hybride', hybride_rechargeable: 'Hybride rechargeable', electrique: '100% Électrique', gpl: 'GPL' },
+  ar: { diesel: 'ديزل', essence: 'بنزين', hybride: 'هجين', hybride_rechargeable: 'هجين قابل للشحن', electrique: 'كهربائي بالكامل', gpl: 'غاز' },
+  darija: { diesel: 'مازوط', essence: 'ليصانص', hybride: 'إيبريد', hybride_rechargeable: 'إيبريد ريشارجابل', electrique: 'كهربائي 100%', gpl: 'غاز' },
+};
+
+export const BODY_LABEL_MAP: Record<ChatLanguage, Record<string, string>> = {
+  en: { suv: 'SUV', berline: 'Sedan', citadine: 'Hatchback / City car', break: 'Estate / Wagon', monospace: 'MPV / Minivan', coupe: 'Coupe', pick_up: 'Pick-up', cabriolet: 'Convertible' },
+  fr: { suv: 'SUV', berline: 'Berline', citadine: 'Citadine compacte', break: 'Break', monospace: 'Monospace', coupe: 'Coupé', pick_up: 'Pick-up', cabriolet: 'Cabriolet' },
+  ar: { suv: 'دفع رباعي (SUV)', berline: 'سيدان', citadine: 'سيارة مدينة (سيتادين)', break: 'واغن عائلية', monospace: 'مونوسباس', coupe: 'كوبيه', pick_up: 'بيك أب', cabriolet: 'كابريوليه' },
+  darija: { suv: 'SUV عالي', berline: 'بيرلين', citadine: 'سيتادين صغيرة', break: 'بريك عائلي', monospace: 'مونوسباس', coupe: 'كوبي', pick_up: 'بيك آب', cabriolet: 'كابريولي' },
+};
+
+export function isEcoCar(car: Car): boolean {
+  return /hybrid|hybride|electric|electrique|phev|ev/i.test(car.fuel_type || '') ||
+         /hybrid|hybride|electric|electrique|phev|ev/i.test(car.engine_type || '');
+}
+
+export function is4x4Car(car: Car): boolean {
+  return Boolean(car.is_4x4) ||
+         /4x4|awd|integral/i.test(car.transmission || '') ||
+         /4x4|awd/i.test((car as any).drivetrain || '');
+}
+
+export function isNoPreferenceOption(opt: QuestionOption): boolean {
+  const norm = (opt.value || opt.label).toLowerCase();
+  return /no\s*preference|pas\s*de\s*pr[ée]f[ée]rence|ما\s*عندي(?:\s*ش)?\s*تفضيل|لا\s*أفضلية|لا\s*افضلية/i.test(norm);
+}
+
+export function doesOptionMatchCars(opt: QuestionOption, cars: Car[]): boolean {
+  if (!cars || cars.length === 0) return true;
+  if (isNoPreferenceOption(opt)) return true;
+
+  const text = `${opt.label} ${opt.value || ''}`.toLowerCase();
+
+  // Drivetrain
+  if (/4x4|awd|int[ée]grale|four-wheel|all-wheel|دفع\s*رباعي/.test(text)) {
+    return cars.some(is4x4Car);
+  }
+  if (/\b2wd\b|2\s*roues|deux\s*roues|standard\s*\(2wd\)|دفع\s*ثنائي|دفع\s*عادي/.test(text)) {
+    return cars.some((c) => !is4x4Car(c));
+  }
+
+  // Seats / 7 places
+  if (/7\s*(?:places|seats|مقاعد|بلايص)/.test(text)) {
+    return cars.some((c) => (Number(c.seats) || 5) >= 7);
+  }
+
+  // Safety
+  if (/5★|5\s*étoiles|5\s*stars|أعلى\s*تقييم|أعلى\s*نقطة/.test(text)) {
+    return cars.some((c) => getNcapScore(c) === 5);
+  }
+  if (/4★|4\s*étoiles|4\s*stars|bonne\s*sécurité|good\s*safety|سلامة\s*جيدة|سلامة\s*مزيانة/.test(text)) {
+    return cars.some((c) => getNcapScore(c) >= 4);
+  }
+
+  // Fuel / Clean / Thermal
+  const isHybridText = /hybrid|hybride|phev|هجين|إيبريد/.test(text);
+  const isElectricText = /electric|electrique|électrique|\bev\b|100%|كهربائي/.test(text);
+  if (isHybridText && isElectricText) {
+    return cars.some(isEcoCar);
+  }
+  if (isElectricText) {
+    return cars.some((c) => /electri|\bev\b/i.test(c.fuel_type || ''));
+  }
+  if (isHybridText) {
+    return cars.some((c) => /hybrid|hybride|phev/i.test(c.fuel_type || '') || isEcoCar(c));
+  }
+  if (/thermique|moteur\s*économe|essence\s*\/\s*diesel|petrol\s*\/\s*diesel|بنزين\s*\/\s*ديزل|ليصانص\s*ولا\s*مازوط/.test(text)) {
+    return cars.some((c) => !isEcoCar(c));
+  }
+  if (/diesel|gazoil|mazout|مازوط/.test(text)) {
+    return cars.some((c) => /diesel|mazout|gazoil/i.test(c.fuel_type || ''));
+  }
+  if (/essence|petrol|gasoline|بنزين|ليصانص/.test(text)) {
+    return cars.some((c) => /essence|petrol|gasoline/i.test(c.fuel_type || ''));
+  }
+
+  // Body / Silhouette
+  if (/\bsuv\b|crossover|دفع\s*رباعي\s*\(suv\)|suv\s*عالي/.test(text)) {
+    return cars.some((c) => normalizeBodyType(c.body_type) === 'suv');
+  }
+  if (/citadine|city\s*car|hatchback|\bcompact\b|سيتادين|صغيرة/.test(text)) {
+    return cars.some((c) => normalizeBodyType(c.body_type) === 'citadine');
+  }
+  if (/berline|sedan|saloon|سيدان|بيرلين/.test(text)) {
+    return cars.some((c) => normalizeBodyType(c.body_type) === 'berline');
+  }
+  if (/break|wagon|estate|بريك/.test(text)) {
+    return cars.some((c) => normalizeBodyType(c.body_type) === 'break');
+  }
+  if (/monospace|minivan|mpv|مونوسباس/.test(text)) {
+    return cars.some((c) => normalizeBodyType(c.body_type) === 'monospace');
+  }
+  if (/coupe|coupé|كوبي/.test(text)) {
+    return cars.some((c) => normalizeBodyType(c.body_type) === 'coupe');
+  }
+  if (/cabriolet|convertible|spider|كابريولي/.test(text)) {
+    return cars.some((c) => normalizeBodyType(c.body_type) === 'cabriolet');
+  }
+  if (/pick.?up|بيك/.test(text)) {
+    return cars.some((c) => normalizeBodyType(c.body_type) === 'pick_up');
+  }
+
+  // Gearbox
+  if (/automatique|automatic|\bauto\b|\bbva\b|أوتوماتيك|اوتوماتيك/.test(text)) {
+    return cars.some((c) => /auto/i.test(c.transmission || ''));
+  }
+  if (/manuelle|manual|\bbvm\b|يدوي|مانييل/.test(text)) {
+    return cars.some((c) => /man/i.test(c.transmission || ''));
+  }
+
+  // Trunk / Space / Luggage
+  if (/grand coffre|large trunk|صندوق كبير|كوفير كبير/.test(text)) {
+    return cars.some((c) => (Number(c.trunk_volume_l) || 0) >= 380);
+  }
+  if (/coffre standard|standard trunk|صندوق قياسي|كوفير عادي/.test(text)) {
+    return cars.some((c) => (Number(c.trunk_volume_l) || 0) < 450);
+  }
+  const suitcaseMatch = text.match(/(\d+)\s*(?:valises?|suitcases?|حقائب|فاليزات)/);
+  if (suitcaseMatch) {
+    const count = Number(suitcaseMatch[1]);
+    return cars.some((c) => Math.round((Number(c.trunk_volume_l) || 0) / LITERS_PER_SUITCASE) >= count);
+  }
+
+  // Urban practicality & Interior space
+  if (/plus d[’']espace int[ée]rieur|more interior space|مساحة داخلية أكبر|بلاصة أكثر/.test(text)) {
+    return cars.some((c) => ['suv', 'berline', 'break', 'monospace'].includes(normalizeBodyType(c.body_type)));
+  }
+
+  // Performance vs Running costs
+  if (/puissance|reprises|power and acceleration|القوة والتسارع/.test(text)) {
+    const powers = cars.map((c) => Number(c.engine_power_hp) || 0).filter((p) => p > 0);
+    const hasDiff = powers.length > 1 && Math.min(...powers) < Math.max(...powers);
+    return hasDiff || cars.some((c) => (Number(c.engine_power_hp) || 0) >= 115);
+  }
+  if (/coûts? d[’']usage r[ée]duits?|lower running costs?|تكاليف تشغيل أقل|مصاريف قليلة|économie & coûts réduits|توفير وتكاليف أقل|اقتصاد ومصاريف قليلة/.test(text)) {
+    const powers = cars.map((c) => Number(c.engine_power_hp) || 0).filter((p) => p > 0);
+    const hasDiff = powers.length > 1 && Math.min(...powers) < Math.max(...powers);
+    return hasDiff || cars.some((c) => (Number(c.engine_power_hp) || 0) < 115 || isEcoCar(c) || Number(c.fuel_consumption ?? c.official_consumption ?? 6) <= 5.5);
+  }
+
+  // Priority options (Économie, Sécurité, Confort, Performance)
+  if (/^économie$|^economy$|^الاقتصاد$/i.test(text.trim())) {
+    return cars.some((c) => isEcoCar(c) || /diesel/i.test(c.fuel_type || '') || Number(c.fuel_consumption ?? c.official_consumption ?? 6) <= 5.5);
+  }
+  if (/^sécurité$|^securite$|^safety$|^السلامة$/i.test(text.trim())) {
+    return cars.some((c) => getNcapScore(c) >= 4);
+  }
+  if (/^confort$|^comfort$|^الراحة$/i.test(text.trim())) {
+    return cars.some((c) => ['berline', 'suv', 'break', 'monospace'].includes(normalizeBodyType(c.body_type)));
+  }
+  if (/^performance$|^الأداء$/i.test(text.trim())) {
+    return cars.some((c) => (Number(c.engine_power_hp) || 0) >= 115);
+  }
+
+  // Budget bracket options
+  const budgetUnderMatch = text.match(/(?:moins de|under|less than|أقل من|قل من)\s*(\d[\d\s.,]*)/i);
+  if (budgetUnderMatch) {
+    const maxP = Number(budgetUnderMatch[1].replace(/[\s.,]/g, ''));
+    if (Number.isFinite(maxP) && maxP > 0) return cars.some((c) => Number(c.price) <= maxP);
+  }
+  const budgetOverMatch = text.match(/(?:plus de|over|more than|أكثر من|كثر من)\s*(\d[\d\s.,]*)/i);
+  if (budgetOverMatch) {
+    const minP = Number(budgetOverMatch[1].replace(/[\s.,]/g, ''));
+    if (Number.isFinite(minP) && minP > 0) return cars.some((c) => Number(c.price) >= minP);
+  }
+
+  return true;
+}
+
+export function getValidSpecificOptions(options: QuestionOption[], cars?: Car[]): QuestionOption[] {
+  if (!options || options.length === 0) return [];
+  if (!cars || cars.length === 0) {
+    return options.filter((opt) => !isNoPreferenceOption(opt));
+  }
+  return options.filter((opt) => !isNoPreferenceOption(opt) && doesOptionMatchCars(opt, cars));
+}
+
+export function hasAtLeastTwoValidSuggestions(question: NextQuestion | null, cars?: Car[]): boolean {
+  if (!question) return false;
+  if (question.rangeBounds) {
+    return question.rangeBounds.max > question.rangeBounds.min;
+  }
+  const specificOptions = getValidSpecificOptions(question.options || [], cars);
+  return specificOptions.length >= 2;
+}
+
+export function filterOptionsByCandidateCars(options: QuestionOption[], cars?: Car[]): QuestionOption[] {
+  if (!cars || cars.length === 0 || !options || options.length === 0) {
+    return options || [];
+  }
+  const filtered = options.filter((opt) => doesOptionMatchCars(opt, cars));
+  const specificOptions = filtered.filter((opt) => !isNoPreferenceOption(opt));
+  if (specificOptions.length < 2) {
+    return [];
+  }
+  return filtered;
+}
+
+export function alignQuestionOptions(
+  question: string,
+  options: QuestionOption[],
+  language: ChatLanguage,
+  candidateCars?: Car[]
+): QuestionOption[] {
+  let resolved: QuestionOption[] = [];
+
+  // If specific tailored options were already supplied with 2 or more choices, preserve and localize them
+  if (options && options.length >= 2) {
+    resolved = options.map((opt) => {
+      const lowerVal = (opt.value || opt.label).toLowerCase();
+      const mappedFuel = FUEL_LABEL_MAP[language]?.[lowerVal];
+      const mappedBody = BODY_LABEL_MAP[language]?.[lowerVal];
+      let cleanLabel = mappedFuel || mappedBody || opt.label;
+      if (!/^(est-ce que|confirmez-vous|do you confirm|واش متأكد)/i.test(question)) {
+        cleanLabel = cleanLabel.replace(/^(?:Oui,?\s*|Yes,?\s*|نعم،?\s*|آه،?\s*)/i, '');
+        if (cleanLabel.length > 0) {
+          cleanLabel = cleanLabel.charAt(0).toUpperCase() + cleanLabel.slice(1);
+        }
+      }
+      return { ...opt, label: cleanLabel || opt.label };
+    });
+  } else {
+    const text = question.toLowerCase();
+
+    // 1. Priorité Puissance vs Économie / Reprises
+    if (/(puissance.*(?:économie|conso|coût|reprises)|power.*(?:running costs|consumption|fuel economy|acceleration|responsiveness|highway)|(?:reprises|performance).*(?:conso|économie|running costs|acceleration)|تسارع.*(?:استهلاك|تكاليف)|أداء.*(?:اقتصاد|تكاليف)|جهد.*صرف|قوة.*(?:استهلاك|تكاليف)|تكاليف التشغيل)/i.test(text)) {
+      resolved = language === 'en'
+        ? [{ label: 'Power & performance first' }, { label: 'Fuel economy first' }, { label: 'Balanced compromise' }, { label: 'No preference' }]
+        : language === 'ar'
+          ? [{ label: 'أولوية القوة والتسارع' }, { label: 'أولوية التوفير والاقتصاد' }, { label: 'توازن معتدل' }, { label: 'لا أفضلية' }]
+          : language === 'darija'
+            ? [{ label: 'القوة والجهد أولاً' }, { label: 'الاقتصاد فالمصاريف أولاً' }, { label: 'حل متوازن' }, { label: 'ما عنديش تفضيل' }]
+            : [{ label: 'Priorité puissance & reprises' }, { label: 'Priorité économie de carburant' }, { label: 'Compromis équilibré' }, { label: 'Pas de préférence' }];
+    }
+    // 2. Format urbain / Compact vs Espace / Parking (Dimension Praticité urbaine)
+    else if (/(gabarit|compact.*garer|facile à garer|voiture compacte|format compact|format de véhicule|compact car.*easy to park|صغيرة.*ركن|ساهلة فالركنة|حجم مدمج)/i.test(text)) {
+      resolved = language === 'en'
+        ? [{ label: 'Compact (easy to park)' }, { label: 'More interior space' }, { label: 'No preference' }]
+        : language === 'ar'
+          ? [{ label: 'حجم مدمج (سهل الركن)' }, { label: 'مساحة داخلية أكبر' }, { label: 'لا أفضلية' }]
+          : language === 'darija'
+            ? [{ label: 'صغيرة وساهلة فالركنة' }, { label: 'بلاصة أكثر' }, { label: 'ما عنديش تفضيل' }]
+            : [{ label: 'Format compact (facile à garer)' }, { label: 'Plus d’espace intérieur' }, { label: 'Pas de préférence' }];
+    }
+    // 2b. Espace / Coffre en valises / 7 places (Dimension Espace)
+    else if (/(bagages|valises?|coffre|luggage|suitcases?|7\s*(?:places|seats|مقاعد|بلايص)|أمتعة|حقائب|فاليزات|كوفير)/i.test(text)) {
+      resolved = language === 'en'
+        ? [{ label: 'Large trunk (3-4 suitcases)' }, { label: 'Huge trunk (5+ suitcases / 7 seats)' }, { label: 'Standard trunk' }]
+        : language === 'ar'
+          ? [{ label: 'صندوق كبير (3-4 حقائب)' }, { label: 'صندوق ضخم (5+ حقائب / 7 مقاعد)' }, { label: 'صندوق عادي' }]
+          : language === 'darija'
+            ? [{ label: 'كوفير كبير (3-4 فاليزات)' }, { label: 'كوفير ضخم (5+ فاليزات / 7 بلايص)' }, { label: 'كوفير عادي' }]
+            : [{ label: 'Grand coffre (3-4 valises)' }, { label: 'Coffre géant (5+ valises / 7 places)' }, { label: 'Coffre standard' }];
+    }
+    // 2c. Carburant / Énergie
+    else if (/(carburant|fuel|type\s+de\s+carburant|essence.*diesel|diesel.*essence|وقود|مازوط|ليصانص)/i.test(text)) {
+      resolved = language === 'en'
+        ? [{ label: 'Diesel', value: 'diesel' }, { label: 'Petrol', value: 'essence' }, { label: 'Hybrid', value: 'hybride' }, { label: '100% Electric', value: 'electrique' }]
+        : language === 'ar'
+          ? [{ label: 'ديزل', value: 'diesel' }, { label: 'بنزين', value: 'essence' }, { label: 'هجين', value: 'hybride' }, { label: 'كهربائي بالكامل', value: 'electrique' }]
+          : language === 'darija'
+            ? [{ label: 'مازوط', value: 'diesel' }, { label: 'ليصانص', value: 'essence' }, { label: 'إيبريد', value: 'hybride' }, { label: 'كهربائي 100%', value: 'electrique' }]
+            : [{ label: 'Diesel', value: 'diesel' }, { label: 'Essence', value: 'essence' }, { label: 'Hybride', value: 'hybride' }, { label: '100% Électrique', value: 'electrique' }];
+    }
+    // 2d. Écologie & Coût réel (Hybride/Électrique propre vs thermique économe)
+    else if (/(hybride.*(?:électrique|electrique)|hybrid.*electric|motorisation propre|clean.*propulsion|faible consommation|thermique.*économe|moteur.*économe|هجين.*كهربائي|إيبريد.*كهربائي)/i.test(text)) {
+      resolved = language === 'en'
+        ? [{ label: 'Clean Hybrid or Electric' }, { label: 'Fuel-efficient engine' }, { label: 'No preference' }]
+        : language === 'ar'
+          ? [{ label: 'هجين أو كهربائي نظيف' }, { label: 'محرك اقتصادي في الوقود' }, { label: 'لا أفضلية' }]
+          : language === 'darija'
+            ? [{ label: 'إيبريد ولا كهربائي نظيف' }, { label: 'موتور اقتصادي فالمصاريف' }, { label: 'ما عنديش تفضيل' }]
+            : [{ label: 'Hybride ou Électrique propre' }, { label: 'Thermique très économe' }, { label: 'Pas de préférence' }];
+    }
+    // 2e. Transmission 4x4 / AWD (Dimension Motricité)
+    else if (/(4x4|awd|intégrale|integrale|motricité|all-wheel drive|drivetrain|دفع رباعي)/i.test(text)) {
+      resolved = language === 'en'
+        ? [{ label: '4x4 / All-Wheel Drive (AWD)', value: 'Yes, 4x4 / AWD' }, { label: 'Standard (2WD)', value: 'Standard (2WD)' }, { label: 'No preference', value: 'No preference' }]
+        : language === 'ar'
+          ? [{ label: 'دفع رباعي (4x4 / AWD)', value: 'دفع رباعي (4x4)' }, { label: 'دفع ثنائي عادي (2WD)', value: 'دفع ثنائي عادي' }, { label: 'لا أفضلية', value: 'لا أفضلية' }]
+          : language === 'darija'
+            ? [{ label: 'دفع رباعي (4x4)', value: '4x4' }, { label: 'دفع عادي (2WD)', value: 'دفع عادي (2WD)' }, { label: 'ما عنديش تفضيل', value: 'ما عنديش تفضيل' }]
+            : [{ label: '4x4 / Intégrale (AWD)', value: '4x4 / Intégrale' }, { label: '2 roues motrices (Standard)', value: '2 roues motrices (Standard)' }, { label: 'Pas de préférence', value: 'Pas de préférence' }];
+    }
+    // 2f. Sécurité NCAP (Dimension Sécurité)
+    else if (/(sécurité|ncap|crash-test|safety|السلامة)/i.test(text)) {
+      resolved = language === 'en'
+        ? [{ label: 'Highest NCAP rating (5★)', value: 'Highest NCAP rating' }, { label: 'Good safety (4★+)', value: 'Good safety' }, { label: 'No preference', value: 'no safety preference' }]
+        : language === 'ar'
+          ? [{ label: 'أعلى تقييم NCAP (5★)', value: 'أعلى تقييم NCAP' }, { label: 'سلامة جيدة (4★+)', value: 'سلامة جيدة' }, { label: 'لا أفضلية', value: 'لا أفضلية في السلامة' }]
+          : language === 'darija'
+            ? [{ label: 'أعلى نقطة NCAP (5★)', value: 'أعلى نقطة NCAP' }, { label: 'سلامة مزيانة (4★+)', value: 'سلامة مزيانة' }, { label: 'ما عنديش تفضيل', value: 'ما عنديش تفضيل فالسلامة' }]
+            : [{ label: 'Note NCAP maximale (5★)', value: 'Note NCAP maximale' }, { label: 'Bonne sécurité (4★+)', value: 'Bonne sécurité' }, { label: 'Pas de préférence', value: 'Pas de préférence' }];
+    }
+    // 3. Transmission / Boîte de vitesses
+    else if (!/(4x4|awd|intégrale|integrale|motricité|drivetrain|دفع)/i.test(text) && /(bo[îi]te|gearbox|transmission|automatique.*manuelle|manual.*automatic|ناقل الحركة|علبة السرعات|بواط)/i.test(text)) {
+      resolved = language === 'en'
+        ? [{ label: 'Automatic' }, { label: 'Manual' }, { label: 'No preference' }]
+        : language === 'ar'
+          ? [{ label: 'أوتوماتيك' }, { label: 'يدوي' }, { label: 'لا أفضلية' }]
+          : language === 'darija'
+            ? [{ label: 'أوتوماتيك' }, { label: 'مانييل' }, { label: 'ما عنديش تفضيل' }]
+            : [{ label: 'Automatique' }, { label: 'Manuelle' }, { label: 'Pas de préférence' }];
+    }
+    // 5. Carrosserie / Format de véhicule (SUV / Berline / Citadine)
+    else if (/(carrosserie|body\s*style|body\s*type|format|suv.*berline|suv.*sedan|hatchback|citadine|berline|هيكل|شكل الطوموبيل)/i.test(text)) {
+      resolved = language === 'en'
+        ? [{ label: 'SUV', value: 'suv' }, { label: 'Hatchback / City car', value: 'citadine' }, { label: 'Sedan', value: 'berline' }, { label: 'No preference', value: 'no preference' }]
+        : language === 'ar'
+          ? [{ label: 'دفع رباعي (SUV)', value: 'suv' }, { label: 'سيارة مدينة (هاتشباك)', value: 'citadine' }, { label: 'سيدان', value: 'berline' }, { label: 'لا أفضلية', value: 'لا أفضلية' }]
+          : language === 'darija'
+            ? [{ label: 'SUV عالي', value: 'suv' }, { label: 'سيتادين صغيرة', value: 'citadine' }, { label: 'بيرلين', value: 'berline' }, { label: 'ما عنديش تفضيل', value: 'ما عنديش تفضيل' }]
+            : [{ label: 'SUV', value: 'suv' }, { label: 'Citadine compacte', value: 'citadine' }, { label: 'Berline', value: 'berline' }, { label: 'Pas de préférence', value: 'Pas de préférence' }];
+    }
+    // 8. Usage (Ville / Autoroute / Mixte)
+    else if (/(use the car|mainly use|city driving|surtout en ville|ville,?\s*(sur autoroute|ou)|usage.*principal|trajets?.*quotidiens?|فين غادي تسوق|استعمال|ستستعمل|تستعمل)/i.test(text)) {
+      resolved = language === 'en'
+        ? [{ label: 'Mostly city' }, { label: 'Mostly highway' }, { label: 'Both' }]
+        : language === 'ar'
+          ? [{ label: 'داخل المدينة' }, { label: 'في الطريق السيار' }, { label: 'الاثنين' }]
+          : language === 'darija'
+            ? [{ label: 'فالمدينة' }, { label: 'فالطريق السيار' }, { label: 'بجوج' }]
+            : [{ label: 'Ville' }, { label: 'Autoroute' }, { label: 'Mixte' }];
+    }
+    // 9. Fallback: Extract options listed in parentheses
+    else {
+      const parenMatch = question.match(/\(([^)]+)\)\s*[?؟]?$/);
+      if (parenMatch) {
+        const rawItems = parenMatch[1].split(/,\s*(?:or|ou|and|et|أم|أو|ولا)?\s*|\s+(?:or|ou|أم|أو|ولا)\s+/i);
+        const extracted = rawItems
+          .map((item) => item.trim())
+          .filter((item) => item.length > 0 && item.length < 35 && !/^(?:etc|ex|e\.g\.)/i.test(item));
+        if (extracted.length >= 2) {
+          resolved = extracted.map((item) => ({
+            label: item.charAt(0).toUpperCase() + item.slice(1),
+            value: item.toLowerCase(),
+          }));
+        }
+      }
+    }
+  }
+
+  // Nettoyage de tout préfixe "Oui, " / "Yes, " / "نعم، " résiduel
+  const cleaned = resolved.map((opt) => {
+    let cleanLabel = opt.label;
+    if (!/^(est-ce que|confirmez-vous|do you confirm|واش متأكد)/i.test(question)) {
+      cleanLabel = cleanLabel.replace(/^(?:Oui,?\s*|Yes,?\s*|نعم،?\s*|آه،?\s*)/i, '');
+      if (cleanLabel.length > 0) {
+        cleanLabel = cleanLabel.charAt(0).toUpperCase() + cleanLabel.slice(1);
+      }
+    }
+    return { ...opt, label: cleanLabel || opt.label };
+  });
+
+  return filterOptionsByCandidateCars(cleaned, candidateCars);
 }

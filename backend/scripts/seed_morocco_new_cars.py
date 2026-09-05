@@ -659,17 +659,6 @@ async def seed_new_cars_database():
     print("[+] Initializing 100% New Car Moroccan Digital Showroom Seed...")
 
     async with engine.begin() as conn:
-        tables_to_drop = [
-            "trim_equipment_mappings", "equipment_features", "equipment_categories",
-            "lead_inquiries", "showrooms", "dealerships", "car_trims",
-            "car_technical_specs", "car_powertrains", "car_models", "car_brands",
-            "staged_catalog_scrapes", "catalog_ingest_anomalies"
-        ]
-        for tbl in tables_to_drop:
-            try:
-                await conn.execute(text(f"DROP TABLE IF EXISTS {tbl} CASCADE;"))
-            except Exception:
-                pass
         await conn.run_sync(Base.metadata.create_all)
 
     async with async_session_factory() as session:

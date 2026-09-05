@@ -1,10 +1,11 @@
 -- seed.sql
 -- Create a test user
-INSERT INTO users (id, name, email, password_hash, role, is_verified, is_pro)
+INSERT INTO users (id, full_name, email, phone, hashed_password, role, is_verified, is_pro)
 VALUES (
     '11111111-1111-1111-1111-111111111111', 
     'Test Seller', 
     'test@wakala.ma', 
+    '+212600000000',
     'hashed', 
     'seller', 
     true, 

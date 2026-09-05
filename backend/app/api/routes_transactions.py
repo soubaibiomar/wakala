@@ -12,6 +12,7 @@ from app.models.transaction import Transaction
 from app.models.listing import Listing
 from app.models.user import User
 from app.core.security import get_current_user
+from app.core.config import settings
 from app.core.limiter import limiter
 from app.services.payment_service import payment_service
 from app.ml.vision.ocr_validator import ocr_validator
@@ -84,7 +85,7 @@ async def webhook_payment_success(
 ):
     # SÉCURITÉ : Validation de la provenance du Webhook
     webhook_secret = request.headers.get("X-Webhook-Secret")
-    expected_secret = os.environ.get("WEBHOOK_SECRET")
+    expected_secret = settings.WEBHOOK_SECRET or os.environ.get("WEBHOOK_SECRET")
     if not expected_secret:
         raise HTTPException(
             status_code=500,
