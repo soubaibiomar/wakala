@@ -900,7 +900,7 @@ def fast_classify_intent(message: str) -> Optional[Dict[str, Any]]:
     greetings = [
         'bonjour', 'salut', 'bonsoir', 'hello', 'hi', 'hey', 'good morning', 'good afternoon',
         'salam', 'slm', 'salamo alaykom', 'salamou alaykoum', 'salam alaykom',
-        'labas', 'kidayr', 'ki dayr', 'kidayra', 'cv', 'ca va', 'ça va',
+        'labas', 'kidayr', 'ki dayr', 'kidayra', 'cv', 'cava', 'ca va', 'ça va',
         'merci', 'thanks', 'thank you', 'shukran', 'chokran', 'barak allaho fik',
         'ok', 'oui', 'non', 'yes', 'no', 'bye', 'goodbye', 'bslama', 'b slama',
         'hola', 'buenos días', 'buenas tardes', 'gracias',
@@ -997,7 +997,8 @@ AUTOMOTIVE_DOMAIN_TERMS = (
 )
 AUTOMOTIVE_GREETING_TERMS = (
     'bonjour', 'salut', 'bonsoir', 'hello', 'hi', 'hey', 'salam', 'slm', 'مرحبا', 'سلام',
-    'merci', 'thanks', 'thank you', 'شكرا', 'chokran'
+    'merci', 'thanks', 'thank you', 'شكرا', 'chokran',
+    'cava', 'ca va', 'ça va', 'cv', 'labas', 'kidayr', 'ki dayr', 'kidayra'
 )
 
 
@@ -1081,7 +1082,8 @@ async def retrieve_vehicles(query: str, max_price: Optional[float] = None, top_k
 
     if qdrant:
         try:
-            query_vector = await asyncio.wait_for(embeddings_model.aembed_query(clean_query), timeout=2.5)
+            from app.rag.embeddings import embedding_service
+            query_vector = embedding_service.embed_text(clean_query)
             filter_conditions = []
             if max_price is not None:
                 filter_conditions.append(

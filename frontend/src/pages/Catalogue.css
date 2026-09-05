@@ -685,7 +685,68 @@ body.catalogue-chat-open .catalogue__assistant-hint {
   }
 }
 
-/* ─── Sidebar (Mobile First) ───────────────────────────────── */
+/* ─── Mobile Filter Bar ────────────────────────────────────── */
+.catalogue__mobile-filter-bar {
+  display: none;
+}
+
+@media (max-width: 991px) {
+  .catalogue__mobile-filter-bar {
+    display: flex;
+    width: 100%;
+    margin-bottom: var(--space-xs);
+  }
+
+  .catalogue__mobile-filter-btn {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    width: 100%;
+    padding: 13px 18px;
+    background: var(--color-bg-card);
+    border: 1px solid rgba(18, 33, 53, 0.1);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(18, 33, 53, 0.04);
+    transition: all 180ms ease;
+  }
+
+  .catalogue__mobile-filter-btn:hover,
+  .catalogue__mobile-filter-btn--active {
+    border-color: var(--color-accent-gold);
+    color: var(--color-accent-gold);
+  }
+
+  .catalogue__filter-badge {
+    display: inline-grid;
+    place-items: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 99px;
+    background: var(--color-accent-gold);
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+
+  .catalogue__mobile-filter-arrow {
+    margin-left: auto;
+    font-size: 0.7rem;
+    opacity: 0.7;
+  }
+
+  /* When chat is open on mobile in catalogue, provide bottom padding so all vehicle cards can be scrolled */
+  body.catalogue-chat-open .catalogue {
+    padding-bottom: calc(56dvh + env(safe-area-inset-bottom, 0px) + 24px);
+  }
+}
+
+/* ─── Sidebar (Mobile First: Collapsed on small screens) ───── */
 .catalogue__sidebar {
   width: 100%;
   flex: none;
@@ -697,8 +758,32 @@ body.catalogue-chat-open .catalogue__assistant-hint {
   flex-direction: column;
 }
 
+@media (max-width: 991px) {
+  .catalogue__sidebar {
+    display: none;
+    margin-bottom: var(--space-md);
+  }
+
+  .catalogue__sidebar.catalogue__sidebar--mobile-open {
+    display: flex;
+    animation: catalogue-sidebar-slide-down 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+@keyframes catalogue-sidebar-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (min-width: 992px) {
   .catalogue__sidebar {
+    display: flex !important;
     flex: 0 0 300px;
     width: auto;
     position: sticky;

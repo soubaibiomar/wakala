@@ -32,9 +32,6 @@ export default function Navbar() {
             <li>
               <Link to="/catalogue" className={isActive('/catalogue')}>Catalogue</Link>
             </li>
-            <li>
-              <Link to="/dedouanement" className={isActive('/dedouanement')}>Dédouanement</Link>
-            </li>
 
             {isAuthenticated && user ? (
               <>
@@ -74,10 +71,6 @@ export default function Navbar() {
         <Link to="/catalogue" className={isMobileActive('/catalogue')}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           <span>Catalogue</span>
-        </Link>
-        <Link to="/dedouanement" className={isMobileActive('/dedouanement')}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="22"/><line x1="8" x2="8" y1="2" y2="22"/><line x1="4" x2="20" y1="10" y2="10"/><line x1="4" x2="20" y1="14" y2="14"/></svg>
-          <span>Dédouane</span>
         </Link>
         {isAuthenticated ? (
           <button className="mobile-tab-bar__item" onClick={logout} style={{ background: 'none', border: 'none' }}>

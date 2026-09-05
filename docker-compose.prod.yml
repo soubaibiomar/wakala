@@ -55,6 +55,12 @@ services:
       - TTS_VOICE_EN=${TTS_VOICE_EN:-}
       - VOICE_MAX_SECONDS=${VOICE_MAX_SECONDS:-90}
       - QDRANT_URL=http://qdrant:6333
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - OPENROUTER_BASE_URL=${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-liquid/lfm-2.5-2.6b:free}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - GROQ_MODEL=${GROQ_MODEL:-llama-3.3-70b-versatile}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
     depends_on:
       postgres:
         condition: service_healthy

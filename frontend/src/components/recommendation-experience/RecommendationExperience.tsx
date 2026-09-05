@@ -67,6 +67,7 @@ export default function RecommendationExperience({ client = recommendationClient
   const [rangeBounds, setRangeBounds] = useState<{ min: number; max: number; step?: number; label: string } | null>(null);
   const [recommendationActive, setRecommendationActive] = useState(false);
   const [showCatalogueBubble, setShowCatalogueBubble] = useState(!isCatalogue);
+  const [isMinimized, setIsMinimized] = useState(false);
   const resetVersionRef = useRef(0);
   const hasRestoredRef = useRef(false);
   const visibleMessages = deduplicateAssistantQuestions(messages);
@@ -458,13 +459,63 @@ export default function RecommendationExperience({ client = recommendationClient
   const voice = useVoiceAssistant({ language: language || 'fr', history: messages, onResult: handleVoiceResult });
 
   const open = () => {
+    setIsMinimized(false);
     setMode((current) => current === 'launcher' ? 'widget' : 'launcher');
     window.dispatchEvent(new CustomEvent('wakala:assistant-visibility', { detail: { open: mode === 'launcher' } }));
   };
+  const close = useCallback(() => {
+    setIsMinimized(false);
+    setMode('launcher');
+    window.dispatchEvent(new CustomEvent('wakala:assistant-visibility', { detail: { open: false } }));
+  }, []);
   return (
     <div className={`recommendation-experience recommendation-experience--${mode}${isCatalogue ? ' recommendation-experience--catalogue' : ''}`}>
-      {mode !== 'launcher' && mode !== 'immersive' && <div className="recommendation-experience__widget"><ChatPanel messages={visibleMessages} options={options} busy={busy} onSend={send} language={language} onLanguageSelect={selectLanguage} onVoiceInput={voice.toggle} voiceRecording={voice.recording} voiceBusy={voice.busy} voiceError={voice.error} catalogueMode={isCatalogue} rangeBounds={rangeBounds} onReset={resetChat} onRangeSelect={(min, max, label) => language && void send(formatRangeAnswer(language, min, max, label), language)} /></div>}
-      {mode === 'immersive' && <main className="recommendation-experience__immersive"><CarResultsPanel cars={cars} immersive /><ChatPanel messages={visibleMessages} options={options} busy={busy} onSend={send} language={language} onLanguageSelect={selectLanguage} onVoiceInput={voice.toggle} voiceRecording={voice.recording} voiceBusy={voice.busy} voiceError={voice.error} catalogueMode={isCatalogue} rangeBounds={rangeBounds} onReset={resetChat} onRangeSelect={(min, max, label) => language && void send(formatRangeAnswer(language, min, max, label), language)} /></main>}
+      {mode !== 'launcher' && mode !== 'immersive' && (
+        <div className={`recommendation-experience__widget${isMinimized ? ' recommendation-experience__widget--minimized' : ''}`}>
+          <ChatPanel
+            messages={visibleMessages}
+            options={options}
+            busy={busy}
+            onSend={send}
+            language={language}
+            onLanguageSelect={selectLanguage}
+            onVoiceInput={voice.toggle}
+            voiceRecording={voice.recording}
+            voiceBusy={voice.busy}
+            voiceError={voice.error}
+            catalogueMode={isCatalogue}
+            rangeBounds={rangeBounds}
+            onReset={resetChat}
+            onClose={close}
+            isMinimized={isMinimized}
+            onToggleMinimize={() => setIsMinimized((prev) => !prev)}
+            candidateCount={candidateCars.length || initialCars.length}
+            onRangeSelect={(min, max, label) => language && void send(formatRangeAnswer(language, min, max, label), language)}
+          />
+        </div>
+      )}
+      {mode === 'immersive' && (
+        <main className="recommendation-experience__immersive">
+          <CarResultsPanel cars={cars} immersive />
+          <ChatPanel
+            messages={visibleMessages}
+            options={options}
+            busy={busy}
+            onSend={send}
+            language={language}
+            onLanguageSelect={selectLanguage}
+            onVoiceInput={voice.toggle}
+            voiceRecording={voice.recording}
+            voiceBusy={voice.busy}
+            voiceError={voice.error}
+            catalogueMode={isCatalogue}
+            rangeBounds={rangeBounds}
+            onReset={resetChat}
+            onClose={close}
+            onRangeSelect={(min, max, label) => language && void send(formatRangeAnswer(language, min, max, label), language)}
+          />
+        </main>
+      )}
       {mode !== 'immersive' && (!isCatalogue || showCatalogueBubble) && <ChatBubbleIcon open={mode === 'widget'} onClick={open} />}
     </div>
   );

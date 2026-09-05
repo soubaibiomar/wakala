@@ -56,6 +56,8 @@ describe('FastApiRecommendationClient recommendation logic', () => {
     'best car for city', 'which vehicle fits me', 'recommend a hybrid car',
     'I need a manual vehicle', 'show me a sedan', 'most secure vehicle',
     'tonobile dyal 3a2ila', 'tomobile dyal l3a2ila',
+    'What car dhould i have', 'what car to buy', 'what car for me', 'what should i buy',
+    'شنو نشري', 'achmen tonobil',
     'a car for 22 years old', 'voiture pour une femme de 30 ans',
     'سيارة لرجل عمره 35 سنة', 'tomobil l wa7ed 3omro 22 3am',
     'I am a director', 'I am a student', 'I am a taxi driver', 'je suis entrepreneur',

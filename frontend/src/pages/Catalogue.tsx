@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef, type ReactNode, type Dispatch, type SetStateAction } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { Plus, Edit3, Trash2, Image as ImageIcon, CheckCircle2, AlertCircle, X, ShieldCheck } from 'lucide-react';
+import { Plus, Edit3, Trash2, Image as ImageIcon, CheckCircle2, AlertCircle, X, ShieldCheck, SlidersHorizontal } from 'lucide-react';
 import { vehicleService } from '../services/vehicleService';
 import { useAuth } from '../context/AuthContext';
 import type { Vehicle, VehicleFilters, FuelType, BodyType, TransmissionType } from '../types/vehicle';
@@ -200,6 +200,13 @@ export default function Catalogue() {
   const [savedSearch, setSavedSearch] = useState(false);
   const [showAssistantHint, setShowAssistantHint] = useState(true);
   const [activeModel, setActiveModel] = useState('');
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+
+  const activeFiltersCount = [
+    activeFuel, activeBody, city, priceMin, priceMax, searchTerm,
+    activeCondition, yearMin, yearMax, mileageMax, activeTransmission,
+    doors, seats, color, minEnginePower, is4x4 ? '4x4' : '',
+  ].filter(Boolean).length;
 
   const [lastQuery, setLastQuery] = useState<string | null>(null);
   const fetchRequestRef = useRef(0);
@@ -447,8 +454,27 @@ export default function Catalogue() {
     <div className="catalogue">
       <div className="catalogue__container">
         
+        {/* Mobile Filter & Sort Toggle Button */}
+        <div className="catalogue__mobile-filter-bar">
+          <button
+            type="button"
+            className={`catalogue__mobile-filter-btn ${isMobileFiltersOpen ? 'catalogue__mobile-filter-btn--active' : ''}`}
+            onClick={() => setIsMobileFiltersOpen(!isMobileFiltersOpen)}
+            aria-expanded={isMobileFiltersOpen}
+          >
+            <SlidersHorizontal size={16} />
+            <span>Filtres & Tri</span>
+            {activeFiltersCount > 0 && (
+              <span className="catalogue__filter-badge">{activeFiltersCount}</span>
+            )}
+            <span className="catalogue__mobile-filter-arrow">
+              {isMobileFiltersOpen ? '▲' : '▼'}
+            </span>
+          </button>
+        </div>
+
         {/* ─── Sidebar Filters (Avito Style) ────────────────────── */}
-        <aside className="catalogue__sidebar">
+        <aside className={`catalogue__sidebar${isMobileFiltersOpen ? ' catalogue__sidebar--mobile-open' : ''}`}>
           
           <div className="catalogue__sidebar-top">
             <div className="catalogue__save-search">

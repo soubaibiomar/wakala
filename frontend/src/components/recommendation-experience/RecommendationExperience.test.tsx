@@ -323,12 +323,42 @@ describe('RecommendationExperience - Navigation and Process Continuation', () =>
     fireEvent.click(dieselChip);
 
     // 7. Verify applyAnswer was called with diesel
+      await waitFor(() => {
+        expect(mockClient.applyAnswer).toHaveBeenCalledWith(
+          'diesel',
+          expect.any(Array),
+          expect.any(Array)
+        );
+      });
+    });
+
+  it('renders a close button in the chat header and closes the widget when clicked', async () => {
+    const mockClient: RecommendationClient = {
+      detectRecommendationIntent: vi.fn().mockResolvedValue(false),
+      applyAnswer: vi.fn().mockResolvedValue([]),
+      getNextQuestion: vi.fn().mockResolvedValue(null),
+    };
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <RecommendationExperience client={mockClient} />
+      </MemoryRouter>
+    );
+
+    // Open the widget by clicking the launcher bubble
+    const bubble = screen.getByRole('button', { name: /ouvrir le conseiller/i });
+    fireEvent.click(bubble);
+
+    // Verify header close button is rendered
+    const closeBtn = screen.getByRole('button', { name: /^fermer$/i });
+    expect(closeBtn).toBeTruthy();
+
+    // Click the header close button
+    fireEvent.click(closeBtn);
+
+    // Widget should be closed and launcher bubble restored
     await waitFor(() => {
-      expect(mockClient.applyAnswer).toHaveBeenCalledWith(
-        'diesel',
-        expect.any(Array),
-        expect.any(Array)
-      );
+      expect(screen.getByRole('button', { name: /ouvrir le conseiller/i })).toBeTruthy();
     });
   });
 });
