@@ -171,39 +171,7 @@
     background: var(--re-bg);
   }
 
-  /* Minimized state: sleek compact bottom pill allowing full-screen car browsing */
-  .recommendation-experience--catalogue .recommendation-experience__widget--minimized {
-    height: 56px !important;
-    max-height: 56px !important;
-    overflow: hidden;
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -4px 20px rgba(18, 33, 53, 0.18);
-    cursor: pointer;
-  }
-
-  .recommendation-experience__minimize-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 6px 11px;
-    border: 1px solid var(--re-border);
-    border-radius: var(--radius-pill);
-    color: var(--re-accent);
-    background: color-mix(in srgb, var(--re-accent) 10%, var(--re-card));
-    font-size: 0.74rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 160ms ease;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  .recommendation-experience__minimize-btn:hover {
-    border-color: var(--re-accent);
-    background: color-mix(in srgb, var(--re-accent) 18%, var(--re-card));
-  }
-
-  .recommendation-experience__titlebar {
+    .recommendation-experience__titlebar {
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -309,12 +277,6 @@
     gap: 4px;
     flex-shrink: 0;
     margin-left: auto;
-  }
-
-  .recommendation-experience__minimize-btn {
-    padding: 5px 8px;
-    font-size: 0.68rem;
-    gap: 4px;
   }
 
   .recommendation-experience__reset,

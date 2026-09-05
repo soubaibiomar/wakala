@@ -67,7 +67,6 @@ export default function RecommendationExperience({ client = recommendationClient
   const [rangeBounds, setRangeBounds] = useState<{ min: number; max: number; step?: number; label: string } | null>(null);
   const [recommendationActive, setRecommendationActive] = useState(false);
   const [showCatalogueBubble, setShowCatalogueBubble] = useState(!isCatalogue);
-  const [isMinimized, setIsMinimized] = useState(false);
   const [mobileImmersiveTab, setMobileImmersiveTab] = useState<'chat' | 'results'>('chat');
   const resetVersionRef = useRef(0);
   const hasRestoredRef = useRef(false);
@@ -461,19 +460,17 @@ export default function RecommendationExperience({ client = recommendationClient
   const voice = useVoiceAssistant({ language: language || 'fr', history: messages, onResult: handleVoiceResult });
 
   const open = () => {
-    setIsMinimized(false);
     setMode((current) => current === 'launcher' ? 'widget' : 'launcher');
     window.dispatchEvent(new CustomEvent('wakala:assistant-visibility', { detail: { open: mode === 'launcher' } }));
   };
   const close = useCallback(() => {
-    setIsMinimized(false);
     setMode('launcher');
     window.dispatchEvent(new CustomEvent('wakala:assistant-visibility', { detail: { open: false } }));
   }, []);
   return (
     <div className={`recommendation-experience recommendation-experience--${mode}${isCatalogue ? ' recommendation-experience--catalogue' : ''}`}>
       {mode !== 'launcher' && mode !== 'immersive' && (
-        <div className={`recommendation-experience__widget${isMinimized ? ' recommendation-experience__widget--minimized' : ''}`}>
+        <div className="recommendation-experience__widget">
           <ChatPanel
             messages={visibleMessages}
             options={options}
@@ -489,9 +486,6 @@ export default function RecommendationExperience({ client = recommendationClient
             rangeBounds={rangeBounds}
             onReset={resetChat}
             onClose={close}
-            isMinimized={isMinimized}
-            onToggleMinimize={() => setIsMinimized((prev) => !prev)}
-            candidateCount={candidateCars.length || initialCars.length}
             onRangeSelect={(min, max, label) => language && void send(formatRangeAnswer(language, min, max, label), language)}
           />
         </div>

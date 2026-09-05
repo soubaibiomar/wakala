@@ -202,6 +202,59 @@ export default function Catalogue() {
   const [savedSearch, setSavedSearch] = useState(false);
   const [activeModel, setActiveModel] = useState('');
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [isMobileSubmitVisible, setIsMobileSubmitVisible] = useState(true);
+
+  // Smart floating apply button on mobile:
+  // Visible from the start, hides when scrolling down fast to consult filters,
+  // reappears when scrolling stops or with a slight scroll back (reverse scroll).
+  useEffect(() => {
+    if (!isMobileFiltersOpen) {
+      setIsMobileSubmitVisible(true);
+      return;
+    }
+
+    setIsMobileSubmitVisible(true);
+    let lastScrollY = window.scrollY;
+    let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const delta = currentScrollY - lastScrollY;
+
+      // Always show near top or at very bottom of page
+      const isNearTop = currentScrollY <= 40;
+      const isNearBottom = window.innerHeight + currentScrollY >= document.documentElement.scrollHeight - 60;
+
+      if (isNearTop || isNearBottom) {
+        setIsMobileSubmitVisible(true);
+      } else if (delta < -4) {
+        // Slight scroll back (scrolled upwards) -> appear immediately
+        setIsMobileSubmitVisible(true);
+      } else if (delta > 8) {
+        // Scrolling down -> hide to allow uncluttered reading of filters
+        setIsMobileSubmitVisible(false);
+      }
+
+      lastScrollY = currentScrollY;
+
+      // When scroll stops, reappear
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        setIsMobileSubmitVisible(true);
+      }, 200);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+    };
+  }, [isMobileFiltersOpen]);
+
+  const handleApplyMobileFilters = () => {
+    setIsMobileFiltersOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Debounce search input to avoid reloading/refetching on every keystroke
   useEffect(() => {
@@ -721,11 +774,11 @@ export default function Catalogue() {
             </div>
           </div>
           
-          <div className="catalogue__sidebar-footer">
+          <div className={`catalogue__sidebar-footer ${!isMobileSubmitVisible ? 'catalogue__sidebar-footer--hidden' : ''}`}>
             <button
               type="button"
               className="catalogue__submit-btn"
-              onClick={() => setIsMobileFiltersOpen(false)}
+              onClick={handleApplyMobileFilters}
             >
               {loading ? 'Chargement...' : `Afficher les (${total}) annonces`}
             </button>

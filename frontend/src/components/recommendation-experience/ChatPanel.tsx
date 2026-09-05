@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { RefreshCw, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { RefreshCw, X } from 'lucide-react';
 import { LANGUAGE_OPTIONS, type ChatLanguage, type ChatTurn, type QuestionOption, extractBrandPreference, getBrandFallbackBudgetRange } from './recommendationClient';
 
 const FALLBACK_BUDGET_RANGE = { min: 80000, max: 600000, step: 5000, label: 'Budget recommandé' };
@@ -22,9 +22,6 @@ interface ChatPanelProps {
   onRangeSelect?: (min: number, max: number, label: string) => void;
   onReset?: () => void;
   onClose?: () => void;
-  isMinimized?: boolean;
-  onToggleMinimize?: () => void;
-  candidateCount?: number;
 }
 
 export function ChatPanel({
@@ -43,9 +40,6 @@ export function ChatPanel({
   onRangeSelect,
   onReset,
   onClose,
-  isMinimized = false,
-  onToggleMinimize,
-  candidateCount,
 }: ChatPanelProps) {
   const [draft, setDraft] = useState('');
   const [budgetMin, setBudgetMin] = useState(0);
@@ -115,46 +109,24 @@ export function ChatPanel({
 
   return (
     <section className="recommendation-experience__chat" dir={isRtl ? 'rtl' : 'ltr'} aria-label={assistantAriaLabel(language)}>
-      <header 
-        className="recommendation-experience__titlebar"
-        onClick={isMinimized && onToggleMinimize ? onToggleMinimize : undefined}
-        style={isMinimized ? { cursor: 'pointer' } : undefined}
-      >
+      <header className="recommendation-experience__titlebar">
         <div className="recommendation-experience__drag-handle" aria-hidden="true" />
         <div className="recommendation-experience__header-main">
           <div className="recommendation-experience__avatar" aria-hidden="true"><img src="/assets/chatlogo.png" alt="Wakala" /></div>
           <div className="recommendation-experience__identity">
             <div className="recommendation-experience__identity-title-row">
               <strong>{assistantTitle(language)}</strong>
-              {!isMinimized && (
-                <span className="recommendation-experience__status"><i aria-hidden="true" /> <span>{onlineLabel(language)}</span></span>
-              )}
+              <span className="recommendation-experience__status"><i aria-hidden="true" /> <span>{onlineLabel(language)}</span></span>
             </div>
-            <small>{isMinimized ? expandLabel(language) : assistantSubtitle(language)}</small>
+            <small>{assistantSubtitle(language)}</small>
           </div>
           <div className="recommendation-experience__header-actions">
-            {onToggleMinimize && (
-              <button
-                type="button"
-                className="recommendation-experience__minimize-btn"
-                onClick={(e) => { e.stopPropagation(); onToggleMinimize(); }}
-                aria-label={isMinimized ? expandLabel(language) : minimizeLabel(language, candidateCount)}
-                title={isMinimized ? expandLabel(language) : minimizeLabel(language, candidateCount)}
-              >
-                {isMinimized ? <ChevronUp size={15} aria-hidden="true" /> : <ChevronDown size={15} aria-hidden="true" />}
-                <span className="recommendation-experience__minimize-text">
-                  {isMinimized ? 'Ouvrir' : minimizeLabel(language, candidateCount)}
-                </span>
-              </button>
-            )}
-            {!isMinimized && onReset && <button type="button" className="recommendation-experience__reset" onClick={onReset} disabled={busy} aria-label={resetLabel(language)} title={resetLabel(language)}><RefreshCw size={14} aria-hidden="true" /></button>}
+            {onReset && <button type="button" className="recommendation-experience__reset" onClick={onReset} disabled={busy} aria-label={resetLabel(language)} title={resetLabel(language)}><RefreshCw size={14} aria-hidden="true" /></button>}
             {onClose && <button type="button" className="recommendation-experience__close" onClick={(e) => { e.stopPropagation(); onClose(); }} aria-label={closeLabel(language)} title={closeLabel(language)}><X size={16} aria-hidden="true" /></button>}
           </div>
         </div>
       </header>
-      {!isMinimized && (
-        <>
-          <div className="recommendation-experience__messages" aria-live="polite">
+      <div className="recommendation-experience__messages" aria-live="polite">
         {!messages.length && !busy && <div className="recommendation-experience__welcome" aria-hidden="true"><span>✦</span><strong>{catalogueMode ? catalogueWelcomeTitle(language) : 'Trouvez la voiture qui vous ressemble'}</strong><p>{catalogueMode ? catalogueWelcomeText(language) : 'Répondez naturellement. Je m’adapte à votre langue et à vos besoins.'}</p></div>}
         {messages.map((message, index) => (
           <div key={`${message.role}-${index}`} className={`recommendation-experience__message recommendation-experience__message--${message.role}`}>
@@ -242,8 +214,6 @@ export function ChatPanel({
         </form>
         <p className="recommendation-experience__hint">{voiceError || (language ? languageHint(language) : languageChoiceLabel(language))}</p>
       </div>
-        </>
-      )}
     </section>
   );
 }
@@ -351,18 +321,4 @@ function closeLabel(language: ChatLanguage | null): string {
   }[language || 'fr'];
 }
 
-function minimizeLabel(language: ChatLanguage | null, count?: number): string {
-  const c = typeof count === 'number' && count > 0 ? ` (${count})` : '';
-  if (language === 'en') return `Cars${c}`;
-  if (language === 'ar') return `السيارات${c}`;
-  if (language === 'darija') return `السيارات${c}`;
-  return `Véhicules${c}`;
-}
-
-function expandLabel(language: ChatLanguage | null): string {
-  if (language === 'en') return 'Tap to open assistant';
-  if (language === 'ar') return 'اضغط لفتح المساعد';
-  if (language === 'darija') return 'برك باش تفتح المساعد';
-  return 'Appuyez pour ouvrir l’assistant';
-}
 
