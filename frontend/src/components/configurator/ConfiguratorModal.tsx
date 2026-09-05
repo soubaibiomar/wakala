@@ -12,6 +12,7 @@ import { ColorPicker } from './ColorPicker';
 import { OptionsPanel } from './OptionsPanel';
 import { useVehicleConfig } from './useVehicleConfig';
 import type { VehicleColorItem, VehicleOptionItem } from '../../services/vehicleOptionsService';
+import './ConfiguratorModal.css';
 
 export interface ConfiguratorModalProps {
   isOpen: boolean;
@@ -96,53 +97,16 @@ export const ConfiguratorModal: React.FC<ConfiguratorModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 9999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'rgba(10, 15, 25, 0.85)',
-          backdropFilter: 'blur(12px)',
-          padding: '20px',
-        }}
-      >
+      <div className="configurator-modal__overlay">
         <motion.div
+          className="configurator-modal__dialog"
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ duration: 0.25 }}
-          style={{
-            position: 'relative',
-            width: '100%',
-            maxWidth: '1200px',
-            height: '90vh',
-            maxHeight: '850px',
-            background: 'var(--bg-surface)',
-            borderRadius: '24px',
-            border: '1px solid var(--border-subtle)',
-            boxShadow: '0 25px 60px -15px rgba(0,0,0,0.7)',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-          }}
         >
           {/* Header */}
-          <div
-            style={{
-              padding: '18px 24px',
-              borderBottom: '1px solid var(--border-subtle)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              background: 'var(--bg-elevated)',
-            }}
-          >
+          <div className="configurator-modal__header">
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)' }}>
@@ -196,9 +160,9 @@ export const ConfiguratorModal: React.FC<ConfiguratorModalProps> = ({
           </div>
 
           {/* Body: 3D Canvas Left + Customization Controls Right */}
-          <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+          <div className="configurator-modal__body">
             {/* Colonne Visualiseur 360° Studio */}
-            <div style={{ flex: 1.3, padding: '20px', display: 'flex', flexDirection: 'column' }}>
+            <div className="configurator-modal__viewer-col">
               <StudioViewer360
                 vehicleIdOrSlug={vehicleIdOrSlug}
                 vehicleName={vehicleName}
@@ -210,16 +174,8 @@ export const ConfiguratorModal: React.FC<ConfiguratorModalProps> = ({
             </div>
 
             {/* Colonne Contrôles */}
-            <div
-              style={{
-                flex: 1,
-                borderLeft: '1px solid var(--border-subtle)',
-                display: 'flex',
-                flexDirection: 'column',
-                background: 'var(--bg-primary)',
-              }}
-            >
-              <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+            <div className="configurator-modal__controls-col">
+              <div className="configurator-modal__controls-scroll">
                 <ColorPicker
                   colors={computedColors}
                   selectedColor={selectedColor}
@@ -234,27 +190,19 @@ export const ConfiguratorModal: React.FC<ConfiguratorModalProps> = ({
               </div>
 
               {/* Footer avec Prix Total et Validation */}
-              <div
-                style={{
-                  padding: '20px 24px',
-                  borderTop: '1px solid var(--border-subtle)',
-                  background: 'var(--bg-elevated)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <div>
+              <div className="configurator-modal__footer">
+                <div className="configurator-modal__footer-price">
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block' }}>
                     Prix Total Configuré (TTC)
                   </span>
-                  <span style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--accent-gold)' }}>
+                  <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-gold)' }}>
                     {totalPrice.toLocaleString('fr-FR')} DH
                   </span>
                 </div>
 
                 <button
                   type="button"
+                  className="configurator-modal__validate-btn"
                   onClick={() => {
                     if (onApplyConfiguration) {
                       onApplyConfiguration(totalPrice, selectedColor, selectedOptionsList);

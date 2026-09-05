@@ -1,0 +1,146 @@
+﻿/* ═══════════════════════════════════════════════════════════════
+   ConfiguratorModal Responsive Styles
+   ═══════════════════════════════════════════════════════════════ */
+
+.configurator-modal__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.configurator-modal__dialog {
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  height: 90vh;
+  max-height: 850px;
+  background: var(--bg-surface);
+  border-radius: 24px;
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 25px 60px -15px rgba(0,0,0,0.7);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.configurator-modal__header {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-elevated);
+}
+
+.configurator-modal__body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.configurator-modal__viewer-col {
+  flex: 1.3;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.configurator-modal__controls-col {
+  flex: 1;
+  border-left: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+.configurator-modal__controls-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.configurator-modal__footer {
+  padding: 20px 24px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* ─── Mobile Viewport Adjustments (<768px) ─────────────── */
+@media (max-width: 768px) {
+  .configurator-modal__overlay {
+    padding: 0;
+  }
+
+  .configurator-modal__dialog {
+    width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    border: none;
+  }
+
+  .configurator-modal__header {
+    padding: 12px 16px;
+    padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  }
+
+  .configurator-modal__header h3 {
+    font-size: 1.05rem !important;
+  }
+
+  .configurator-modal__body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .configurator-modal__viewer-col {
+    flex: none;
+    height: 250px;
+    padding: 10px;
+  }
+
+  .configurator-modal__controls-col {
+    flex: 1;
+    border-left: none;
+    border-top: 1px solid var(--border-subtle);
+    overflow: visible;
+  }
+
+  .configurator-modal__controls-scroll {
+    padding: 16px 14px;
+    overflow-y: visible;
+  }
+
+  .configurator-modal__footer {
+    padding: 14px 16px;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .configurator-modal__footer-price {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .configurator-modal__validate-btn {
+    width: 100%;
+    min-height: 48px;
+    justify-content: center;
+  }
+}

@@ -405,11 +405,20 @@
   .hero {
     padding: var(--space-2xl) var(--space-md);
   }
+  .search-input {
+    font-size: 16px !important;
+  }
   .search-btn span {
     display: none;
   }
   .search-btn {
     padding: 12px 16px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .search-clear-btn {
+    min-width: 36px;
+    min-height: 36px;
   }
   .headlight {
     width: 80px;

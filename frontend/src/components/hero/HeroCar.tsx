@@ -55,16 +55,18 @@ export default function HeroCar() {
   const [animatingTo, setAnimatingTo] = useState(0);
   const [transitionState, setTransitionState] = useState('isEntering');
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isInteractingWithSearch, setIsInteractingWithSearch] = useState(false);
   
   const autoPlayDelay = 5000;
 
-  // Auto-play
+  // Auto-play (paused while user is searching/interacting)
   useEffect(() => {
+    if (isInteractingWithSearch) return;
     const timer = setInterval(() => {
       goToSlide((currentSlide + 1) % slides.length);
     }, autoPlayDelay);
     return () => clearInterval(timer);
-  }, [currentSlide]);
+  }, [currentSlide, isInteractingWithSearch]);
 
   // Transition state management
   useEffect(() => {
@@ -135,23 +137,33 @@ export default function HeroCar() {
 
       {/* Contenu textuel, recherche et actions */}
       <div className={styles.contentWrap}>
-        <div className={`${styles.content} ${styles[transitionState]}`}>
-          <span className={styles.titleLine} aria-hidden="true" />
-          <span className={styles.eyebrow}>WAKALA AUTOMOBILE</span>
-          
-          <div className={`${styles.titleWrap} ${activeSlideData.id === 'mercedescla' || activeSlideData.id === 'jeepgrandcherokee' ? styles.titleWrapLong : ''}`}>
-            <h1 className={styles.title}>
-              <span className={styles.titleTop}>{activeSlideData.titleTop}</span>
-              <br />
-              <span className={styles.titleBottom}>{activeSlideData.titleBottom}</span>
-            </h1>
+        <div className={styles.content}>
+          <div className={`${styles.slideTextWrap} ${styles[transitionState]}`}>
+            <span className={styles.titleLine} aria-hidden="true" />
+            <span className={styles.eyebrow}>WAKALA AUTOMOBILE</span>
+            
+            <div className={`${styles.titleWrap} ${activeSlideData.id === 'mercedescla' || activeSlideData.id === 'jeepgrandcherokee' ? styles.titleWrapLong : ''}`}>
+              <h1 className={styles.title}>
+                <span className={styles.titleTop}>{activeSlideData.titleTop}</span>
+                <br />
+                <span className={styles.titleBottom}>{activeSlideData.titleBottom}</span>
+              </h1>
+            </div>
+            
+            <p className={styles.description}>{activeSlideData.description}</p>
           </div>
           
-          <p className={styles.description}>{activeSlideData.description}</p>
-          
           {/* Barre de Recherche IA du Repo */}
-          <div className={styles.searchWrapper}>
-            <SearchBar userId={user?.id} onResults={handleResults} />
+          <div
+            className={styles.searchWrapper}
+            onMouseEnter={() => setIsInteractingWithSearch(true)}
+            onMouseLeave={() => setIsInteractingWithSearch(false)}
+          >
+            <SearchBar
+              userId={user?.id}
+              onResults={handleResults}
+              onActiveChange={setIsInteractingWithSearch}
+            />
           </div>
 
           <div className={styles.actions}>

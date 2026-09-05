@@ -103,17 +103,21 @@
   text-shadow: 0 6px 22px rgba(0,0,0,0.35);
 }
 
-/* Entering / Exiting */
-.content.isExiting {
+/* Slide Text Transition (Entering / Exiting) */
+.slideTextWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+}
+
+.slideTextWrap.isExiting {
   animation: heroTextExit 0.25s ease forwards;
 }
 
-.content.isEntering .eyebrow       { animation: revealUp 0.3s ease both; animation-delay: 0ms; }
-.content.isEntering .titleTop      { animation: revealUp 0.4s ease both; animation-delay: 0.1s; }
-.content.isEntering .titleBottom   { animation: revealUp 0.4s ease both; animation-delay: 0.22s; }
-.content.isEntering .description   { animation: revealUp 0.35s ease both; animation-delay: 0.35s; }
-.content.isEntering .searchWrapper { animation: revealUp 0.35s ease both; animation-delay: 0.45s; }
-.content.isEntering .actions       { animation: revealUp 0.3s ease both; animation-delay: 0.55s; }
+.slideTextWrap.isEntering .eyebrow     { animation: revealUp 0.3s ease both; animation-delay: 0ms; }
+.slideTextWrap.isEntering .titleTop    { animation: revealUp 0.4s ease both; animation-delay: 0.1s; }
+.slideTextWrap.isEntering .titleBottom { animation: revealUp 0.4s ease both; animation-delay: 0.22s; }
+.slideTextWrap.isEntering .description { animation: revealUp 0.35s ease both; animation-delay: 0.35s; }
 
 .titleLine {
   width: 2px;

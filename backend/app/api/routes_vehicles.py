@@ -8,7 +8,7 @@ from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func, select, or_
+from sqlalchemy import func, select, or_, and_
 
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role
@@ -43,6 +43,7 @@ async def list_vehicles(
     page: int = Query(1, ge=1, description="Numéro de page"),
     page_size: int = Query(20, ge=1, le=100, description="Résultats par page"),
     # Filtres
+    q: Optional[str] = Query(None, description="Recherche globale texte libre (marque, modèle, version)"),
     brand: Optional[str] = Query(None, description="Filtrer par marque"),
     model: Optional[str] = Query(None, description="Filtrer par modèle"),
     city: Optional[str] = Query(None, description="Filtrer par ville"),
@@ -70,6 +71,34 @@ async def list_vehicles(
 
     if group_by_model:
         query = query.distinct(Vehicle.brand, Vehicle.model)
+
+    if q and q.strip():
+        tokens = q.strip().split()
+        token_clauses = []
+        for t in tokens:
+            t_norm = t.strip()
+            if not t_norm:
+                continue
+            if len(t_norm) <= 2:
+                token_clauses.append(
+                    or_(
+                        Vehicle.brand.ilike(f"{t_norm}%"),
+                        Vehicle.model.ilike(f"{t_norm}%"),
+                        Vehicle.brand.ilike(f"%{t_norm}%"),
+                        Vehicle.model.ilike(f"%{t_norm}%"),
+                        Vehicle.version.ilike(f"%{t_norm}%"),
+                    )
+                )
+            else:
+                token_clauses.append(
+                    or_(
+                        Vehicle.brand.ilike(f"%{t_norm}%"),
+                        Vehicle.model.ilike(f"%{t_norm}%"),
+                        Vehicle.version.ilike(f"%{t_norm}%"),
+                    )
+                )
+        if token_clauses:
+            query = query.where(and_(*token_clauses))
 
     if brand:
         import re
@@ -120,6 +149,7 @@ async def list_vehicles(
             if len(b) <= 3:
                 brand_conditions.extend([
                     Vehicle.brand.ilike(b),
+                    Vehicle.brand.ilike(f"{b}%"),
                     Vehicle.brand.ilike(f"{b} %"),
                     Vehicle.brand.ilike(f"% {b}"),
                     Vehicle.brand.ilike(f"% {b} %"),

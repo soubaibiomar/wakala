@@ -355,3 +355,200 @@
   font-weight: 500;
   margin-top: 3px;
 }
+
+
+/* --- Modern Chat Input & Action Buttons -------------- */
+.chat-input-wrapper {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-bg-card);
+  border-top: var(--border-subtle);
+  position: relative;
+  z-index: 10;
+}
+
+.chat-input-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  background: var(--color-bg-secondary);
+  border: 1.5px solid rgba(18, 33, 53, 0.12);
+  border-radius: var(--radius-pill);
+  padding: 6px 10px 6px 14px;
+  transition: all var(--transition-base);
+}
+
+.chat-input-bar:focus-within {
+  border-color: var(--color-accent-gold);
+  background: var(--color-bg-primary);
+  box-shadow: 0 0 0 3px rgba(174, 140, 78, 0.15);
+}
+
+.chat-textarea {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.4;
+  color: var(--color-text-primary);
+  resize: none;
+  padding: 8px 4px;
+  min-height: 24px;
+  max-height: 120px;
+}
+
+.chat-textarea::placeholder {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  background: var(--color-bg-card);
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.action-btn.listening {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #ef4444;
+}
+
+.cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: #ef4444;
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.send-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  min-width: 70px;
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--gradient-navy);
+  color: white;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.send-btn:disabled {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* --- Mobile Viewport & Touch Optimization (<768px) --- */
+@media (max-width: 768px) {
+  .chat-container {
+    height: calc(100dvh - var(--nav-height, 64px) - 70px - env(safe-area-inset-bottom, 0px));
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    max-width: 100%;
+    box-shadow: none;
+  }
+
+  .chat-header {
+    padding: 10px 14px;
+    padding-top: calc(10px + env(safe-area-inset-top, 0px));
+  }
+
+  .chat-header h1 {
+    font-size: 1.15rem;
+  }
+
+  .chat-header p {
+    font-size: 0.78rem;
+  }
+
+  .chat-messages {
+    padding: 10px 8px;
+    gap: 10px;
+  }
+
+  .message {
+    max-width: 88%;
+    font-size: 0.92rem;
+    padding: 10px 12px;
+  }
+
+  .chat-input-wrapper {
+    padding: 8px 10px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .chat-textarea {
+    font-size: 16px !important;
+  }
+
+  .action-btn,
+  .cancel-btn,
+  .send-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .chat-lang-select-screen {
+    padding: 20px 12px;
+  }
+
+  .chat-lang-title {
+    font-size: 1.25rem;
+  }
+}
+
+/* --- RTL Multilingual Adjustments ------------------- */
+[dir="rtl"] .message-wrapper.user {
+  justify-content: flex-start;
+}
+
+[dir="rtl"] .message-wrapper.assistant {
+  justify-content: flex-end;
+}
+
+[dir="rtl"] .message.user {
+  border-bottom-right-radius: var(--radius-lg);
+  border-bottom-left-radius: 4px;
+}
+
+[dir="rtl"] .message.assistant {
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: 4px;
+}
+
+[dir="rtl"] .chat-textarea {
+  text-align: right;
+}
+
+[dir="rtl"] .chat-lang-card {
+  text-align: right;
+}

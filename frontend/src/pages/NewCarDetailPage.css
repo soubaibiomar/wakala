@@ -594,3 +594,126 @@
 .btn-back:hover {
   background: #1C3352;
 }
+
+/* ───────────────────────────────────────────────────────────
+   Mobile Responsive Adjustments (< 768px)
+   ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .newcar-container {
+    padding: 1rem 1rem 5rem;
+  }
+
+  .newcar-hero-grid {
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .newcar-visual-studio {
+    padding: 1.25rem 1rem;
+    border-radius: 16px;
+  }
+
+  .studio-image-wrapper {
+    min-height: 200px;
+    max-height: 260px;
+    padding: 1rem 0;
+  }
+
+  .color-studio-bar {
+    padding: 0.85rem 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .color-dots-row {
+    gap: 0.8rem;
+  }
+
+  .color-dot-btn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+  }
+
+  .model-title {
+    font-size: 1.65rem;
+  }
+
+  .price-card-morocco {
+    padding: 1.25rem 1rem;
+    border-radius: 14px;
+  }
+
+  .price-val {
+    font-size: 1.55rem;
+  }
+
+  .hero-cta-buttons {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .btn-hero-testdrive,
+  .btn-hero-compare {
+    width: 100%;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.85rem 1rem;
+    white-space: normal;
+  }
+
+  .specs-highlight-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
+
+  .spec-tile {
+    padding: 1rem 0.85rem;
+    border-radius: 12px;
+  }
+
+  .spec-val {
+    font-size: 0.95rem;
+  }
+
+  /* CRITICAL FIX: Prevent horizontal overflow blowout from minmax(340px, 1fr) */
+  .equipment-showroom-section {
+    padding: 1.25rem 1rem;
+    border-radius: 16px;
+  }
+
+  .section-title {
+    font-size: 1.35rem;
+  }
+
+  .equipment-categories-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .equipment-cat-card {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .specs-highlight-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+
+  .trim-pill {
+    padding: 0.55rem 0.85rem;
+  }
+
+  .otr-badge-box {
+    width: 100%;
+    text-align: left;
+  }
+}

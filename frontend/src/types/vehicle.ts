@@ -73,6 +73,7 @@ export interface VehicleListResponse {
 }
 
 export interface VehicleFilters {
+  q?: string;
   brand?: string;
   model?: string;
   city?: string;

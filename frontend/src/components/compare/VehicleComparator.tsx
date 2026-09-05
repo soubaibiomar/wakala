@@ -41,26 +41,44 @@ export default function VehicleComparator({ onClose }: { onClose: () => void }) 
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
       backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
-      zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '20px'
+      zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 'min(20px, 2.5vw)'
     }}>
       <div style={{
         background: 'var(--bg-surface)', width: '100%', maxWidth: '1200px',
-        maxHeight: '90vh', borderRadius: 'var(--radius-card)',
+        maxHeight: 'min(92dvh, 900px)', borderRadius: 'var(--radius-card)',
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
         boxShadow: '0 24px 60px rgba(0,0,0,0.2)'
       }}>
         {/* Header */}
         <div style={{
-          padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)',
+          padding: '14px 18px',
+          paddingTop: 'calc(14px + env(safe-area-inset-top, 0px))',
+          borderBottom: '1px solid var(--border-subtle)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           background: 'var(--bg-elevated)'
         }}>
-          <h2 style={{ margin: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <h2 style={{ margin: 0, fontSize: '1.15rem', display: 'flex', alignItems: 'center', gap: 10 }}>
             <Scale color="var(--accent-gold)" />
             Comparateur de véhicules
           </h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+          <button 
+            type="button"
+            onClick={onClose} 
+            aria-label="Fermer le comparateur"
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              cursor: 'pointer', 
+              color: 'var(--text-muted)',
+              minWidth: 44,
+              minHeight: 44,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 8
+            }}
+          >
             <X size={24} />
           </button>
         </div>

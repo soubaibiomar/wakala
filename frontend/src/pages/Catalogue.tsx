@@ -1,3 +1,4 @@
+import CatalogueSearchBar from '../components/catalogue-search/CatalogueSearchBar';
 import { useEffect, useState, useCallback, useRef, type ReactNode, type Dispatch, type SetStateAction } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { Plus, Edit3, Trash2, Image as ImageIcon, CheckCircle2, AlertCircle, X, ShieldCheck, SlidersHorizontal, Search } from 'lucide-react';
@@ -179,6 +180,7 @@ export default function Catalogue() {
   );
 
   // Filter States
+  const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFuel, setActiveFuel] = useState<FuelType | ''>('');
   const [activeBody, setActiveBody] = useState<BodyType | ''>('');
@@ -201,8 +203,21 @@ export default function Catalogue() {
   const [activeModel, setActiveModel] = useState('');
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
+  // Debounce search input to avoid reloading/refetching on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm((current) => {
+        if (current === searchInput) return current;
+        setPage(1);
+        setActiveRecommendations(null);
+        return searchInput;
+      });
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   const activeFiltersCount = [
-    activeFuel, activeBody, city, priceMin, priceMax, searchTerm,
+    activeFuel, activeBody, city, priceMin, priceMax, searchInput,
     activeCondition, yearMin, yearMax, mileageMax, activeTransmission,
     doors, seats, color, minEnginePower, is4x4 ? '4x4' : '',
   ].filter(Boolean).length;
@@ -223,7 +238,10 @@ export default function Catalogue() {
     if (fuel) setActiveFuel(fuel);
     if (body) setActiveBody(body);
     if (isNew === 'true') setActiveCondition('neuf');
-    if (brand) setSearchTerm(brand);
+    if (brand) {
+      setSearchInput(brand);
+      setSearchTerm(brand);
+    }
     if (model) setActiveModel(model);
     const queryBudget = q ? extractMaximumBudget(q) : null;
     if (maxPrice) setPriceMax(maxPrice);
@@ -231,23 +249,18 @@ export default function Catalogue() {
 
     if (q && q !== lastQuery) {
       setLastQuery(q);
-      // The recommendation bar and the chatbot share one qualification flow.
-      // Do not fetch three cars here: the assistant must ask its criteria first.
       setActiveRecommendations(null);
       const detectedBrand = extractBrandPreference(q);
       if (detectedBrand) {
-        setSearchTerm(detectedBrand.apiValue);
+        setSearchInput(q);
+        setSearchTerm(q);
         if (detectedBrand.model) {
           setActiveModel(detectedBrand.model);
         }
       } else {
         const cleanQ = q.replace(/[^\p{L}\p{N}\s-]/gu, ' ').trim().replace(/\s+/g, ' ');
-        if (cleanQ.split(/\s+/).length <= 2) {
-          setSearchTerm(cleanQ);
-        } else {
-          setLoading(true);
-          fetchVehicles(1);
-        }
+        setSearchInput(cleanQ);
+        setSearchTerm(cleanQ);
       }
     } else if (!q && lastQuery) {
       const clearedQuery = lastQuery;
@@ -257,6 +270,7 @@ export default function Catalogue() {
       // parameter. Once that parameter is removed by the chatbot reset, do
       // not leave an invisible budget/brand filter constraining the catalogue.
       if (!searchParams.has('price_max')) setPriceMax('');
+      setSearchInput((current) => current === clearedQuery ? '' : current);
       setSearchTerm((current) => current === clearedQuery ? '' : current);
     }
   }, [searchParams, lastQuery]);
@@ -336,7 +350,17 @@ export default function Catalogue() {
       if (city) filters.city = city;
       if (priceMin) filters.price_min = parseInt(priceMin, 10);
       if (priceMax) filters.price_max = parseInt(priceMax, 10);
-      if (searchTerm) filters.brand = searchTerm; // Simplified search mapping for now
+      if (searchTerm && searchTerm.trim()) {
+        const term = searchTerm.trim();
+        filters.q = term;
+        const brandPref = extractBrandPreference(term);
+        if (brandPref) {
+          filters.brand = brandPref.apiValue;
+          if (brandPref.model) {
+            filters.model = brandPref.model;
+          }
+        }
+      }
       if (activeModel) filters.model = activeModel;
       if (yearMin) filters.year_min = parseInt(yearMin, 10);
       if (yearMax) filters.year_max = parseInt(yearMax, 10);
@@ -405,6 +429,7 @@ export default function Catalogue() {
   }, [page, fetchVehicles]);
 
   const handleClearFilters = () => {
+    setSearchInput('');
     setSearchTerm('');
     setActiveFuel('');
     setActiveBody('');
@@ -448,25 +473,12 @@ export default function Catalogue() {
         {/* Mobile Search & Filter Bar */}
         <div className="catalogue__mobile-filter-bar">
           <div className="catalogue__mobile-search-box">
-            <Search size={16} className="catalogue__mobile-search-icon" aria-hidden="true" />
-            <input
-              type="text"
-              placeholder="Marque, modèle (ex: Golf, Dacia)..."
-              className="catalogue__mobile-search-input"
-              value={searchTerm}
-              onChange={(e) => handleFilterChange(setSearchTerm, e.target.value)}
-              aria-label="Rechercher un véhicule"
+            <CatalogueSearchBar
+              value={searchInput}
+              onChange={(val) => setSearchInput(val)}
+              variant="mobile"
+              placeholder="Marque, modèle ou besoin IA..."
             />
-            {searchTerm && (
-              <button
-                type="button"
-                className="catalogue__mobile-search-clear"
-                onClick={() => handleFilterChange(setSearchTerm, '')}
-                aria-label="Effacer la recherche"
-              >
-                <X size={14} />
-              </button>
-            )}
           </div>
           <button
             type="button"
@@ -499,7 +511,7 @@ export default function Catalogue() {
                 <span className="catalogue__toggle-slider"></span>
               </label>
             </div>
-            {(activeFuel || activeBody || city || priceMin || priceMax || searchTerm || activeCondition || yearMin || yearMax || mileageMax || activeTransmission || doors || seats || color || minEnginePower || is4x4) && (
+            {(activeFuel || activeBody || city || priceMin || priceMax || searchInput || activeCondition || yearMin || yearMax || mileageMax || activeTransmission || doors || seats || color || minEnginePower || is4x4) && (
               <button className="catalogue__clear-btn" onClick={handleClearFilters}>
                 Effacer
               </button>
@@ -507,15 +519,13 @@ export default function Catalogue() {
           </div>
 
           <div className="catalogue__filter-block">
-            <div className="catalogue__search-input-wrapper">
-              <input 
-                type="text" 
-                placeholder="Que recherchez-vous ?" 
-                className="catalogue__input"
-                value={searchTerm}
-                onChange={(e) => handleFilterChange(setSearchTerm, e.target.value)}
-              />
-            </div>
+            <span className="catalogue__label">Que recherchez-vous ?</span>
+            <CatalogueSearchBar
+              value={searchInput}
+              onChange={(val) => setSearchInput(val)}
+              variant="sidebar"
+              placeholder="Ex: Golf, Clio ou besoin IA..."
+            />
           </div>
 
           <div className="catalogue__filter-block catalogue__filter-block--state">
@@ -756,14 +766,24 @@ export default function Catalogue() {
           {/* Active filters summary */}
           <div className="catalogue__main-header">
             <h1 className="catalogue__main-title">
-              {activeRecommendations 
+              {activeRecommendations
                 ? 'Véhicules Recommandés par l\'IA'
-                  : activeModel && searchTerm 
-                    ? `${searchTerm} ${activeModel}`
-                    : 'Voitures neuves au Maroc'}
+                : searchTerm
+                  ? (activeModel ? `${searchTerm} ${activeModel} au Maroc` : `Recherche "${searchTerm}" au Maroc`)
+                  : activeCondition === 'neuf'
+                    ? 'Voitures neuves au Maroc'
+                    : activeCondition === 'occasion'
+                      ? 'Voitures d\'occasion au Maroc'
+                      : 'Voitures neuves au Maroc'}
             </h1>
             <span className="catalogue__main-count">
-              1 - {vehicles.length} sur {total} {activeRecommendations ? 'finitions recommandées' : 'annonces'}
+              {loading ? (
+                'Recherche en cours...'
+              ) : total === 0 ? (
+                '0 annonce trouvée'
+              ) : (
+                `${(page - 1) * PAGE_SIZE + 1} - ${Math.min(page * PAGE_SIZE, total)} sur ${total} ${activeRecommendations ? 'finitions recommandées' : 'annonces'}`
+              )}
             </span>
           </div>
 

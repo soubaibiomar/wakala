@@ -215,6 +215,12 @@ function BrandsSection() {
 // Page Home
 // ═══════════════════════════════════════════════════════════════
 
+const NEW_VEHICLES_PARAMS: CarSectionProps['fetchParams'] = {
+  page_size: 15,
+  sort_by: 'created_at',
+  sort_order: 'desc',
+};
+
 export default function Home() {
   return (
     <>
@@ -227,7 +233,7 @@ export default function Home() {
         id="new-vehicles"
         tag="Neufs"
         title="Véhicules Neufs"
-        fetchParams={{ page_size: 15, sort_by: 'created_at', sort_order: 'desc' }}
+        fetchParams={NEW_VEHICLES_PARAMS}
         emptyMessage="Aucun véhicule neuf disponible."
       />
     </>

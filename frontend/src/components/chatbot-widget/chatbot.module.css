@@ -510,6 +510,12 @@
   opacity: 1;
 }
 
+@media (hover: none), (max-width: 768px) {
+  .messageActions {
+    opacity: 0.85;
+  }
+}
+
 .copyBtn {
   display: flex;
   align-items: center;
@@ -1039,7 +1045,7 @@
 
   .trigger {
     position: fixed;
-    bottom: 80px;
+    bottom: calc(70px + env(safe-area-inset-bottom, 0px) + 16px);
     right: 16px;
     z-index: 10000;
   }
@@ -1058,5 +1064,26 @@
   50% {
     opacity: 0.15;
     transform: scaleY(0.85);
+  }
+}
+
+
+@media (max-width: 768px) {
+  .inputField {
+    font-size: 16px !important;
+  }
+
+  .headerCloseBtn {
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .windowHeader {
+    padding-top: calc(14px + env(safe-area-inset-top, 0px));
   }
 }

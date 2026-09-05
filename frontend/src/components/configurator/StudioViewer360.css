@@ -167,3 +167,39 @@
 .studio-viewer-360__hotspot:hover .studio-viewer-360__tooltip {
   opacity: 1;
 }
+
+
+/* ─── Mobile Viewport & Touch Controls (<768px) ───────── */
+@media (max-width: 768px) {
+  .studio-viewer-360 {
+    min-height: 220px;
+    height: 250px;
+    border-radius: 12px;
+  }
+
+  .studio-viewer-360__view-tabs {
+    top: 8px;
+    right: 8px;
+  }
+
+  .studio-viewer-360__tab-btn {
+    min-height: 38px;
+    padding: 6px 10px;
+    font-size: 0.72rem;
+  }
+
+  .studio-viewer-360__bottom-bar {
+    bottom: 10px;
+    padding: 4px 12px;
+    gap: 8px;
+  }
+
+  .studio-viewer-360__control-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .studio-viewer-360__hint {
+    font-size: 0.7rem;
+  }
+}

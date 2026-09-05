@@ -1,0 +1,219 @@
+/* ==========================================================================
+   CatalogueSearchBar — Dual Simple Search & AI Recommendation Engine
+   ========================================================================== */
+
+.catalogue-search-container {
+  position: relative;
+  width: 100%;
+}
+
+.catalogue-search-bar {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background: var(--color-bg-primary, #ffffff);
+  border: 1.5px solid rgba(174, 140, 78, 0.35);
+  border-radius: 12px;
+  padding: 4px 6px 4px 12px;
+  box-shadow: 0 2px 8px rgba(18, 33, 53, 0.04);
+  transition: all 0.25s ease;
+}
+
+.catalogue-search-container--mobile .catalogue-search-bar {
+  border-radius: 9999px;
+  padding: 4px 6px 4px 12px;
+}
+
+.catalogue-search-bar:focus-within {
+  border-color: #AE8C4E;
+  box-shadow: 0 4px 16px rgba(174, 140, 78, 0.22), 0 0 0 2px rgba(174, 140, 78, 0.12);
+}
+
+.catalogue-search-bar__left-icon {
+  color: #AE8C4E;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-right: 6px;
+}
+
+.catalogue-search-bar__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 0.88rem;
+  color: var(--color-text-primary, #122135);
+  padding: 8px 4px;
+}
+
+.catalogue-search-bar__input::placeholder {
+  color: var(--color-text-muted, #8492A6);
+  font-size: 0.84rem;
+}
+
+.catalogue-search-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+/* Base button */
+.catalogue-search-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Clear button (X) */
+.catalogue-search-btn--clear {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #E2E8F0;
+  color: #475569;
+}
+.catalogue-search-btn--clear:hover {
+  background: #CBD5E1;
+  color: #0F172A;
+}
+
+/* Microphone button */
+.catalogue-search-btn--mic {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(174, 140, 78, 0.35);
+  background: rgba(174, 140, 78, 0.08);
+  color: #AE8C4E;
+}
+.catalogue-search-btn--mic:hover {
+  background: rgba(174, 140, 78, 0.2);
+  border-color: #AE8C4E;
+  color: #122135;
+}
+.catalogue-search-btn--mic-listening {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #EF4444;
+  animation: mic-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes mic-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+}
+
+/* AI Sparkles button */
+.catalogue-search-btn--ai {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #AE8C4E 0%, #C9A24B 100%);
+  color: #FFFFFF;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(174, 140, 78, 0.35);
+}
+.catalogue-search-btn--ai:hover {
+  background: linear-gradient(135deg, #C9A24B 0%, #D4B465 100%);
+  box-shadow: 0 4px 12px rgba(174, 140, 78, 0.5);
+  transform: translateY(-1px);
+}
+.catalogue-search-btn--ai:active {
+  transform: translateY(0);
+}
+
+.catalogue-search-btn--ai-text {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   Suggestions Dropdown (same styling as Accueil)
+   ========================================================================== */
+
+.catalogue-search-suggestions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 100;
+  padding: 10px;
+  border: 1px solid rgba(174, 140, 78, 0.3);
+  border-radius: 14px;
+  background: #FFFFFF;
+  box-shadow: 0 16px 36px rgba(18, 33, 53, 0.16);
+  animation: suggestionsFadeIn 0.2s ease-out;
+}
+
+@keyframes suggestionsFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.catalogue-search-suggestions__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 6px 8px;
+  color: #AE8C4E;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.catalogue-search-suggestions__label .sparkles-icon {
+  color: #AE8C4E;
+}
+
+.catalogue-search-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  color: #122135;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-family: inherit;
+  transition: all 0.18s ease;
+}
+
+.catalogue-search-suggestion svg {
+  color: #AE8C4E;
+  flex-shrink: 0;
+}
+
+.catalogue-search-suggestion:hover {
+  background: rgba(174, 140, 78, 0.08);
+  color: #AE8C4E;
+  transform: translateX(2px);
+}

@@ -6,6 +6,7 @@ import type { RecommendationResponse } from '../../services/recommendationServic
 interface SearchBarProps {
   userId?: string | null;
   onResults?: (query: string, result?: RecommendationResponse | null) => void;
+  onActiveChange?: (active: boolean) => void;
 }
 
 const SEARCH_SUGGESTIONS = [
@@ -15,7 +16,7 @@ const SEARCH_SUGGESTIONS = [
   'Je cherche une voiture fiable',
 ];
 
-export default function SearchBar({ userId, onResults }: SearchBarProps) {
+export default function SearchBar({ userId, onResults, onActiveChange }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -35,11 +36,15 @@ export default function SearchBar({ userId, onResults }: SearchBarProps) {
     const trimmed = textToSearch.trim();
     if (!trimmed) return;
     setSearchLoading(true);
-    window.dispatchEvent(new CustomEvent('wakala:recommendation-search', { detail: { message: trimmed } }));
-    onResults?.(trimmed, null);
     setIsFocused(false);
+    onActiveChange?.(false);
+    if (onResults) {
+      onResults(trimmed, null);
+    } else {
+      window.dispatchEvent(new CustomEvent('wakala:recommendation-search', { detail: { message: trimmed } }));
+    }
     setSearchLoading(false);
-  }, [onResults]);
+  }, [onResults, onActiveChange]);
 
   const handleSubmitForm = (e: FormEvent) => {
     e.preventDefault();
@@ -97,8 +102,14 @@ export default function SearchBar({ userId, onResults }: SearchBarProps) {
             }
           }}
           readOnly={voice.status === 'listening'}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => window.setTimeout(() => setIsFocused(false), 120)}
+          onFocus={() => {
+            setIsFocused(true);
+            onActiveChange?.(true);
+          }}
+          onBlur={() => window.setTimeout(() => {
+            setIsFocused(false);
+            onActiveChange?.(false);
+          }, 150)}
         />
         
         {/* ─── Bouton Clear (X) ───────────────────────── */}
