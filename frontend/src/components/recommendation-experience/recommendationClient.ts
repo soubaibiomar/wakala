@@ -665,7 +665,7 @@ function hasProfilePreference(text: string): boolean {
 return agePreferencePattern.test(text) || genderPreferencePattern.test(text) || occupationPreferencePattern.test(text);
 }
 
-export const informativeRequestPattern = /\b(?:informations?|infos?)\s+(?:about|on|sur|de)\b|\b(?:informations?|infos?)\s+(?:عن|على)(?:$|[^\p{L}\p{N}])|\b(?:tell|parle|renseigne)\s+(?:me|moi)\b|\b(?:can you tell me|i want to know|do you know|your opinion|price of|is .+ available)\b|\b(?:je voudrais savoir|que pensez[- ]vous|avis sur|prix de|est .+ disponible)\b|(?:معلومات عن|معلومات على|معلومة على|شنو رأيك|بغيت نعرف|بغيت معلومات|ثمن|سعر|واش كاين|3tini ma3lomat 3la|gol lia 3la|bghit n3ref 3la|ach katgol 3la)/iu;
+export const informativeRequestPattern = /\b(?:informations?|infos?)\s+(?:about|on|sur|de)\b|\b(?:informations?|infos?)\s+(?:عن|على)(?:$|[^\p{L}\p{N}])|\b(?:bghit|baghi|3tini|khassni|khsni)?\s*(?:m3lomat|ma3lomat|ma3loumat|maloumat|infos?|informations?)\s*(?:3la|3la\s+l|sur|de|about|on|عن|على)\b|\b(?:m3lomat|ma3lomat|ma3loumat|maloumat)\b|\b(?:tell|parle|renseigne)\s+(?:me|moi)\b|\b(?:can you tell me|i want to know|do you know|your opinion|price of|is .+ available)\b|\b(?:je voudrais savoir|que pensez[- ]vous|avis sur|prix de|est .+ disponible)\b|\b(?:chnahya|chnhya|chnou\s+hiya|chnou\s+howa|chnou|chniya|chnehiya|achnahya|achnhya|achnou|ach\s+hiya|ach\s+howa|chouhouwa|c'est quoi|qu'est[- ]ce que|what is|what's)\b|(?:معلومات عن|معلومات على|معلومة على|شنو رأيك|رأيك في|شنو هي|شنو هو|ما هي|ما هو|شنو كتعني|بغيت نعرف|بغيت معلومات|عطيني معلومات|ثمن|سعر|واش كاين|3tini ma3lomat 3la|3tini m3lomat 3la|gol lia 3la|bghit n3ref 3la|ach katgol 3la)/iu;
 
 function hasAny(text: string, patterns: RegExp[]): boolean {
 return patterns.some((pattern) => pattern.test(text));

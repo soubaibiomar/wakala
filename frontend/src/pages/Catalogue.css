@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════════
    Catalogue Page — Wakala Premium Design (Sidebar Layout)
    ═══════════════════════════════════════════════════════════════ */
 
@@ -733,7 +733,7 @@
 
   /* When chat is open on mobile in catalogue, provide bottom padding so all vehicle cards can be scrolled */
   body.catalogue-chat-open .catalogue {
-    padding-bottom: calc(56dvh + env(safe-area-inset-bottom, 0px) + 24px);
+    padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px) + 24px);
   }
 }
 

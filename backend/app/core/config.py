@@ -108,10 +108,11 @@ class Settings(BaseSettings):
     # ─── OpenRouter cloud LLMs with native provider fallback ────────────────
     OPENROUTER_API_KEY: str = ""
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
-    OPENROUTER_MODEL: str = "liquid/lfm-2.5-2.6b:free"
+    OPENROUTER_MODEL: str = "minimax/minimax-m3:free"
     OPENROUTER_MODELS: list[str] = [
-        "liquid/lfm-2.5-2.6b:free",
         "minimax/minimax-m3:free",
+        "z-ai/glm-5.2:free",
+        "liquid/lfm-2.5-2.6b:free",
         "openrouter/free",
     ]
 
@@ -124,7 +125,8 @@ class Settings(BaseSettings):
             return ""
         return self.GROQ_API_KEY
 
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
+    GROQ_MODELS: list[str] = ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]
 
     # ─── LLM / RAG ────────────────────────────────────────────
     OPENAI_API_KEY: str = ""

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useVoiceAssistant } from '../../hooks/useVoiceAssistant';
 import { chatbotService } from '../../services/chatbotService';
@@ -66,7 +66,7 @@ export default function RecommendationExperience({ client = recommendationClient
   const [pendingSearch, setPendingSearch] = useState<string | null>(null);
   const [rangeBounds, setRangeBounds] = useState<{ min: number; max: number; step?: number; label: string } | null>(null);
   const [recommendationActive, setRecommendationActive] = useState(false);
-  const [showCatalogueBubble, setShowCatalogueBubble] = useState(!isCatalogue);
+
   const [mobileImmersiveTab, setMobileImmersiveTab] = useState<'chat' | 'results'>('chat');
   const resetVersionRef = useRef(0);
   const hasRestoredRef = useRef(false);
@@ -216,7 +216,7 @@ export default function RecommendationExperience({ client = recommendationClient
         const isInformative = informativeRequestPattern.test(message)
           || /\b(?:informations?|infos?|avis\s+sur|que\s+pensez|donne[- ]moi\s+des\s+infos)\b/i.test(message);
         const detectedRecommendation = await client.detectRecommendationIntent(message);
-        const isAutomotiveConsultation = /\b(what is|what does|explain|how does|why does|problem|issue|fault|warning light|maintenance|service|repair|engine|motor|dci|diesel common rail|oil change|brake|brakes|tyre|tire|battery|overheat|consumption)\b/i.test(message);
+        const isAutomotiveConsultation = /\b(what is|what's|what does|explain|how does|why does|c'est quoi|qu'est[- ]ce que|chnahya|chnhya|chnou|achnahya|achnhya|problem|issue|fault|warning light|maintenance|service|repair|engine|motor|dci|diesel common rail|oil change|brake|brakes|tyre|tire|battery|overheat|consumption|amg)\b|(?:شنو هي|شنو هو|ما هي|ما هو)/i.test(message);
         const isRecommendation = !isInformative && (detectedRecommendation || (recommendationActive && !isAutomotiveConsultation));
         if (!isRecommendation) {
           // Clear any recommendation options so they don't linger under general answers
@@ -416,13 +416,8 @@ export default function RecommendationExperience({ client = recommendationClient
   }, [initialCars, client]);
 
   useEffect(() => {
-    setShowCatalogueBubble(!isCatalogue);
-  }, [isCatalogue]);
-
-  useEffect(() => {
     const handleOpenChat = () => setMode((current) => current === 'immersive' ? current : 'widget');
     const handleOpenFromHint = () => {
-      setShowCatalogueBubble(true);
       setMode('widget');
     };
     window.addEventListener('wakala:open-chat', handleOpenChat);
@@ -536,7 +531,7 @@ export default function RecommendationExperience({ client = recommendationClient
           </div>
         </main>
       )}
-      {mode !== 'immersive' && (!isCatalogue || showCatalogueBubble) && <ChatBubbleIcon open={mode === 'widget'} onClick={open} />}
+      {mode !== 'immersive' && <ChatBubbleIcon open={mode === 'widget'} onClick={open} hasActiveConversation={messages.length > 0} />}
     </div>
   );
 }
@@ -654,4 +649,5 @@ function extractFilterSummary(text: string): Record<string, any> {
   }
   return filters;
 }
+
 

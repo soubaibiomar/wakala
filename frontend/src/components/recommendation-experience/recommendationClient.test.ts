@@ -1307,6 +1307,21 @@ describe('FastApiRecommendationClient recommendation logic', () => {
       expect(result.every((c) => c.fuel_type === 'hybride')).toBe(true);
     });
 
+    it('correctly identifies Darija informative and definition queries', async () => {
+      const client = new FastApiRecommendationClient();
+      expect(informativeRequestPattern.test('Bghit m3lomat 3la dacia')).toBe(true);
+      expect(informativeRequestPattern.test('bghit ma3lomat 3la dacia')).toBe(true);
+      expect(informativeRequestPattern.test('Chnahya amfmg')).toBe(true);
+      expect(informativeRequestPattern.test('Chnhya amg')).toBe(true);
+      expect(informativeRequestPattern.test('Informations sur Dacia')).toBe(true);
+      expect(informativeRequestPattern.test('What is AMG')).toBe(true);
+
+      await expect(client.detectRecommendationIntent('Bghit m3lomat 3la dacia')).resolves.toBe(false);
+      await expect(client.detectRecommendationIntent('bghit ma3lomat 3la dacia')).resolves.toBe(false);
+      await expect(client.detectRecommendationIntent('Chnhya amg')).resolves.toBe(false);
+      await expect(client.detectRecommendationIntent('Chnahya amfmg')).resolves.toBe(false);
+    });
+
     it('correctly identifies informative queries and does not treat them as recommendation intent', async () => {
       const client = new FastApiRecommendationClient();
       expect(informativeRequestPattern.test('je veux des informations sur dacia')).toBe(true);

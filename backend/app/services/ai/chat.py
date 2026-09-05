@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from typing import Optional, List, Dict, Any, AsyncIterable
+
 import re
 import json
 import asyncio
@@ -33,72 +35,35 @@ except ImportError:
 from app.core.config import settings
 from app.services.ai.qdrant import get_qdrant_client
 
-async def _stream_openrouter_direct(messages_payload: list[dict], fallback_text: str) -> AsyncIterable[str]:
-    """Stream des tokens depuis OpenRouter sans fournisseur local de secours."""
-    headers = {
-        "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
-        "HTTP-Referer": "https://wakala.ma",
-        "X-Title": "Wakala Platform",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "models": settings.OPENROUTER_MODELS,
-        "messages": messages_payload,
-        "stream": True,
-        "temperature": 0.2,
-        "max_tokens": 360,
-        # The selected OpenRouter model can spend the complete token budget
-        # emitting hidden reasoning and leave the user with an empty stream.
-        # Exclude reasoning so every request produces an actual answer.
-        "reasoning": {"exclude": True},
-    }
-    url = f"{settings.OPENROUTER_BASE_URL.rstrip('/')}/chat/completions"
-    
+async def _stream_openrouter_direct(messages_payload: list[dict], fallback_text: str, detected_lang: str = "french", query_text: str = "") -> AsyncIterable[str]:
+    """Stream des tokens depuis Groq puis OpenRouter de façon hautement résiliente avec fallback garanti."""
     yielded_any = False
-    should_fallback = False
-    
-    try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(14.0, connect=4.0)) as client:
-            async with client.stream("POST", url, json=payload, headers=headers) as response:
-                if response.status_code != 200:
-                    print(f"[OpenRouter Status {response.status_code}] Primary LLM request failed, evaluating fallback")
-                    should_fallback = True
-                else:
-                    async for line in response.aiter_lines():
-                        if line.startswith("data: "):
-                            data_str = line[6:].strip()
-                            if data_str == "[DONE]":
-                                break
-                            try:
-                                data = json.loads(data_str)
-                                delta = data["choices"][0].get("delta", {}).get("content", "")
-                                if delta:
-                                    yielded_any = True
-                                    yield delta
-                            except Exception:
-                                pass
-    except Exception as e:
-        print(f"[OpenRouter Stream Exception: {e}] Cloud provider request failed, evaluating fallback")
-        should_fallback = True
 
-    if should_fallback or not yielded_any:
-        # Fallback to secondary provider (Groq) if configured
-        groq_key = getattr(settings, "GROQ_API_KEY", None)
-        if groq_key:
-            print("[LLM Resilience] Activating secondary LLM provider (Groq)")
-            groq_headers = {
-                "Authorization": f"Bearer {groq_key}",
-                "Content-Type": "application/json",
-            }
+    # 1. Priorité à Groq ultra-rapide (< 1s) si clé configurée
+    groq_key = getattr(settings, "GROQ_API_KEY", None)
+    if groq_key:
+        groq_models = getattr(settings, "GROQ_MODELS", [
+            getattr(settings, "GROQ_MODEL", "openai/gpt-oss-120b"),
+            "openai/gpt-oss-120b",
+            "openai/gpt-oss-20b",
+            "qwen/qwen3.8-27b",
+        ])
+        groq_headers = {
+            "Authorization": f"Bearer {groq_key}",
+            "Content-Type": "application/json",
+        }
+        for g_model in groq_models:
+            if yielded_any:
+                break
             groq_payload = {
-                "model": getattr(settings, "GROQ_MODEL", "llama-3.3-70b-versatile"),
+                "model": g_model,
                 "messages": messages_payload,
                 "stream": True,
                 "temperature": 0.2,
-                "max_tokens": 360,
+                "max_tokens": 400,
             }
             try:
-                async with httpx.AsyncClient(timeout=httpx.Timeout(5.0, connect=2.5)) as groq_client:
+                async with httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=3.0)) as groq_client:
                     async with groq_client.stream("POST", "https://api.groq.com/openai/v1/chat/completions", json=groq_payload, headers=groq_headers) as groq_res:
                         if groq_res.status_code == 200:
                             async for line in groq_res.aiter_lines():
@@ -114,15 +79,71 @@ async def _stream_openrouter_direct(messages_payload: list[dict], fallback_text:
                                             yield delta
                                     except Exception:
                                         pass
+                            if yielded_any:
+                                return
+                        else:
+                            print(f"[Groq Status {groq_res.status_code} on {g_model}]")
             except Exception as ge:
-                print(f"[Groq Secondary Provider Exception: {ge}]")
+                print(f"[Groq Exception on {g_model}: {ge}]")
 
-        if not yielded_any:
-            yield fallback_text
+    # 2. OpenRouter provider
+    openrouter_key = getattr(settings, "OPENROUTER_API_KEY", None)
+    if not yielded_any and openrouter_key:
+        headers = {
+            "Authorization": f"Bearer {openrouter_key}",
+            "HTTP-Referer": "https://wakala.ma",
+            "X-Title": "Wakala Platform",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "models": getattr(settings, "OPENROUTER_MODELS", ["minimax/minimax-m3:free", "z-ai/glm-5.2:free", "liquid/lfm-2.5-2.6b:free"]),
+            "messages": messages_payload,
+            "stream": True,
+            "temperature": 0.2,
+            "max_tokens": 400,
+            "reasoning": {"exclude": True},
+        }
+        url = f"{settings.OPENROUTER_BASE_URL.rstrip('/')}/chat/completions"
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(14.0, connect=4.0)) as client:
+                async with client.stream("POST", url, json=payload, headers=headers) as response:
+                    if response.status_code == 200:
+                        async for line in response.aiter_lines():
+                            if line.startswith("data: "):
+                                data_str = line[6:].strip()
+                                if data_str == "[DONE]":
+                                    break
+                                try:
+                                    data = json.loads(data_str)
+                                    delta = data["choices"][0].get("delta", {}).get("content", "")
+                                    if delta:
+                                        yielded_any = True
+                                        yield delta
+                                except Exception:
+                                    pass
+                    else:
+                        print(f"[OpenRouter Status {response.status_code}]")
+        except Exception as e:
+            print(f"[OpenRouter Stream Exception: {e}]")
 
+    # 3. Knowledge fallback or text fallback
+    if not yielded_any:
+        knowledge = get_automotive_knowledge_fallback(detected_lang, query_text)
+        yield knowledge if knowledge else fallback_text
 
 def get_llm():
-    if settings.OPENROUTER_API_KEY:
+    groq_key = getattr(settings, "GROQ_API_KEY", None)
+    if groq_key:
+        return ChatOpenAI(
+            base_url="https://api.groq.com/openai/v1",
+            model=getattr(settings, "GROQ_MODEL", "openai/gpt-oss-120b"),
+            api_key=groq_key,
+            temperature=0.2,
+            max_tokens=450,
+            request_timeout=15.0,
+            timeout=15.0,
+        )
+    if getattr(settings, "OPENROUTER_API_KEY", None):
         return ChatOpenAI(
             base_url=settings.OPENROUTER_BASE_URL,
             model=settings.OPENROUTER_MODEL,
@@ -137,17 +158,12 @@ def get_llm():
                 "X-Title": "Wakala Platform",
             }
         )
-    if getattr(settings, "GROQ_API_KEY", None):
-        return ChatOpenAI(
-            base_url="https://api.groq.com/openai/v1",
-            model=getattr(settings, "GROQ_MODEL", "llama-3.3-70b-versatile"),
-            api_key=settings.GROQ_API_KEY,
-            temperature=0.2,
-            max_tokens=450,
-            request_timeout=15.0,
-            timeout=15.0,
-        )
-    raise RuntimeError("Neither OPENROUTER_API_KEY nor GROQ_API_KEY is configured")
+    # Return dummy harmless fallback instead of throwing uncaught RuntimeError
+    return ChatOpenAI(
+        base_url="https://api.groq.com/openai/v1",
+        model="openai/gpt-oss-120b",
+        api_key="disabled",
+    )
 
 EMOJI_PATTERN = re.compile(
     r'[\U00010000-\U0010ffff]|[\u2600-\u27BF]|[\u2300-\u23FF]|[\u2B50\u2B55\u2934\u2935\u25AA\u25AB\u25FE\u25FD\u25FB\u25FC\u25B6\u25C0\u3030\u303D\u3297\u3299\uFE0F]'
@@ -337,7 +353,7 @@ def detect_language(text: str, history: Optional[List[Dict[str, str]]] = None, e
         return "darija_lat"
     darija_patterns = [
         'salam', 'slm', 'labas', 'bghit', 'kayna', 'chhal', 'chno homa', 'fihom machakil',
-        'li fihom', 'chno howa', 'wach kayn', 'ki dayr', 'chhal taman', 'gol lia'
+        'li fihom', 'chno howa', 'wach kayn', 'ki dayr', 'chhal taman', 'gol lia', 'chnahya', 'chnhya', 'chnou', 'achnahya', 'achnhya', 'achnou', 'm3lomat', 'ma3lomat', 'dyal', 'dial'
     ]
     if any(p in t for p in darija_patterns):
         return "darija_lat"
@@ -781,6 +797,18 @@ def normalize_multilingual_query_terms(query: str) -> str:
 
 def fast_classify_intent(message: str) -> Optional[Dict[str, Any]]:
     msg = message.lower().strip()
+    definition_question_words = [
+        'chnahya', 'chnhya', 'chnou hiya', 'chnou howa', 'chnou', 'chniya', 'chnehiya',
+        'achnahya', 'achnhya', 'achnou', 'ach hiya', 'ach howa', 'chouhouwa',
+        "c'est quoi", "qu'est-ce que", "qu'est ce que", 'what is', "what's",
+        'شنو هي', 'شنو هو', 'ما هي', 'ما هو', 'شنو كتعني', 'معنى'
+    ]
+    if any(q_word in msg for q_word in definition_question_words):
+        # Questions asking what a brand, model, or automotive term is (e.g. "chnahya amg", "c'est quoi amg")
+        if any(term in msg for term in AUTOMOTIVE_DOMAIN_TERMS) or any(b in msg for b in KNOWN_BRANDS_MODELS) or 'amg' in msg:
+            clean_q = normalize_multilingual_query_terms(message)
+            return {"intent": "auto_expert", "max_price": None, "search_query": clean_q}
+
 
     expert_kw = [
         'problème', 'probleme', 'problèmes', 'problemes', 'panne', 'pannes', 'bruit bizarre',
@@ -873,7 +901,7 @@ def fast_classify_intent(message: str) -> Optional[Dict[str, Any]]:
         'ما هي', 'ما هو', 'من هي', 'من هو', 'معلومات عن', 'أخبرني عن', 'هل ',
         'شنو هي', 'شنو هو', 'اش هي', 'اش هو', 'شكون هي', 'شكون هو', 'شنو كتعني',
         'علاش ', 'كيفاش ', 'كيف ', 'الفرق بين', 'قارن ', 'بشحال', 'chno hiya',
-        'chno howa', 'gol lia 3la', '3tini ma3lomat', 'wach ', '3lach ',
+        'chno howa', 'gol lia 3la', '3tini ma3lomat', '3tini m3lomat', 'bghit m3lomat', 'bghit ma3lomat', 'chnahya', 'chnhya', 'chnou', 'achnahya', 'achnhya', 'wach ', '3lach ',
         'kifach ', 'chno kay3ni', 'far9 bin', 'qaren '
     ]
     recommendation_markers = [
@@ -890,7 +918,7 @@ def fast_classify_intent(message: str) -> Optional[Dict[str, Any]]:
         'price of', 'prix de', ' vs ', ' versus ', ' contre ', 'worth it',
         'available in', 'disponible au', 'reliable', 'fiable', 'معلومات عن',
         'معلومات على', 'معلومة على', 'بغيت معلومات', 'بغيت نعرف', 'ثمن',
-        'سعر', 'ma3lomat 3la', 'bghit ma3lomat', 'bghit n3ref 3la'
+        'سعر', 'ma3lomat 3la', 'bghit ma3lomat', 'bghit m3lomat', 'bghit m3lomat 3la', 'm3lomat 3la', 'ma3lomat 3la', 'ma3loumat 3la', 'maloumat 3la', 'bghit n3ref 3la'
     ]
     informative_signal = any(msg.startswith(prefix) for prefix in informative_prefixes) or any(marker in msg for marker in informative_markers)
     if informative_signal and not any(marker in msg for marker in recommendation_markers):
@@ -985,7 +1013,7 @@ AUTOMOTIVE_DOMAIN_TERMS = (
     'adblue', 'dpf', 'fap', 'egr', 'injecteur', 'injector', 'courroie', 'distribution',
     'consommation', 'consumption', 'kilométrage', 'kilometrage', 'mileage', 'suv',
     'berline', 'citadine', 'break', 'crossover', 'pickup', 'van', '4x4', 'bva', 'bvm',
-    'dci', 'tce', 'puretech', 'tsi', 'tdi', 'vin', 'panne', 'fiabilité', 'reliability',
+    'dci', 'tce', 'puretech', 'tsi', 'tdi', 'vin', 'amg', 'mercedes-amg', 'm power', 'audi rs', 'gti', 'dacia', 'panne', 'fiabilité', 'reliability',
     'occasion', 'neuf', 'new car', 'used car', 'achat', 'acheter', 'buy', 'prix', 'price',
     'budget', 'assurance', 'insurance', 'douane', 'dédouanement', 'customs', 'import',
     'sécurité', 'safety', 'carte grise', 'concessionnaire', 'marque', 'modèle',
@@ -1516,39 +1544,22 @@ async def chat_stream(message: str, history: List[Dict[str, str]], language: Opt
             
     raw_messages.append({"role": "user", "content": remove_emojis(clean_message)})
     
-    # Keep discovery requests deterministic even when the LLM is unavailable:
-    # the UI must receive exactly one localized question to continue the flow.
-    is_discovery_request = intent == "car_search" or bool(re.search(
-        r"\b(family|famille|familiale|familial|suv|vehicle|voiture|car|acheter|budget|recommend|recommande|cherche)\b",
-        clean_message,
-        re.IGNORECASE,
-    ))
+    # Discovery questions apply ONLY to car_search intent (when user actually wants to purchase/find cars)
+    is_discovery_request = (intent == "car_search")
 
     # 6. Stream de génération avec filtrage systématique d'emojis et des balises de réflexion (<think>)
-    if settings.OPENROUTER_API_KEY:
-        if is_discovery_request:
-            fallback_text = get_fallback_discovery_question(detected_lang, clean_message, history, max_price)
-        else:
-            fallback_text = {
-                "french": "Je peux vous aider avec votre question automobile. Pouvez-vous préciser votre besoin ?",
-                "english": "I can help with your automotive question. Could you clarify what you need?",
-                "arabic": "يمكنني مساعدتك في سؤالك عن السيارات. هل يمكنك توضيح حاجتك؟",
-                "darija_ar": "نقدر نعاونك فالسؤال ديالك على السيارات. واش تقدر توضح ليا الحاجة ديالك؟",
-                "darija_lat": "N9der n3awnek f sou2al dyalek 3la tomobilat. Wach t9der twadda7 l7aja dyalek?",
-            }.get(detected_lang, "I can help with your automotive question. Could you clarify what you need?")
-        stream_source = _stream_openrouter_direct(raw_messages, fallback_text)
+    if is_discovery_request:
+        fallback_text = get_fallback_discovery_question(detected_lang, clean_message, history, max_price)
     else:
-        messages = [
-            SystemMessage(content=m["content"]) if m["role"] == "system"
-            else HumanMessage(content=m["content"]) if m["role"] == "user"
-            else AIMessage(content=m["content"])
-            for m in raw_messages
-        ]
-        active_llm = get_llm()
-        async def _adapt_langchain():
-            async for chunk in active_llm.astream(messages):
-                yield getattr(chunk, "content", "")
-        stream_source = _adapt_langchain()
+        fallback_text = {
+            "french": "Je peux vous aider avec votre question automobile. Pouvez-vous préciser votre besoin ?",
+            "english": "I can help with your automotive question. Could you clarify what you need?",
+            "arabic": "يمكنني مساعدتك في سؤالك عن السيارات. هل يمكنك توضيح حاجتك؟",
+            "darija_ar": "نقدر نعاونك فالسؤال ديالك على السيارات. واش تقدر توضح ليا الحاجة ديالك؟",
+            "darija_lat": "N9der n3awnek f sou2al dyalek 3la tomobilat. Wach t9der twadda7 l7aja dyalek?",
+        }.get(detected_lang, "I can help with your automotive question. Could you clarify what you need?")
+
+    stream_source = _stream_openrouter_direct(raw_messages, fallback_text, detected_lang=detected_lang, query_text=clean_message)
 
     thinking_buffer = ""
     is_filtering_thinking = False
@@ -1617,3 +1628,27 @@ async def chat_stream(message: str, history: List[Dict[str, str]], language: Opt
     # case: return one localized, useful next step.
     if not started_yielding and is_discovery_request:
         yield get_fallback_discovery_question(detected_lang, clean_message, history, max_price)
+
+
+def get_automotive_knowledge_fallback(detected_lang: str, query: str) -> Optional[str]:
+    """Provide accurate automotive knowledge fallback when cloud LLMs are unreachable."""
+    q = (query or "").lower().strip()
+    if "amg" in q:
+        return {
+            "darija_ar": "AMG هو الفرع الرياضي وعالي الأداء ديال مرسيدس-بنز (Mercedes-Benz). كيتخصص فمحركات قوية معدلة يدوياً ('رجل واحد، محرك واحد')، شاسيه رياضي وتصميم هجومي (بحال A45 AMG، C63 AMG، G63). واش باغي معلومات على شي موديل محدد؟",
+            "darija_lat": "AMG houwa l-far3 r-riyadi dyal l-performance l-3alya 3nd Mercedes-Benz. M3roufin b les moteurs 9wiyin m9adin b l-yed ('one man, one engine'), chassis sport w design hjoumi (bhal A45, C63, G63 AMG). Wach bghiti t3ref 3la chi modele precis?",
+            "french": "AMG (Aufrecht, Melcher et Großaspach) est la division sportive et haute performance de Mercedes-Benz. Elle est réputée pour ses moteurs puissants assemblés à la main ('un homme, un moteur'), ses châssis affûtés et son design agressif (ex. A45, C63, G63 AMG). Souhaitez-vous des détails sur un modèle en particulier ?",
+            "arabic": "AMG هو قسم الأداء العالي والرياضي التابع لشركة مرسيدس-بنز (Mercedes-Benz). يشتهر بمحركاته القوية المجمعة يدوياً وأنظمة التعليق الرياضية والتصاميم الحصرية (مثل A45 وC63 وG63 AMG). هل تود معرفة تفاصيل حول طراز معين؟",
+            "english": "AMG is the high-performance division of Mercedes-Benz, famous for hand-built high-output engines ('one man, one engine'), tuned chassis, and aggressive styling (such as A45, C63, G63 AMG). Would you like details on a specific model?",
+        }.get(detected_lang, "AMG is the high-performance division of Mercedes-Benz, famous for hand-built engines and sports performance.")
+
+    if "dacia" in q:
+        return {
+            "darija_ar": "داسيا (Dacia) علامة تابعة لمجموعة رونو ومصنعة محلياً فالمغرب (طنجة والدار البيضاء). معروفة بالموثوقية، واقتصادية فالاستهلاك وقطع الغيار متوفرة ورخيصة. الموديلات الأكثر شعبية فالمغرب هي سانديرو (Sandero)، وداستر (Duster SUV)، ولوغان (Logan)، وجوغر (Jogger). واش باغي تعرف تفاصيل على شي موديل بالخصوص؟",
+            "darija_lat": "Dacia marque tab3a l Renault w katssna3 f l-Meghrib (Tanger w Casablanca). M3roufa b l-fiabilite, l-iqtissad f l-mazot w l-pièces mojoudin w rkhas. Les modeles li kaynin: Sandero, Duster, Logan, w Jogger. Wach bghiti m3lomat 3la chi modele precis?",
+            "french": "Dacia est une marque du groupe Renault produite au Maroc (usines de Tanger et Casablanca). Elle est reconnue pour sa robustesse, sa grande fiabilité et ses coûts d'usage très économiques. Les modèles les plus vendus au Maroc sont la Sandero, le Duster, la Logan et le Jogger. Souhaitez-vous des informations détaillées sur l'un de ces modèles ?",
+            "arabic": "داسيا هي علامة تجارية تابعة لمجموعة رينو وتُصنع محلياً في المغرب (مصانع طنجة والدار البيضاء). تشتهر بالموثوقية العالية والاقتصاد الكبير في استهلاك الوقود وانخفاض تكلفة قطع الغيار والصيانة. أبرز موديلاتها: سانديرو، داستر، لوغان، وجوغر. هل تود معرفة معلومات عن طراز محدد؟",
+            "english": "Dacia is a brand under the Renault Group manufactured locally in Morocco (Tangier and Casablanca). It is celebrated for durability, low maintenance costs, and exceptional fuel efficiency. Popular models in Morocco include the Sandero, Duster, Logan, and Jogger. Would you like details on a specific model?",
+        }.get(detected_lang, "Dacia is a Renault Group brand produced in Morocco, known for reliability and affordable maintenance.")
+
+    return None

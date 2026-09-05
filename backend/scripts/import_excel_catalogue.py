@@ -68,27 +68,41 @@ def fuel_type(value: str) -> str:
     return "essence"
 
 
-def body_type(model: str, finish: str) -> str:
-    text = f"{model} {finish}".lower()
-    if any(x in text for x in ("pick-up", "pickup", "pik-up")):
+def body_type(model: str, finish: str, brand: str = "", row: dict[str, object] | None = None) -> str:
+    if row:
+        for k in ("[AG] Carrosserie", "Carrosserie", "carrosserie", "Type Carrosserie"):
+            val = clean(row.get(k)).lower()
+            if val in ("citadine", "berline", "suv", "break", "coupe", "cabriolet", "monospace", "utilitaire", "pick_up"):
+                return val
+
+    # Fallback: try data_pipeline catalogue_mapping if available
+    try:
+        from data_pipeline.scripts.catalogue_mapping import infer_body_type
+        return infer_body_type(brand, model, finish, None, False, None, row=row)
+    except Exception:
+        pass
+
+    text = f"{brand} {model} {finish}".lower()
+    if any(x in text for x in ("pick-up", "pickup", "pik-up", "hilux", "ranger", "d-max", "l200", "navara", "landtrek", "titano")):
         return "pick_up"
-    if any(x in text for x in ("monospace", "space", "staria", "carnival", "spacetourer")):
+    if any(x in text for x in ("monospace", "space", "staria", "carnival", "spacetourer", "zafira")):
         return "monospace"
-    if any(x in text for x in ("break", "touring", "estate", "sw", "wagon")):
+    if any(x in text for x in ("break", "touring", "estate", "sw", "wagon", "avant")):
         return "break"
-    if any(x in text for x in ("berline", "sedan", "saloon")):
-        return "berline"
-    if any(x in text for x in ("coupé", "coupe")):
+    if any(x in text for x in ("coupé", "coupe", "a110", "gtb", "911")):
         return "coupe"
-    if "cabrio" in text or "convertible" in text:
+    if any(x in text for x in ("cabrio", "convertible", "spider", "spyder", "roadster")):
         return "cabriolet"
-    if any(x in text for x in ("citadine", "city", "mini")):
-        return "citadine"
-    if any(x in text for x in ("utilitaire", "van", "fourgon")):
+    if any(x in text for x in ("utilitaire", "van", "fourgon", "transit", "berlingo", "partner", "kangoo", "caddy", "combo", "express")):
         return "utilitaire"
-    if "suv" in text or "crossover" in text or "4x4" in text:
+    if any(x in text for x in ("citadine", "city", "mini", "clio", "208", "c3", "sandero", "yaris", "polo", "i10", "i20", "picanto", "swift", "micra", "fiesta", "fabia", "ibiza", "corsa", "spring", "500")):
+        return "citadine"
+    if any(x in text for x in ("berline", "sedan", "saloon", "corolla", "golf", "megane", "octavia", "astra", "classe a", "classe c", "classe e", "serie 3", "serie 5", "a3", "a4", "a6", "passat", "mondeo")):
+        return "berline"
+    if any(x in text for x in ("suv", "crossover", "4x4", "duster", "tiguan", "tucson", "sportage", "qashqai", "3008", "2008", "5008", "rav4", "kuga", "captur", "austral", "t-roc", "t-cross", "x1", "x3", "x5", "q3", "q5", "gla", "glc")):
         return "suv"
-    return "suv"
+    return "berline"
+
 
 
 def transmission(value: str) -> str:
@@ -127,6 +141,7 @@ def row_to_vehicle(row: dict[str, object]) -> dict[str, object] | None:
 
     ncap = clean(row.get("[R] Sécurité NCAP"))
     source_url = clean(row.get("[H] Fiche Finition Officielle"))
+    bt = body_type(model, version, brand=brand, row=row)
     return {
         "brand": brand[:100],
         "model": model[:100],
@@ -134,12 +149,12 @@ def row_to_vehicle(row: dict[str, object]) -> dict[str, object] | None:
         "year": 2026,
         "mileage": 0,
         "fuel_type": fuel_type(clean(row.get("[O] Type Moteur"))),
-        "body_type": body_type(model, version),
+        "body_type": bt,
         "transmission": transmission(clean(row.get("[P] Transmission"))),
         "engine_power_hp": number(row.get("[N] Puissance (ch)")),
         "color": None,
         "doors": 5,
-        "seats": 7 if body_type(model, version) == "monospace" else 5,
+        "seats": 7 if bt == "monospace" else 5,
         "trunk_volume_l": number(row.get("[J] Coffre (L)")),
         "ncap_rating": ncap[:50] or None,
         "co2_emissions": number(row.get("[Q] CO2 (g/km)")),
@@ -176,7 +191,7 @@ async def import_new_car_catalog_row(db, row: dict[str, object]) -> bool:
         select(ModelCatalog).where(ModelCatalog.brand_id == brand.id, ModelCatalog.name == model_name)
     )
     model = model_result.scalars().first()
-    model_body = body_type(model_name, trim_name)
+    model_body = body_type(model_name, trim_name, brand=brand_name, row=row)
     if model is None:
         model = ModelCatalog(
             brand_id=brand.id,
