@@ -117,32 +117,38 @@
   }
 }
 
-/* AI Sparkles button */
+/* Search Action Button */
+.catalogue-search-btn--search,
 .catalogue-search-btn--ai {
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
   background: linear-gradient(135deg, #AE8C4E 0%, #C9A24B 100%);
   color: #FFFFFF;
   border-radius: 8px;
-  padding: 5px 10px;
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
   box-shadow: 0 2px 8px rgba(174, 140, 78, 0.35);
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
 }
+.catalogue-search-btn--search:hover,
 .catalogue-search-btn--ai:hover {
   background: linear-gradient(135deg, #C9A24B 0%, #D4B465 100%);
   box-shadow: 0 4px 12px rgba(174, 140, 78, 0.5);
   transform: translateY(-1px);
 }
+.catalogue-search-btn--search:active,
 .catalogue-search-btn--ai:active {
   transform: translateY(0);
 }
 
 .catalogue-search-btn--ai-text {
-  font-size: 0.75rem;
-  font-weight: 700;
+  display: none;
 }
 
 /* ==========================================================================
@@ -216,4 +222,91 @@
   background: rgba(174, 140, 78, 0.08);
   color: #AE8C4E;
   transform: translateX(2px);
+}
+
+
+/* ==========================================================================
+   Recommendation Intent Sensing State
+   ========================================================================== */
+
+.catalogue-search-bar--recommendation {
+  border-color: #AE8C4E !important;
+  box-shadow: 0 4px 16px rgba(174, 140, 78, 0.22), 0 0 0 2px rgba(174, 140, 78, 0.15) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.catalogue-search-bar__left-sparkle {
+  color: #AE8C4E;
+  animation: sparkle-pulse 1.8s infinite ease-in-out;
+}
+
+@keyframes sparkle-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+.catalogue-search-bar__ai-tag {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(174, 140, 78, 0.14);
+  border: 1px solid rgba(174, 140, 78, 0.35);
+  color: #8C6D2D;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-right: 4px;
+  animation: tagFadeIn 0.22s ease-out;
+}
+
+@keyframes tagFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.catalogue-search-btn--recommendation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #AE8C4E 0%, #C9A24B 100%);
+  color: #FFFFFF;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  box-shadow: 0 2px 10px rgba(174, 140, 78, 0.4);
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  animation: btn-glow 2s infinite ease-in-out;
+}
+
+.catalogue-search-btn--recommendation:hover {
+  background: linear-gradient(135deg, #C9A24B 0%, #D4B465 100%);
+  box-shadow: 0 4px 14px rgba(174, 140, 78, 0.6);
+  transform: translateY(-1px);
+}
+
+.catalogue-search-btn--recommendation:active {
+  transform: translateY(0);
+}
+
+@keyframes btn-glow {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(174, 140, 78, 0.35);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(174, 140, 78, 0.65);
+  }
 }

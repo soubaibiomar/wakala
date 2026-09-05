@@ -1,7 +1,7 @@
-import { useCallback, useState, useRef, useEffect, type FormEvent, type KeyboardEvent } from 'react';
+﻿import { useCallback, useState, useRef, useEffect, useMemo, type FormEvent, type KeyboardEvent } from 'react';
 import { Search, Mic, Square, X, Sparkles } from 'lucide-react';
 import { useVoiceInput } from '../../hooks/useVoiceInput';
-import { recommendationClient } from '../recommendation-experience/recommendationClient';
+import { isRecommendationQuery } from '../../utils/recommendationIntentDetector';
 import './CatalogueSearchBar.css';
 
 interface CatalogueSearchBarProps {
@@ -29,7 +29,10 @@ export default function CatalogueSearchBar({
   const [isFocused, setIsFocused] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Web Speech API hook (same as Accueil)
+  // Détection en temps réel de l'intention : Recommandation / Conseil IA vs Recherche directe
+  const isRecommendation = useMemo(() => isRecommendationQuery(value), [value]);
+
+  // Web Speech API hook (identique à l'accueil)
   const voice = useVoiceInput({
     defaultLang: 'fr-FR',
     onTranscript: (text) => {
@@ -39,7 +42,7 @@ export default function CatalogueSearchBar({
     },
   });
 
-  // Handle language switch if text contains Arabic/Darija
+  // Bascule automatique de la langue vocale si texte en Arabe / Darija
   useEffect(() => {
     const hasArabic = /[\u0600-\u06FF]/.test(value);
     if (hasArabic && voice.lang !== 'ar-MA') {
@@ -67,10 +70,16 @@ export default function CatalogueSearchBar({
       setIsFocused(false);
       if (!trimmed) return;
 
-      // Direct catalogue search filtering
-      onChange(trimmed);
+      // Aiguillage intelligent selon l'intention détectée
+      if (isRecommendationQuery(trimmed)) {
+        // Demande de recommandation / besoin IA -> Lancer l'expérience conversationnelle IA
+        triggerRecommendation(trimmed);
+      } else {
+        // Recherche catalogue directe (marque, modèle, version, ville)
+        onChange(trimmed);
+      }
     },
-    [value, onChange]
+    [value, onChange, triggerRecommendation]
   );
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -81,11 +90,6 @@ export default function CatalogueSearchBar({
 
   const handleClear = () => {
     onChange('');
-  };
-
-  const handleAiButtonClick = () => {
-    setIsFocused(false);
-    triggerRecommendation(value);
   };
 
   const handleSuggestionClick = (suggestion: string) => {
@@ -129,9 +133,17 @@ export default function CatalogueSearchBar({
         </div>
       )}
 
-      <form className="catalogue-search-bar" onSubmit={handleSubmit} role="search">
+      <form 
+        className={`catalogue-search-bar ${isRecommendation ? 'catalogue-search-bar--recommendation' : ''}`} 
+        onSubmit={handleSubmit} 
+        role="search"
+      >
         <div className="catalogue-search-bar__left-icon" aria-hidden="true">
-          <Search size={17} />
+          {isRecommendation ? (
+            <Sparkles size={16} className="catalogue-search-bar__left-sparkle" />
+          ) : (
+            <Search size={17} />
+          )}
         </div>
 
         <input
@@ -146,6 +158,13 @@ export default function CatalogueSearchBar({
           aria-label={ariaLabel}
           autoComplete="off"
         />
+
+        {/* Badge visuel d'indication d'intention IA en temps réel */}
+        {isRecommendation && (
+          <div className="catalogue-search-bar__ai-tag" title="Intention de conseil IA détectée">
+            <span>Conseil IA</span>
+          </div>
+        )}
 
         <div className="catalogue-search-bar__actions">
           {value.length > 0 && (
@@ -175,14 +194,19 @@ export default function CatalogueSearchBar({
           )}
 
           <button
-            type="button"
-            className="catalogue-search-btn catalogue-search-btn--ai"
-            onClick={handleAiButtonClick}
-            title="Lancer le conseil / recommandation IA Wakala"
-            aria-label="Recommander avec l'IA"
+            type="submit"
+            className={`catalogue-search-btn ${
+              isRecommendation ? 'catalogue-search-btn--recommendation' : 'catalogue-search-btn--search'
+            }`}
+            onClick={handleSubmit}
+            title={isRecommendation ? "Lancer le Conseil IA Wakala (Entrée)" : "Rechercher dans le catalogue"}
+            aria-label={isRecommendation ? "Recommander avec l'IA" : "Rechercher"}
           >
-            <Sparkles size={14} />
-            <span className="catalogue-search-btn--ai-text">IA</span>
+            {isRecommendation ? (
+              <Sparkles size={15} className="catalogue-search-btn__sparkle-icon" />
+            ) : (
+              <Search size={15} />
+            )}
           </button>
         </div>
       </form>

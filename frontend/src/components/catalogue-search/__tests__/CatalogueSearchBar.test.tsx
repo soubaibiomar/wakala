@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import CatalogueSearchBar from '../CatalogueSearchBar';
 
-describe('CatalogueSearchBar Component', () => {
-  it('renders input, search icon, and AI recommendation button', () => {
+describe('CatalogueSearchBar Component with Recommendation Sensing', () => {
+  it('renders input, search icon, and submit button in direct search mode', () => {
     const handleChange = vi.fn();
     render(
       <CatalogueSearchBar
@@ -15,11 +15,11 @@ describe('CatalogueSearchBar Component', () => {
     const input = screen.getByRole('textbox', { name: /Rechercher un véhicule/i });
     expect(input).toBeTruthy();
 
-    const aiButton = screen.getByRole('button', { name: /Recommander avec l'IA/i });
-    expect(aiButton).toBeTruthy();
+    const searchButton = screen.getByRole('button', { name: /Rechercher/i });
+    expect(searchButton).toBeTruthy();
   });
 
-  it('triggers onChange for real-time simple search when typing', () => {
+  it('triggers onChange for direct catalogue search when typing a brand/model', () => {
     const handleChange = vi.fn();
     render(
       <CatalogueSearchBar
@@ -48,7 +48,7 @@ describe('CatalogueSearchBar Component', () => {
     expect(handleChange).toHaveBeenCalledWith('');
   });
 
-  it('dispatches wakala:recommendation-search when clicking the AI button with a query', () => {
+  it('intelligently senses a recommendation query and dispatches wakala:recommendation-search on submit', () => {
     const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
     const handleChange = vi.fn();
     render(
@@ -58,7 +58,9 @@ describe('CatalogueSearchBar Component', () => {
       />
     );
 
+    // Should sense recommendation intent and update button role/aria-label
     const aiButton = screen.getByRole('button', { name: /Recommander avec l'IA/i });
+    expect(aiButton).toBeTruthy();
     fireEvent.click(aiButton);
 
     expect(dispatchSpy).toHaveBeenCalled();
@@ -68,6 +70,77 @@ describe('CatalogueSearchBar Component', () => {
 
     expect(event).toBeDefined();
     expect(event.detail.message).toBe('SUV familial économique');
+    dispatchSpy.mockRestore();
+  });
+
+  it('senses a Darija / Arabic recommendation request and triggers recommendation on submit', () => {
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+    const handleChange = vi.fn();
+    render(
+      <CatalogueSearchBar
+        value="bghit tomobil sghira 9tisadiya"
+        onChange={handleChange}
+      />
+    );
+
+    const aiButton = screen.getByRole('button', { name: /Recommander avec l'IA/i });
+    expect(aiButton).toBeTruthy();
+    fireEvent.click(aiButton);
+
+    expect(dispatchSpy).toHaveBeenCalled();
+    const event = dispatchSpy.mock.calls.find(
+      (call) => call[0] instanceof CustomEvent && call[0].type === 'wakala:recommendation-search'
+    )?.[0] as CustomEvent;
+
+    expect(event).toBeDefined();
+    expect(event.detail.message).toBe('bghit tomobil sghira 9tisadiya');
+    dispatchSpy.mockRestore();
+  });
+
+  it('senses a question query (with question mark) and triggers recommendation', () => {
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+    const handleChange = vi.fn();
+    render(
+      <CatalogueSearchBar
+        value="Golf ou Clio 5 que choisir ?"
+        onChange={handleChange}
+      />
+    );
+
+    const aiButton = screen.getByRole('button', { name: /Recommander avec l'IA/i });
+    expect(aiButton).toBeTruthy();
+    fireEvent.click(aiButton);
+
+    expect(dispatchSpy).toHaveBeenCalled();
+    const event = dispatchSpy.mock.calls.find(
+      (call) => call[0] instanceof CustomEvent && call[0].type === 'wakala:recommendation-search'
+    )?.[0] as CustomEvent;
+
+    expect(event).toBeDefined();
+    expect(event.detail.message).toBe('Golf ou Clio 5 que choisir ?');
+    dispatchSpy.mockRestore();
+  });
+
+  it('submits direct catalogue search via onChange when query is a simple vehicle name', () => {
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+    const handleChange = vi.fn();
+    render(
+      <CatalogueSearchBar
+        value="Clio 5"
+        onChange={handleChange}
+      />
+    );
+
+    const searchButton = screen.getByRole('button', { name: /Rechercher/i });
+    expect(searchButton).toBeTruthy();
+    fireEvent.click(searchButton);
+
+    // Direct search should update catalogue filter via onChange, NOT trigger recommendation
+    expect(handleChange).toHaveBeenCalledWith('Clio 5');
+    const recommendationCall = dispatchSpy.mock.calls.find(
+      (call) => call[0] instanceof CustomEvent && call[0].type === 'wakala:recommendation-search'
+    );
+    expect(recommendationCall).toBeUndefined();
     dispatchSpy.mockRestore();
   });
 });

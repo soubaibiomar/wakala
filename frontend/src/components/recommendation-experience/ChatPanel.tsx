@@ -122,7 +122,7 @@ export function ChatPanel({
       >
         <div className="recommendation-experience__drag-handle" aria-hidden="true" />
         <div className="recommendation-experience__header-main">
-          <div className="recommendation-experience__avatar" aria-hidden="true"><img src="/assets/chatlogo.png" alt="" /></div>
+          <div className="recommendation-experience__avatar" aria-hidden="true"><img src="/assets/chatlogo.png" alt="Wakala" /></div>
           <div className="recommendation-experience__identity">
             <div className="recommendation-experience__identity-title-row">
               <strong>{assistantTitle(language)}</strong>
@@ -262,7 +262,7 @@ function assistantTitle(language: ChatLanguage | null): string {
 }
 
 function assistantAriaLabel(language: ChatLanguage | null): string {
-  return { en: 'Wakala automotive advisor', fr: 'Conseiller automobile Wakala', ar: 'مستشار السيارات في وكالة', darija: 'المستشار ديال السيارات فوكالة' }[language || 'en'];
+  return { en: 'Wakala automotive advisor', fr: 'Conseiller automobile Wakala', ar: 'مستشار السيارات في وكالة', darija: 'المستشار ديال السيارات فوكالة' }[language || 'fr'];
 }
 
 function assistantSubtitle(language: ChatLanguage | null): string {
@@ -278,7 +278,7 @@ function resetLabel(language: ChatLanguage | null): string {
 }
 
 function languageChoiceLabel(language: ChatLanguage | null): string {
-  return { en: 'Choose your language', fr: 'Choisissez votre langue', ar: 'اختر لغتك', darija: 'ختار اللغة ديالك' }[language || 'en'];
+  return { en: 'Choose your language', fr: 'Choisissez votre langue', ar: 'اختر لغتك', darija: 'ختار اللغة ديالك' }[language || 'fr'];
 }
 
 function responsePlaceholder(language: ChatLanguage): string {
@@ -286,7 +286,7 @@ function responsePlaceholder(language: ChatLanguage): string {
 }
 
 function responseAriaLabel(language: ChatLanguage | null): string {
-  return { en: 'Your answer', fr: 'Votre réponse', ar: 'إجابتك', darija: 'الجواب ديالك' }[language || 'en'];
+  return { en: 'Your answer', fr: 'Votre réponse', ar: 'إجابتك', darija: 'الجواب ديالك' }[language || 'fr'];
 }
 
 function languageHint(language: ChatLanguage): string {
@@ -294,7 +294,7 @@ function languageHint(language: ChatLanguage): string {
 }
 
 function confirmSelectionLabel(language: ChatLanguage | null): string {
-  return language === 'fr' ? 'Continuer' : language === 'en' ? 'Continue' : 'Confirmer';
+  return language === 'en' ? 'Continue' : 'Confirmer';
 }
 
 function rangeLabel(label: string, language: ChatLanguage): string {
@@ -330,7 +330,7 @@ function catalogueWelcomeTitle(language: ChatLanguage | null): string {
     fr: 'Trouvons les voitures qui vous correspondent',
     ar: 'لنجد السيارات التي تناسبك أكثر',
     darija: 'نقلبو على الطوموبيلات اللي كيناسبوك أكثر',
-  }[language || 'en'];
+  }[language || 'fr'];
 }
 
 function catalogueWelcomeText(language: ChatLanguage | null): string {
@@ -339,7 +339,7 @@ function catalogueWelcomeText(language: ChatLanguage | null): string {
     fr: 'Je vais vous poser quelques questions pour réduire le catalogue aux voitures adaptées à vos besoins.',
     ar: 'سأطرح عليك بعض الأسئلة لتقليص القائمة إلى السيارات التي تناسب احتياجاتك.',
     darija: 'غادي نسولك شي أسئلة باش نقصّو الكاتالوغ للطوموبيلات اللي كيناسبوك.',
-  }[language || 'en'];
+  }[language || 'fr'];
 }
 
 function closeLabel(language: ChatLanguage | null): string {
