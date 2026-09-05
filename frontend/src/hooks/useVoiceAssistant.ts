@@ -54,7 +54,10 @@ export function useVoiceAssistant({ language, history, onResult }: UseVoiceAssis
       recorder.ondataavailable = (event) => { if (event.data.size) chunksRef.current.push(event.data); };
       recorder.onstop = () => { stream.getTracks().forEach((track) => track.stop()); streamRef.current = null; setRecording(false); void processRecording(new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' })); };
       recorderRef.current = recorder; streamRef.current = stream; recorder.start(); setRecording(true);
-    } catch { setError('Accès au microphone refusé ou non disponible.'); }
+    } catch {
+      setError('Accès au microphone refusé ou non disponible.');
+      setTimeout(() => setError(null), 4000);
+    }
   }, [busy, processRecording, recording]);
 
   return { recording, busy, error, toggle };

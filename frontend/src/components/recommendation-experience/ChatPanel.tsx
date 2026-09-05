@@ -120,31 +120,37 @@ export function ChatPanel({
         onClick={isMinimized && onToggleMinimize ? onToggleMinimize : undefined}
         style={isMinimized ? { cursor: 'pointer' } : undefined}
       >
-        <div className="recommendation-experience__avatar" aria-hidden="true"><img src="/assets/chatlogo.png" alt="" /></div>
-        <div className="recommendation-experience__identity">
-          <span className="recommendation-experience__eyebrow">WAKALA IA</span>
-          <strong>{assistantTitle(language)}</strong>
-          <small>{isMinimized ? expandLabel(language) : assistantSubtitle(language)}</small>
+        <div className="recommendation-experience__drag-handle" aria-hidden="true" />
+        <div className="recommendation-experience__header-main">
+          <div className="recommendation-experience__avatar" aria-hidden="true"><img src="/assets/chatlogo.png" alt="" /></div>
+          <div className="recommendation-experience__identity">
+            <div className="recommendation-experience__identity-title-row">
+              <strong>{assistantTitle(language)}</strong>
+              {!isMinimized && (
+                <span className="recommendation-experience__status"><i aria-hidden="true" /> <span>{onlineLabel(language)}</span></span>
+              )}
+            </div>
+            <small>{isMinimized ? expandLabel(language) : assistantSubtitle(language)}</small>
+          </div>
+          <div className="recommendation-experience__header-actions">
+            {onToggleMinimize && (
+              <button
+                type="button"
+                className="recommendation-experience__minimize-btn"
+                onClick={(e) => { e.stopPropagation(); onToggleMinimize(); }}
+                aria-label={isMinimized ? expandLabel(language) : minimizeLabel(language, candidateCount)}
+                title={isMinimized ? expandLabel(language) : minimizeLabel(language, candidateCount)}
+              >
+                {isMinimized ? <ChevronUp size={15} aria-hidden="true" /> : <ChevronDown size={15} aria-hidden="true" />}
+                <span className="recommendation-experience__minimize-text">
+                  {isMinimized ? 'Ouvrir' : minimizeLabel(language, candidateCount)}
+                </span>
+              </button>
+            )}
+            {!isMinimized && onReset && <button type="button" className="recommendation-experience__reset" onClick={onReset} disabled={busy} aria-label={resetLabel(language)} title={resetLabel(language)}><RefreshCw size={14} aria-hidden="true" /></button>}
+            {onClose && <button type="button" className="recommendation-experience__close" onClick={(e) => { e.stopPropagation(); onClose(); }} aria-label={closeLabel(language)} title={closeLabel(language)}><X size={16} aria-hidden="true" /></button>}
+          </div>
         </div>
-        {!isMinimized && (
-          <span className="recommendation-experience__status"><i aria-hidden="true" /> <span>{onlineLabel(language)}</span></span>
-        )}
-        {onToggleMinimize && (
-          <button
-            type="button"
-            className="recommendation-experience__minimize-btn"
-            onClick={(e) => { e.stopPropagation(); onToggleMinimize(); }}
-            aria-label={isMinimized ? expandLabel(language) : minimizeLabel(language, candidateCount)}
-            title={isMinimized ? expandLabel(language) : minimizeLabel(language, candidateCount)}
-          >
-            {isMinimized ? <ChevronUp size={16} aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />}
-            <span className="recommendation-experience__minimize-text">
-              {isMinimized ? 'Ouvrir' : minimizeLabel(language, candidateCount)}
-            </span>
-          </button>
-        )}
-        {!isMinimized && onReset && <button type="button" className="recommendation-experience__reset" onClick={onReset} disabled={busy} aria-label={resetLabel(language)} title={resetLabel(language)}><RefreshCw size={15} aria-hidden="true" /></button>}
-        {onClose && <button type="button" className="recommendation-experience__close" onClick={(e) => { e.stopPropagation(); onClose(); }} aria-label={closeLabel(language)} title={closeLabel(language)}><X size={18} aria-hidden="true" /></button>}
       </header>
       {!isMinimized && (
         <>
@@ -347,10 +353,10 @@ function closeLabel(language: ChatLanguage | null): string {
 
 function minimizeLabel(language: ChatLanguage | null, count?: number): string {
   const c = typeof count === 'number' && count > 0 ? ` (${count})` : '';
-  if (language === 'en') return `See cars${c}`;
-  if (language === 'ar') return `رؤية السيارات${c}`;
-  if (language === 'darija') return `شوف السيارات${c}`;
-  return `Voir véhicules${c}`;
+  if (language === 'en') return `Cars${c}`;
+  if (language === 'ar') return `السيارات${c}`;
+  if (language === 'darija') return `السيارات${c}`;
+  return `Véhicules${c}`;
 }
 
 function expandLabel(language: ChatLanguage | null): string {
