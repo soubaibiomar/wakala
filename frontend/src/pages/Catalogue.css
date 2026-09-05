@@ -319,109 +319,6 @@
   transform: translateY(-1px);
 }
 
-/* ─── Floating assistant prompt ───────────────────────────── */
-.catalogue__assistant-hint {
-  position: fixed;
-  right: 94px;
-  bottom: 24px;
-  z-index: 38;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: min(590px, calc(100vw - 126px));
-  min-height: 64px;
-  padding: 10px 14px 10px 8px;
-  border: 1px solid rgba(18, 33, 53, 0.08);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 10px 26px rgba(18, 33, 53, 0.14);
-  cursor: pointer;
-  transition: transform 180ms ease, box-shadow 180ms ease;
-  animation: catalogue-assistant-in 320ms ease-out;
-}
-
-/* The catalogue prompt must never remain visible over the open chat panel. */
-body.catalogue-chat-open .catalogue__assistant-hint {
-  display: none;
-}
-
-.catalogue__assistant-hint:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 30px rgba(18, 33, 53, 0.18);
-}
-
-.catalogue__assistant-avatar {
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: #f8f7f4;
-  border: 1px solid rgba(174, 140, 78, 0.2);
-}
-
-.catalogue__assistant-hint p {
-  flex: 1;
-  margin: 0;
-  color: var(--color-text-primary);
-  font-size: 0.9rem;
-  font-weight: 600;
-  line-height: 1.35;
-  cursor: pointer;
-}
-
-.catalogue__assistant-hint p:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 4px;
-  border-radius: 4px;
-}
-
-.catalogue__assistant-close {
-  display: grid;
-  place-items: center;
-  border: 0;
-  cursor: pointer;
-}
-
-.catalogue__assistant-close {
-  position: absolute;
-  top: -24px;
-  right: 0;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  color: white;
-  background: #171717;
-}
-
-.catalogue__assistant-close:hover {
-  background: var(--color-primary);
-}
-
-@keyframes catalogue-assistant-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@media (max-width: 640px) {
-  .catalogue__assistant-hint {
-    right: 82px;
-    bottom: 86px;
-    width: calc(100vw - 98px);
-    min-height: 54px;
-    padding: 7px 10px 7px 7px;
-  }
-
-  .catalogue__assistant-avatar {
-    width: 34px;
-    height: 34px;
-    flex-basis: 34px;
-  }
-
-  .catalogue__assistant-hint p {
-    font-size: 0.75rem;
-  }
-}
 
 /* ─── Main content area ────────────────────────────────────── */
 .catalogue__main {
@@ -528,11 +425,59 @@ body.catalogue-chat-open .catalogue__assistant-hint {
   .catalogue__budget-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-@media (max-width: 620px) {
-  .catalogue__budget-browser { padding: 18px 12px; }
-  .catalogue__budget-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .catalogue__budget-image { height: 100px; }
-  .catalogue__budget-label { min-height: 46px; padding: 10px 7px; font-size: 0.72rem; }
+@media (max-width: 768px) {
+  .catalogue__budget-browser {
+    margin: 0 0 var(--space-md);
+    padding: 12px 14px;
+    border-radius: 14px;
+  }
+
+  .catalogue__budget-heading {
+    margin-bottom: 8px;
+    text-align: left;
+  }
+
+  .catalogue__budget-kicker {
+    font-size: 0.6rem;
+  }
+
+  .catalogue__budget-heading h2 {
+    font-size: 1.15rem;
+    margin: 2px 0 0;
+  }
+
+  .catalogue__budget-grid {
+    display: flex;
+    overflow-x: auto;
+    gap: 10px;
+    padding-bottom: 4px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .catalogue__budget-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .catalogue__budget-card {
+    flex: 0 0 130px;
+    width: 130px;
+    scroll-snap-align: start;
+    border-radius: 10px;
+  }
+
+  .catalogue__budget-image {
+    height: 60px;
+  }
+
+  .catalogue__budget-label {
+    min-height: unset;
+    padding: 7px 6px;
+    font-size: 0.68rem;
+    line-height: 1.2;
+    text-align: center;
+  }
 }
 
 /* ─── Vehicle grid (Moved to Mobile-First section at bottom) ─────────────────────────── */
@@ -685,7 +630,7 @@ body.catalogue-chat-open .catalogue__assistant-hint {
   }
 }
 
-/* ─── Mobile Filter Bar ────────────────────────────────────── */
+/* ─── Mobile Search & Filter Bar ────────────────────────────── */
 .catalogue__mobile-filter-bar {
   display: none;
 }
@@ -693,51 +638,97 @@ body.catalogue-chat-open .catalogue__assistant-hint {
 @media (max-width: 991px) {
   .catalogue__mobile-filter-bar {
     display: flex;
+    align-items: center;
+    gap: 8px;
     width: 100%;
     margin-bottom: var(--space-xs);
   }
 
-  .catalogue__mobile-filter-btn {
+  .catalogue__mobile-search-box {
+    position: relative;
+    flex: 1;
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    gap: 10px;
+    min-width: 0;
+  }
+
+  .catalogue__mobile-search-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--color-text-muted, #718096);
+    pointer-events: none;
+  }
+
+  .catalogue__mobile-search-input {
     width: 100%;
-    padding: 13px 18px;
-    background: var(--color-bg-card);
-    border: 1px solid rgba(18, 33, 53, 0.1);
-    border-radius: var(--radius-sm);
-    color: var(--color-text-primary);
-    font-size: 0.92rem;
+    height: 44px;
+    padding: 0 34px 0 36px;
+    background: var(--color-bg-card, #ffffff);
+    border: 1px solid rgba(18, 33, 53, 0.12);
+    border-radius: 10px;
+    color: var(--color-text-primary, #1a202c);
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .catalogue__mobile-search-input:focus {
+    border-color: var(--color-accent-gold, #AE8C4E);
+    box-shadow: 0 0 0 3px rgba(174, 140, 78, 0.15);
+  }
+
+  .catalogue__mobile-search-clear {
+    position: absolute;
+    right: 8px;
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(18, 33, 53, 0.08);
+    color: var(--color-text-secondary, #4a5568);
+    cursor: pointer;
+  }
+
+  .catalogue__mobile-filter-btn {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 44px;
+    padding: 0 14px;
+    background: var(--color-bg-card, #ffffff);
+    border: 1px solid rgba(18, 33, 53, 0.12);
+    border-radius: 10px;
+    color: var(--color-text-primary, #1a202c);
+    font-size: 0.88rem;
     font-weight: 700;
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(18, 33, 53, 0.04);
     transition: all 180ms ease;
+    white-space: nowrap;
   }
 
   .catalogue__mobile-filter-btn:hover,
   .catalogue__mobile-filter-btn--active {
-    border-color: var(--color-accent-gold);
-    color: var(--color-accent-gold);
+    border-color: var(--color-accent-gold, #AE8C4E);
+    color: var(--color-accent-gold, #AE8C4E);
+    background: rgba(174, 140, 78, 0.06);
   }
 
   .catalogue__filter-badge {
     display: inline-grid;
     place-items: center;
-    min-width: 22px;
-    height: 22px;
-    padding: 0 6px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
     border-radius: 99px;
-    background: var(--color-accent-gold);
+    background: var(--color-accent-gold, #AE8C4E);
     color: #ffffff;
-    font-size: 0.72rem;
-    font-weight: 800;
-  }
-
-  .catalogue__mobile-filter-arrow {
-    margin-left: auto;
     font-size: 0.7rem;
-    opacity: 0.7;
+    font-weight: 800;
   }
 
   /* When chat is open on mobile in catalogue, provide bottom padding so all vehicle cards can be scrolled */

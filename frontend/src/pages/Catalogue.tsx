@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef, type ReactNode, type Dispatch, type SetStateAction } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { Plus, Edit3, Trash2, Image as ImageIcon, CheckCircle2, AlertCircle, X, ShieldCheck, SlidersHorizontal } from 'lucide-react';
+import { Plus, Edit3, Trash2, Image as ImageIcon, CheckCircle2, AlertCircle, X, ShieldCheck, SlidersHorizontal, Search } from 'lucide-react';
 import { vehicleService } from '../services/vehicleService';
 import { useAuth } from '../context/AuthContext';
 import type { Vehicle, VehicleFilters, FuelType, BodyType, TransmissionType } from '../types/vehicle';
@@ -198,7 +198,6 @@ export default function Catalogue() {
   const [is4x4, setIs4x4] = useState(false);
   const [openFilterSections, setOpenFilterSections] = useState<Record<string, boolean>>({ availability: false, body: false, specification: false });
   const [savedSearch, setSavedSearch] = useState(false);
-  const [showAssistantHint, setShowAssistantHint] = useState(true);
   const [activeModel, setActiveModel] = useState('');
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
@@ -262,14 +261,6 @@ export default function Catalogue() {
     }
   }, [searchParams, lastQuery]);
 
-  useEffect(() => {
-    const handleAssistantVisibility = (event: Event) => {
-      const isOpen = (event as CustomEvent<{ open?: boolean }>).detail?.open;
-      if (typeof isOpen === 'boolean') setShowAssistantHint(!isOpen);
-    };
-    window.addEventListener('wakala:assistant-visibility', handleAssistantVisibility);
-    return () => window.removeEventListener('wakala:assistant-visibility', handleAssistantVisibility);
-  }, []);
 
   useEffect(() => {
     const handleRecommendationResults = (event: Event) => {
@@ -454,8 +445,29 @@ export default function Catalogue() {
     <div className="catalogue">
       <div className="catalogue__container">
         
-        {/* Mobile Filter & Sort Toggle Button */}
+        {/* Mobile Search & Filter Bar */}
         <div className="catalogue__mobile-filter-bar">
+          <div className="catalogue__mobile-search-box">
+            <Search size={16} className="catalogue__mobile-search-icon" aria-hidden="true" />
+            <input
+              type="text"
+              placeholder="Marque, modèle (ex: Golf, Dacia)..."
+              className="catalogue__mobile-search-input"
+              value={searchTerm}
+              onChange={(e) => handleFilterChange(setSearchTerm, e.target.value)}
+              aria-label="Rechercher un véhicule"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                className="catalogue__mobile-search-clear"
+                onClick={() => handleFilterChange(setSearchTerm, '')}
+                aria-label="Effacer la recherche"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
           <button
             type="button"
             className={`catalogue__mobile-filter-btn ${isMobileFiltersOpen ? 'catalogue__mobile-filter-btn--active' : ''}`}
@@ -463,13 +475,10 @@ export default function Catalogue() {
             aria-expanded={isMobileFiltersOpen}
           >
             <SlidersHorizontal size={16} />
-            <span>Filtres & Tri</span>
+            <span>Filtres</span>
             {activeFiltersCount > 0 && (
               <span className="catalogue__filter-badge">{activeFiltersCount}</span>
             )}
-            <span className="catalogue__mobile-filter-arrow">
-              {isMobileFiltersOpen ? '▲' : '▼'}
-            </span>
           </button>
         </div>
 
@@ -703,8 +712,12 @@ export default function Catalogue() {
           </div>
           
           <div className="catalogue__sidebar-footer">
-            <button className="catalogue__submit-btn">
-              {loading ? 'Chargement...' : `(${total}) annonces`}
+            <button
+              type="button"
+              className="catalogue__submit-btn"
+              onClick={() => setIsMobileFiltersOpen(false)}
+            >
+              {loading ? 'Chargement...' : `Afficher les (${total}) annonces`}
             </button>
           </div>
         </aside>
@@ -1114,36 +1127,6 @@ export default function Catalogue() {
             </form>
           </div>
         </div>
-      )}
-      {showAssistantHint && (
-        <aside className="catalogue__assistant-hint" aria-label="Assistant de recherche">
-          <button
-            type="button"
-            className="catalogue__assistant-close"
-            aria-label="Fermer le message de l'assistant"
-            onClick={() => setShowAssistantHint(false)}
-          >
-            <X size={15} aria-hidden="true" />
-          </button>
-          <img src="/assets/chatlogo.png" alt="" className="catalogue__assistant-avatar" />
-          <p
-            role="button"
-            tabIndex={0}
-            onClick={() => {
-              setShowAssistantHint(false);
-              window.dispatchEvent(new CustomEvent('wakala:open-chat-from-hint'));
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                setShowAssistantHint(false);
-                window.dispatchEvent(new CustomEvent('wakala:open-chat-from-hint'));
-              }
-            }}
-          >
-            Je peux vous aider à trouver la voiture idéale. Une question&nbsp;?
-          </p>
-        </aside>
       )}
     </div>
   );
